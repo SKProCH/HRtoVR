@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
 using HRtoVRChat_OSC_SDK;
-using SharpOSC;
+using Vizcon.OSC;
 
 namespace HRtoVRChat_OSC
 {

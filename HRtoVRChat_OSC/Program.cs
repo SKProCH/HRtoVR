@@ -405,10 +405,11 @@ namespace HRtoVRChat_OSC
                     activeHRManager = new TextFileManager();
                     activeHRManager.Init(ConfigManager.LoadedConfig.textfilelocation);
                     break;
-                case HRType.Omnicept:
-                    activeHRManager = new OmniceptManager();
-                    activeHRManager.Init(String.Empty);
-                    break;
+                // TODO Omnicept Temporarily Disabled
+                // case HRType.Omnicept:
+                //     activeHRManager = new OmniceptManager();
+                //     activeHRManager.Init(String.Empty);
+                //     break;
                 case HRType.SDK:
                     activeHRManager = new SDKManager();
                     activeHRManager.Init("127.0.0.1:9000");
