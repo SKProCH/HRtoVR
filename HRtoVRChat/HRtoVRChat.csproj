@@ -6,7 +6,7 @@
         <TrimMode>copyused</TrimMode>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationIcon>Assets\hrtovrchat_logo.ico</ApplicationIcon>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
     <ItemGroup>
         <None Remove=".gitignore" />
@@ -39,10 +39,10 @@
     </ItemGroup>
     <ItemGroup>
       <Reference Include="Tommy">
-        <HintPath>..\HRtoVRChat_OSC\bin\Release\net6.0\Tommy.dll</HintPath>
+        <HintPath>..\HRtoVRChat_OSC\bin\Release\net10.0\Tommy.dll</HintPath>
       </Reference>
       <Reference Include="Tommy.Serializer">
-        <HintPath>..\HRtoVRChat_OSC\bin\Release\net6.0\Tommy.Serializer.dll</HintPath>
+        <HintPath>..\HRtoVRChat_OSC\bin\Release\net10.0\Tommy.Serializer.dll</HintPath>
       </Reference>
     </ItemGroup>
     <ItemGroup>
