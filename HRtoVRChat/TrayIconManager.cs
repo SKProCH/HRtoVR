@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reactive;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using Avalonia.Shared.PlatformSupport;
+using HRtoVRChat.ViewModels;
 
 namespace HRtoVRChat;
 
@@ -158,25 +162,28 @@ public static class TrayIconManager {
             if (MainWindow != null) {
                 switch (id) {
                     case "AutoStart":
-                        ArgumentsWindow.autostart.IsChecked = nmi.IsChecked;
-                        ArgumentsWindow.AutoStartButtonPressed(null, null);
+                        if (ArgumentsWindow?.DataContext is ArgumentsViewModel vmAS)
+                            vmAS.AutoStart = nmi.IsChecked;
                         break;
                     case "SkipVRCCheck":
-                        ArgumentsWindow.skipvrc.IsChecked = nmi.IsChecked;
-                        ArgumentsWindow.SkipVRCCheckButtonPressed(null, null);
+                        if (ArgumentsWindow?.DataContext is ArgumentsViewModel vmSV)
+                            vmSV.SkipVRCCheck = nmi.IsChecked;
                         break;
                     case "NeosBridge":
-                        ArgumentsWindow.neosbridge.IsChecked = nmi.IsChecked;
-                        ArgumentsWindow.NeosBridgeButtonPressed(null, null);
+                        if (ArgumentsWindow?.DataContext is ArgumentsViewModel vmNB)
+                            vmNB.NeosBridge = nmi.IsChecked;
                         break;
                     case "Start":
-                        MainWindow.StartButtonPressed(null, null);
+                        if (MainWindow.DataContext is MainWindowViewModel vmStart)
+                            vmStart.StartCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "Stop":
-                        MainWindow.StopButtonPressed(null, null);
+                        if (MainWindow.DataContext is MainWindowViewModel vmStop)
+                            vmStop.StopCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "Kill":
-                        MainWindow.KillButtonPressed(null, null);
+                        if (MainWindow.DataContext is MainWindowViewModel vmKill)
+                            vmKill.KillCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "HideApplication":
                         if (nmi.IsChecked)
@@ -185,8 +192,8 @@ public static class TrayIconManager {
                             MainWindow.Show();
                         break;
                     case "Exit":
-                        MainWindow.KillButtonPressed(null, null);
-                        Environment.Exit(0);
+                        if (MainWindow.DataContext is MainWindowViewModel vmExit)
+                            vmExit.ExitAppCommand.Execute(Unit.Default).Subscribe();
                         break;
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia;
+using Avalonia.ReactiveUI;
 
 namespace HRtoVRChat;
 
@@ -17,6 +18,7 @@ internal class Program {
     public static AppBuilder BuildAvaloniaApp() {
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .LogToTrace();
+            .LogToTrace()
+            .UseReactiveUI();
     }
 }

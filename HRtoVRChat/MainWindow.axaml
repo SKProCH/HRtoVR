@@ -3,12 +3,22 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
+        xmlns:vm="using:HRtoVRChat.ViewModels"
+        xmlns:converters="using:HRtoVRChat.Converters"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
         x:Class="HRtoVRChat.MainWindow"
         Icon="/Assets/hrtovrchat_logo.ico"
         Title="HRtoVRChat">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <Window.Resources>
+    <converters:EnumToBooleanConverter x:Key="EnumToBool" />
+  </Window.Resources>
 
   <Window.Styles>
     <Style Selector="TextBlock.h1">
@@ -20,49 +30,49 @@
   <Panel>
     <!--LeftBar-->
     <Canvas Width="150" Height="500" Background="#0c0c0c" HorizontalAlignment="Left" VerticalAlignment="Top">
-      <Button Width="150" Background="transparent" Click="HomeButtonPressed" Canvas.Top="5">
+      <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Home}" Canvas.Top="5">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Home</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Background="transparent" Click="ProgramButtonPressed" Canvas.Top="40">
+      <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Program}" Canvas.Top="40">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource window_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Program</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Background="transparent" Canvas.Top="75" Click="UpdatesButtonPressed">
+      <Button Width="150" Background="transparent" Canvas.Top="75" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Updates}">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource arrow_download_regular}" HorizontalAlignment="Left" Margin="-1,0,0,0" />
           <TextBlock Margin="6,1,0,0">Updates</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Canvas.Top="110" Background="transparent" Click="ConfigButtonPressed">
+      <Button Width="150" Canvas.Top="110" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Config}">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource content_settings_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Config</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Canvas.Top="145" Background="transparent" Click="IncomingDataButtonPressed">
+      <Button Width="150" Canvas.Top="145" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.IncomingData}">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource data_usage_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Incoming Data</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Canvas.Top="365" Background="#212121" Click="HideAppButtonPressed">
+      <Button Width="150" Canvas.Top="365" Background="#212121" Command="{Binding HideAppCommand}">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource slide_hide_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Hide Application</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Canvas.Top="400" Background="Red" Click="ExitAppButtonPressed">
+      <Button Width="150" Canvas.Top="400" Background="Red" Command="{Binding ExitAppCommand}">
         <StackPanel Orientation="Horizontal">
           <PathIcon Data="{StaticResource prohibited_regular}" HorizontalAlignment="Left" />
           <TextBlock Margin="5,1,0,0">Exit</TextBlock>
         </StackPanel>
       </Button>
-      <Button Width="150" Canvas.Top="450" Background="transparent" Click="GitHubButtonPressed">
+      <Button Width="150" Canvas.Top="450" Background="transparent" Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/200Tigersbloxed/HRtoVRChat_OSC">
         <StackPanel Orientation="Horizontal">
           <Image Source="Assets/github.png" Width="35" />
           <TextBlock Margin="10,9,0,0">GitHub</TextBlock>
@@ -70,7 +80,7 @@
       </Button>
     </Canvas>
     <!--Home Tab-->
-    <Canvas Width="450" HorizontalAlignment="Right" Name="HomeCanvas" IsVisible="True">
+    <Canvas Width="450" HorizontalAlignment="Right" Name="HomeCanvas" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Home}">
       <TextBlock FontSize="20" FontWeight="Bold"
                  Canvas.Left="155" Canvas.Top="5">
         HRtoVRChat
@@ -80,85 +90,105 @@
         Welcome to HRtoVRChat!
       </TextBlock>
       <TextBlock Canvas.Top="250" Canvas.Left="45">You can still access the latest news page</TextBlock>
-      <Button Canvas.Top="245" Canvas.Left="330" Click="HereButtonPressed">here</Button>
+      <Button Canvas.Top="245" Canvas.Left="330" Command="{Binding OpenUrlCommand}" CommandParameter="https://hrtovrchat.fortnite.lol/applatest">here</Button>
     </Canvas>
     <!--Program Tab-->
-    <Canvas Width="450" HorizontalAlignment="Right" Name="ProgramCanvas" IsVisible="False">
+    <Canvas Width="450" HorizontalAlignment="Right" Name="ProgramCanvas" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Program}">
       <Panel Width="400" Height="300" Canvas.Left="25" Canvas.Top="25">
         <avaloniaEdit:TextEditor Background="#0c0c0c" Foreground="White"
                                  FontFamily="Courier New" Focusable="False" FontSize="12"
                                  IsReadOnly="True" WordWrap="True"
                                  Name="OutputTextBox" />
       </Panel>
-      <Label Canvas.Bottom="15" Canvas.Left="25" Name="StatusLabel">Status: STOPPED</Label>
-      <Button Canvas.Left="238" Canvas.Bottom="10" Click="StartButtonPressed">START</Button>
-      <Button Canvas.Left="310" Canvas.Bottom="10" Click="StopButtonPressed">STOP</Button>
-      <Button Canvas.Left="375" Canvas.Bottom="10" Click="KillButtonPressed">KILL</Button>
-      <Button Canvas.Left="25" Canvas.Bottom="50" Click="OpenArgumentsButtonPressed">Open Program Arguments</Button>
+      <Label Canvas.Bottom="15" Canvas.Left="25" Name="StatusLabel" Content="{Binding StatusText}" />
+      <Button Canvas.Left="238" Canvas.Bottom="10" Command="{Binding StartCommand}">START</Button>
+      <Button Canvas.Left="310" Canvas.Bottom="10" Command="{Binding StopCommand}">STOP</Button>
+      <Button Canvas.Left="375" Canvas.Bottom="10" Command="{Binding KillCommand}">KILL</Button>
+      <Button Canvas.Left="25" Canvas.Bottom="50" Command="{Binding OpenArgumentsCommand}">Open Program Arguments</Button>
       <TextBox Canvas.Bottom="130" Canvas.Left="25" Width="330" Name="CommandBox"
-               Watermark="Enter a Command" />
-      <Button Canvas.Bottom="130" Canvas.Left="370" Click="SendButtonPressed">SEND</Button>
+               Watermark="Enter a Command" Text="{Binding CommandInput}" />
+      <Button Canvas.Bottom="130" Canvas.Left="370" Command="{Binding SendCommandCommand}">SEND</Button>
     </Canvas>
     <!--Updates Tab-->
-    <Canvas Width="450" HorizontalAlignment="Right" Name="UpdatesCanvas" IsVisible="False">
-      <TextBlock Canvas.Left="5" Canvas.Top="5" Name="InstalledVersionLabel">Installed Version: </TextBlock>
-      <TextBlock Canvas.Left="5" Canvas.Top="30" Name="LatestVersionLabel">Latest Version: </TextBlock>
-      <Button Canvas.Top="12" Canvas.Right="5" Click="UpdatesRefreshButtonPressed">REFRESH</Button>
+    <Canvas Width="450" HorizontalAlignment="Right" Name="UpdatesCanvas" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Updates}">
+      <TextBlock Canvas.Left="5" Canvas.Top="5" Name="InstalledVersionLabel" Text="{Binding InstalledVersion}" />
+      <TextBlock Canvas.Left="5" Canvas.Top="30" Name="LatestVersionLabel" Text="{Binding LatestVersion}" />
+      <Button Canvas.Top="12" Canvas.Right="5" Command="{Binding RefreshUpdatesCommand}">REFRESH</Button>
       <Button Canvas.Left="138" Canvas.Top="100" Name="UpdateButton"
-              Click="UpdateSoftwareButtonPressed">
-        UPDATE SOFTWARE
-      </Button>
+              Command="{Binding UpdateSoftwareCommand}" Content="{Binding UpdateButtonText}" />
       <TextBlock Canvas.Left="5" Canvas.Top="170">Total Progress:</TextBlock>
-      <ProgressBar Canvas.Left="5" Canvas.Top="200" Width="440" Name="TotalProgressBar" />
+      <ProgressBar Canvas.Left="5" Canvas.Top="200" Width="440" Name="TotalProgressBar" Value="{Binding TotalProgress}" />
       <TextBlock Canvas.Left="5" Canvas.Top="245">Current Task Progress:</TextBlock>
-      <ProgressBar Canvas.Left="5" Canvas.Top="275" Width="440" Name="TaskProgressBar" />
+      <ProgressBar Canvas.Left="5" Canvas.Top="275" Width="440" Name="TaskProgressBar" Value="{Binding TaskProgress}" />
     </Canvas>
     <!--Config Tab-->
-    <Canvas Width="450" HorizontalAlignment="Right" Name="ConfigCanvas" IsVisible="False">
+    <Canvas Width="450" HorizontalAlignment="Right" Name="ConfigCanvas" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Config}">
       <TextBlock Canvas.Top="5" Canvas.Left="5">Select a Config Value</TextBlock>
       <Canvas Name="ConfigSelections">
-        <StackPanel Spacing="5" Name="LeftStackPanelConfig" Canvas.Left="5" Canvas.Top="38" />
-        <StackPanel Spacing="5" Canvas.Left="225" Name="RightStackPanelConfig" />
+        <StackPanel Spacing="5" Name="LeftStackPanelConfig" Canvas.Left="5" Canvas.Top="38">
+            <ItemsControl Items="{Binding ConfigItemsLeft}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton GroupName="ConfigValues" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                     Command="{Binding DataContext.SelectedConfigItem, RelativeSource={RelativeSource AncestorType=Window}}"
+                                     CommandParameter="{Binding}" />
+                        <!-- Binding RadioButton to selection is tricky in ItemsControl.
+                             Using ListBox with RadioButton style is better, or just binding IsChecked.
+                             Let's assume we bind IsChecked to a property in ItemVM, but we need mutual exclusivity.
+                             Alternatively, use a Command that sets SelectedConfigItem in MainVM.
+                        -->
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+        <StackPanel Spacing="5" Canvas.Left="225" Name="RightStackPanelConfig">
+             <ItemsControl Items="{Binding ConfigItemsRight}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                         <!-- Using a command to set the selection in the ViewModel -->
+                        <RadioButton GroupName="ConfigValues" Content="{Binding Name}"
+                                     Command="{Binding DataContext.SwitchConfigSelectionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                     CommandParameter="{Binding}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Open ParameterNames Menu" Command="{Binding OpenParameterNamesCommand}" />
+        </StackPanel>
       </Canvas>
       <!--Yes, this is my separator-->
       <Label CornerRadius="5" Width="350" Height="5" Background="#1f1f1f"
              Canvas.Left="50" Canvas.Top="300" />
       <TextBlock Canvas.Left="5" Canvas.Bottom="160" FontSize="18"
-                 Name="ConfigNameLabel">
-        Select a Config Value
+                 Name="ConfigNameLabel" Text="{Binding SelectedConfigItem.Name}">
       </TextBlock>
       <TextBlock Canvas.Left="5" Canvas.Bottom="135" FontSize="15"
-                 Name="ConfigValueType">
-        Value Type
+                 Name="ConfigValueType" Text="{Binding SelectedConfigItem.TypeName}">
       </TextBlock>
       <TextBlock Canvas.Left="5" Canvas.Bottom="5" FontSize="12" TextAlignment="Left" TextWrapping="Wrap"
                  Width="200" Height="120"
-                 Name="ConfigDescription">
-        Description
+                 Name="ConfigDescription" Text="{Binding SelectedConfigItem.Description}">
       </TextBlock>
       <TextBox Canvas.Left="210" Canvas.Bottom="55" Width="230"
                Watermark="Enter a Value Here"
                TextAlignment="Center"
-               Name="ConfigValue" />
-      <Button Canvas.Left="210" Canvas.Bottom="15" Width="230" Click="SaveConfigButtonPressed">
+               Name="ConfigValue" Text="{Binding ConfigValueInput}" />
+      <Button Canvas.Left="210" Canvas.Bottom="15" Width="230" Command="{Binding SaveConfigCommand}">
         <TextBlock TextAlignment="Center">SAVE</TextBlock>
       </Button>
     </Canvas>
     <!--Incoming Data Tab-->
-    <Canvas Width="450" HorizontalAlignment="Right" Name="IncomingDataCanvas" IsVisible="False">
+    <Canvas Width="450" HorizontalAlignment="Right" Name="IncomingDataCanvas" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=IncomingData}">
       <TextBlock FontSize="16" FontWeight="Bold"
                  Canvas.Left="5" Canvas.Top="5">
         HRtoVRChat_OSC Data
       </TextBlock>
       <TextBlock Canvas.Left="5" Canvas.Top="30"
-                 Name="AppBridgeConnectedLabel">
-        App Bridge Connection Status:
-      </TextBlock>
+                 Name="AppBridgeConnectedLabel" Text="{Binding AppBridgeStatus}" />
       <TextBox Background="#0c0c0c" Foreground="White"
                FontFamily="Courier New" Focusable="False" FontSize="12"
                IsReadOnly="True" TextWrapping="Wrap"
                Canvas.Left="5" Canvas.Top="80" Width="435" Height="400"
-               Name="OutputIncomingData" />
+               Name="OutputIncomingData" Text="{Binding IncomingDataOutput}" />
     </Canvas>
   </Panel>
 </Window>

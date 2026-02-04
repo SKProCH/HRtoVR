@@ -4,19 +4,21 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Controls;
-using MessageBox.Avalonia;
-using MessageBox.Avalonia.DTO;
-using MessageBox.Avalonia.Enums;
 
 namespace HRtoVRChat;
 
 public static class SoftwareManager {
     public static Action<string?, string> OnConsoleUpdate = (line, color) => { };
     public static Action<int, int> RequestUpdateProgressBars = (x, y) => { };
+
+    // UI Interaction Delegates
+    public static Func<string, string, Task<bool>>? RequestConfirmation;
+    public static Action<string, string, bool>? ShowMessage;
+
     private static Process? CurrentProcess;
     private static StreamWriter? myStreamWriter;
 
@@ -113,6 +115,7 @@ public static class SoftwareManager {
     }
 
     private static void ContinueStartSoftware() {
+        if (CurrentProcess == null) return;
         CurrentProcess.Start();
         CurrentProcess.StandardInput.AutoFlush = true;
         myStreamWriter = CurrentProcess.StandardInput;
@@ -157,14 +160,7 @@ public static class SoftwareManager {
                 ContinueStartSoftware();
         }
         else {
-            MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                ButtonDefinitions = ButtonEnum.Ok,
-                ContentTitle = "HRtoVRChat",
-                ContentMessage = "HRtoVRChat_OSC is not installed! Please navigate to the Updates tab and install it.",
-                WindowIcon = new WindowIcon(AssetTools.Icon),
-                Icon = Icon.Error,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            }).Show();
+            ShowMessage?.Invoke("HRtoVRChat", "HRtoVRChat_OSC is not installed! Please navigate to the Updates tab and install it.", true);
         }
     }
 
@@ -175,14 +171,7 @@ public static class SoftwareManager {
                 OnConsoleUpdate.Invoke("> " + command, "Purple");
             }
             catch (Exception) {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.Ok,
-                    ContentTitle = "HRtoVRChat",
-                    ContentMessage = "Failed to send command due to an error!",
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = Icon.Error,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
+                ShowMessage?.Invoke("HRtoVRChat", "Failed to send command due to an error!", true);
             }
         }
     }
@@ -206,16 +195,12 @@ public static class SoftwareManager {
                     Directory.CreateDirectory(OutputPath);
                 // Check if there's any files in the Directory
                 if (Directory.GetFiles(OutputPath).Length > 0) {
-                    var messageBox = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                        ButtonDefinitions = ButtonEnum.YesNo,
-                        ContentTitle = "HRtoVRChat",
-                        ContentMessage = "All files in " + Path.GetFullPath(OutputPath) +
-                                         " are going to be deleted! Are you sure?",
-                        WindowIcon = new WindowIcon(AssetTools.Icon),
-                        Icon = Icon.Error,
-                        WindowStartupLocation = WindowStartupLocation.CenterScreen
-                    }).Show();
-                    if ((messageBox & ButtonResult.Yes) != 0) {
+                    var result = true;
+                    if (RequestConfirmation != null)
+                        result = await RequestConfirmation.Invoke("HRtoVRChat", "All files in " + Path.GetFullPath(OutputPath) +
+                                         " are going to be deleted! Are you sure?");
+
+                    if (result) {
                         IsUpdating = true;
                         // Delete all files
                         foreach (var file in Directory.GetFiles(OutputPath)) {
@@ -225,8 +210,8 @@ public static class SoftwareManager {
 
                         // Delete all directories
                         foreach (var directory in Directory.GetDirectories(OutputPath)) {
-                            if (!ExcludeDirectoriesOnDelete.Contains(new DirectoryInfo(Path.GetDirectoryName(directory))
-                                    .Name))
+                            var dirName = new DirectoryInfo(directory).Name;
+                            if (!ExcludeDirectoriesOnDelete.Contains(dirName))
                                 DeleteDirectoryAndWait(directory);
                         }
                     }
@@ -236,34 +221,69 @@ public static class SoftwareManager {
 
                 UpdateProgressBars(0, 25);
                 // Download the file
-                using (var client = new WebClient()) {
+                try {
                     var outputFile = Path.Combine(OutputPath, "HRtoVRChat_OSC.zip");
-                    client.DownloadFileCompleted += (sender, args) => {
-                        UpdateProgressBars(0, 50);
-                        // Extract the Zip
-                        ZipFile.ExtractToDirectory(outputFile, OutputPath);
-                        UpdateProgressBars(100, 50);
-                        // Create version.txt
-                        UpdateProgressBars(0, 75);
-                        File.WriteAllText(Path.Combine(OutputPath, "version.txt"), GetLatestVersion());
-                        UpdateProgressBars(100, 100);
-                        IsUpdating = false;
-                        callback?.Invoke();
-                    };
-                    client.DownloadProgressChanged += (sender, args) => UpdateProgressBars(args.ProgressPercentage, 25);
-                    client.DownloadFileAsync(new Uri(latestDownload), outputFile);
+                    await DownloadFileWithProgressAsync(latestDownload, outputFile, (p) => UpdateProgressBars(p, 25));
+
+                    UpdateProgressBars(0, 50);
+                    // Extract the Zip
+                    ZipFile.ExtractToDirectory(outputFile, OutputPath);
+                    UpdateProgressBars(100, 50);
+                    // Create version.txt
+                    UpdateProgressBars(0, 75);
+                    File.WriteAllText(Path.Combine(OutputPath, "version.txt"), GetLatestVersion());
+                    UpdateProgressBars(100, 100);
+                    IsUpdating = false;
+                    callback?.Invoke();
+                }
+                catch (Exception e) {
+                    ShowMessage?.Invoke("HRtoVRChat", "Failed to download/install update: " + e.Message, true);
+                    IsUpdating = false;
                 }
             }
             else {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.Ok,
-                    ContentTitle = "HRtoVRChat",
-                    ContentMessage =
-                        "There's an instance of HRtoVRChat_OSC running, please close out of it before continuing!",
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = Icon.Error,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
+                ShowMessage?.Invoke("HRtoVRChat", "There's an instance of HRtoVRChat_OSC running, please close out of it before continuing!", true);
+            }
+        }
+    }
+
+    private static async Task DownloadFileWithProgressAsync(string url, string destinationFilePath, Action<int> progressCallback)
+    {
+        using (var client = new HttpClient())
+        {
+            using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                var canReportProgress = totalBytes != -1;
+
+                using (var contentStream = await response.Content.ReadAsStreamAsync())
+                using (var fileStream = new FileStream(destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                {
+                    var totalRead = 0L;
+                    var buffer = new byte[8192];
+                    var isMoreToRead = true;
+
+                    do
+                    {
+                        var read = await contentStream.ReadAsync(buffer, 0, buffer.Length);
+                        if (read == 0)
+                        {
+                            isMoreToRead = false;
+                        }
+                        else
+                        {
+                            await fileStream.WriteAsync(buffer, 0, read);
+
+                            totalRead += read;
+                            if (canReportProgress)
+                            {
+                                progressCallback((int)((totalRead * 100) / totalBytes));
+                            }
+                        }
+                    }
+                    while (isMoreToRead);
+                }
             }
         }
     }
@@ -280,7 +300,9 @@ public static class SoftwareManager {
     /// <param name="filepath">Path of the file</param>
     /// <param name="timeout">Optional Timeout</param>
     private static void DeleteFileAndWait(string filepath, int timeout = 30000) {
-        using (var fw = new FileSystemWatcher(Path.GetDirectoryName(filepath), Path.GetFileName(filepath)))
+        var dir = Path.GetDirectoryName(filepath);
+        if (dir == null) return;
+        using (var fw = new FileSystemWatcher(dir, Path.GetFileName(filepath)))
         using (var mre = new ManualResetEventSlim()) {
             fw.EnableRaisingEvents = true;
             fw.Deleted += (sender, e) => {
@@ -292,7 +314,9 @@ public static class SoftwareManager {
     }
 
     private static void DeleteDirectoryAndWait(string directory, int timeout = 30000) {
-        using (var fw = new FileSystemWatcher(Path.GetDirectoryName(directory)))
+        var dir = Path.GetDirectoryName(directory);
+        if (dir == null) return;
+        using (var fw = new FileSystemWatcher(dir))
         using (var mre = new ManualResetEventSlim()) {
             fw.EnableRaisingEvents = true;
             fw.Deleted += (sender, e) => {
@@ -339,17 +363,18 @@ public static class SoftwareManager {
     /// </summary>
     /// <param name="url"></param>
     /// <returns></returns>
-    private static string GetFinalRedirect(string url) {
+#pragma warning disable SYSLIB0014
+    private static string? GetFinalRedirect(string url) {
         if (string.IsNullOrWhiteSpace(url))
             return url;
 
         var maxRedirCount = 8; // prevent infinite loops
         var newUrl = url;
         do {
-            HttpWebRequest req = null;
-            HttpWebResponse resp = null;
+            HttpWebRequest? req = null;
+            HttpWebResponse? resp = null;
             try {
-                req = (HttpWebRequest)HttpWebRequest.Create(url);
+                req = (HttpWebRequest)WebRequest.Create(url);
                 req.Method = "HEAD";
                 req.AllowAutoRedirect = false;
                 resp = (HttpWebResponse)req.GetResponse();
@@ -381,7 +406,7 @@ public static class SoftwareManager {
                 // Return the last known good URL
                 return newUrl;
             }
-            catch (Exception ex) {
+            catch (Exception) {
                 return null;
             }
             finally {
@@ -392,4 +417,5 @@ public static class SoftwareManager {
 
         return newUrl;
     }
+#pragma warning restore SYSLIB0014
 }

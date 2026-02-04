@@ -1,17 +1,13 @@
-﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Windows.Input;
-using Avalonia.Controls;
 using Tommy.Serializer;
 
 namespace HRtoVRChat;
 
 public class ConfigManager {
     public static readonly string ConfigLocation = Path.Combine(SoftwareManager.OutputPath, "config.cfg");
-    public static Config LoadedConfig { get; private set; }
-    public static UIConfig LoadedUIConfig { get; private set; }
+    public static Config LoadedConfig { get; private set; } = new();
+    public static UIConfig LoadedUIConfig { get; private set; } = new();
 
     public static string UIConfigLocation {
         get {
@@ -42,188 +38,15 @@ public class ConfigManager {
     }
 
     public static void SaveConfig(Config config) {
-        if (!Directory.Exists(Path.GetDirectoryName(ConfigLocation)))
-            Directory.CreateDirectory(Path.GetDirectoryName(ConfigLocation));
+        var dir = Path.GetDirectoryName(ConfigLocation);
+        if (dir != null && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
         TommySerializer.ToTomlFile(config, ConfigLocation);
     }
 
     public static void SaveConfig(UIConfig uiConfig) {
         TommySerializer.ToTomlFile(uiConfig, UIConfigLocation);
     }
-
-    private static RadioButton NewRadioButton(MainWindow instance, string name) {
-        return new RadioButton {
-            Content = name,
-            Command = new OnConfigRadioButtonPressed(instance, name),
-            GroupName = "ConfigValues"
-        };
-    }
-
-    public static void InitStackPanels(MainWindow instance) {
-        List<string> ConfigValues = new();
-        foreach (var fieldInfo in new Config().GetType().GetFields())
-            ConfigValues.Add(fieldInfo.Name);
-        List<RadioButton> LeftButtonsCreated = new();
-        List<RadioButton> RightButtonsCreated = new();
-        if (ConfigValues.Count % 2 == 0) {
-            var i = 0;
-            foreach (var configValue in ConfigValues) {
-                var newConfigButton = NewRadioButton(instance, configValue);
-                if (i < ConfigValues.Count / 2)
-                    LeftButtonsCreated.Add(newConfigButton);
-                else
-                    RightButtonsCreated.Add(newConfigButton);
-                i++;
-            }
-        }
-        else {
-            // Treat it as it's even, but it's not
-            var fakeEvenTotal = ConfigValues.Count - 1;
-            var i = 0;
-            while (i < fakeEvenTotal) {
-                var newConfigButton = NewRadioButton(instance, ConfigValues[i]);
-                if (i < fakeEvenTotal / 2)
-                    LeftButtonsCreated.Add(newConfigButton);
-                else
-                    RightButtonsCreated.Add(newConfigButton);
-                i++;
-            }
-
-            // Add the final one
-            var newConfigButtonOdd = NewRadioButton(instance, ConfigValues[i]);
-            RightButtonsCreated.Add(newConfigButtonOdd);
-        }
-
-        // Remove Incompatible Config Types
-        // L BOZO ENUMERATION WAS MODIFIED
-        var side = -1;
-        var didError = true;
-        var completedLeft = false;
-        var completedRight = false;
-        while (didError) {
-            try {
-                if (!completedLeft) {
-                    foreach (var radioButton in LeftButtonsCreated) {
-                        if (((string)radioButton.Content).Contains("ParameterNames")) {
-                            LeftButtonsCreated.Remove(radioButton);
-                            side = 0;
-                        }
-
-                        completedLeft = true;
-                    }
-                }
-
-                if (!completedRight) {
-                    foreach (var radioButton in RightButtonsCreated) {
-                        if (((string)radioButton.Content).Contains("ParameterNames")) {
-                            RightButtonsCreated.Remove(radioButton);
-                            side = 1;
-                        }
-
-                        completedRight = true;
-                    }
-                }
-
-                didError = false;
-            }
-            catch (Exception) {
-                didError = true;
-            }
-        }
-
-        // Add buttons
-        foreach (var leftRadioButton in LeftButtonsCreated)
-            instance.LeftStackPanelConfig.Children.Add(leftRadioButton);
-        foreach (var rightRadioButton in RightButtonsCreated)
-            instance.RightStackPanelConfig.Children.Add(rightRadioButton);
-        // Add the final ParameterNames Button
-        var pnButton = new Button {
-            Content = "Open ParameterNames Menu",
-            Command = new SpecialCommandButton(() => {
-                if (!ParameterNames.IsOpen)
-                    new ParameterNames().Show();
-            })
-        };
-        switch (side) {
-            case 0:
-                instance.LeftStackPanelConfig.Children.Add(pnButton);
-                break;
-            case 1:
-                instance.RightStackPanelConfig.Children.Add(pnButton);
-                break;
-        }
-    }
-}
-
-public class OnConfigRadioButtonPressed : ICommand {
-    public OnConfigRadioButtonPressed(MainWindow Instance, string Name) {
-        this.Instance = Instance;
-        this.Name = Name;
-    }
-
-    public static string SelectedConfigValue { get; private set; }
-
-    private string Name { get; }
-    private MainWindow Instance { get; }
-
-    public bool CanExecute(object? parameter) {
-        return true;
-    }
-
-    public void Execute(object? parameter) {
-        var targetField = ConfigManager.LoadedConfig.GetType().GetField(Name);
-        var desc = (TommyComment)Attribute.GetCustomAttribute(targetField, typeof(TommyComment));
-        Instance.ConfigNameLabel.Text = targetField.Name;
-        Instance.ConfigValueType.Text = FriendlyName(targetField.FieldType).ToLower();
-        Instance.ConfigDescription.Text = desc.Value;
-        SelectedConfigValue = Name;
-        if (targetField.GetValue(ConfigManager.LoadedConfig) != null)
-            Instance.ConfigValue.Text = targetField.GetValue(ConfigManager.LoadedConfig).ToString();
-    }
-
-    // END CREDITS
-
-    public event EventHandler? CanExecuteChanged = (sender, args) => { };
-
-    // BEGIN CREDITS
-
-    /*
-     * ToCsv and FriendlyName Methods made by Phil
-     * Changes were made to remove this in parameters for both Methods
-     * https://stackoverflow.com/a/34001032/12968919
-     */
-
-    private static string ToCsv(IEnumerable<object> collectionToConvert, string separator = ", ") {
-        return string.Join(separator, collectionToConvert.Select(o => o.ToString()));
-    }
-
-    private static string FriendlyName(Type type) {
-        if (type.IsGenericType) {
-            var namePrefix = type.Name.Split(new[] { '`' }, StringSplitOptions.RemoveEmptyEntries)[0];
-            var genericParameters = ToCsv(type.GetGenericArguments().Select(FriendlyName));
-            return namePrefix + "<" + genericParameters + ">";
-        }
-
-        return type.Name;
-    }
-}
-
-public class SpecialCommandButton : ICommand {
-    private readonly Action OnClick;
-
-    public SpecialCommandButton(Action OnClick) {
-        this.OnClick = OnClick;
-    }
-
-    public bool CanExecute(object? parameter) {
-        return true;
-    }
-
-    public void Execute(object? parameter) {
-        OnClick.Invoke();
-    }
-
-    public event EventHandler? CanExecuteChanged = (sender, args) => { };
 }
 
 [TommyTableName("HRtoVRChat_OSC")]

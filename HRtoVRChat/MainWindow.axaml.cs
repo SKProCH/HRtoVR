@@ -1,65 +1,50 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
+using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.TextMate;
+using HRtoVRChat.ViewModels;
 using HRtoVRChat_OSC_SDK;
+using MessageBox.Avalonia;
+using MessageBox.Avalonia.DTO;
+using MessageBox.Avalonia.Enums;
 using TextMateSharp.Grammars;
 
 namespace HRtoVRChat;
 
 public partial class MainWindow : Window {
-    public enum ProgramPanels {
-        Home,
-        Program,
-        Updates,
-        Config,
-        IncomingData
-    }
-
     private readonly TextEditor _textEditor;
-    private readonly CancellationTokenSource cancellationTokenSource = new();
-    private readonly string homeURL = "https://hrtovrchat.fortnite.lol/applatest";
     private readonly RichTextModel richTextModel = new();
-
-    private readonly Thread SecondaryThread;
-
-    private readonly Dictionary<ProgramPanels, IControl> WindowPanels = new();
-
-    private AppBridge _appBridge;
     private string lastLineColor = "White";
 
     public MainWindow() {
-
-        if (!string.IsNullOrEmpty(SoftwareManager.LocalDirectory) && !Directory.Exists(SoftwareManager.LocalDirectory))
-            Directory.CreateDirectory(SoftwareManager.LocalDirectory);
-        // Init the Window
         InitializeComponent();
-        // Cache Window Panels
-        WindowPanels.Add(ProgramPanels.Home, HomeCanvas);
-        WindowPanels.Add(ProgramPanels.Program, ProgramCanvas);
-        WindowPanels.Add(ProgramPanels.Updates, UpdatesCanvas);
-        WindowPanels.Add(ProgramPanels.Config, ConfigCanvas);
-        WindowPanels.Add(ProgramPanels.IncomingData, IncomingDataCanvas);
-        // Load the Config Views
-        ConfigManager.CreateConfig();
-        ConfigManager.InitStackPanels(this);
-        // Set Instances
-        TrayIconManager.MainWindow = this;
-        TrayIconManager.ArgumentsWindow = new Arguments();
+#if DEBUG
+        this.AttachDevTools();
+#endif
+        var vm = new MainWindowViewModel();
+        DataContext = vm;
+
+        // Setup the Program Output
+        _textEditor = this.FindControl<TextEditor>("OutputTextBox");
+        var _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
+        _textEditor.InstallTextMate(_registryOptions);
+        _textEditor.TextArea.TextView.LineTransformers.Add(new RichTextColorizer(richTextModel));
+
         // Subscribe to events
-        SoftwareManager.OnConsoleUpdate += (message, overrideColor) => {
-            Dispatcher.UIThread.InvokeAsync(async () => {
+        vm.OnLogReceived += (message, overrideColor) => {
+            Dispatcher.UIThread.InvokeAsync(() => {
+                if (overrideColor == "CLEAR") {
+                    _textEditor.Clear();
+                    return;
+                }
+
                 if (message != null && _textEditor != null) {
-                    var currentLength = OutputTextBox.Text?.Length ?? 0;
+                    var currentLength = _textEditor.Text?.Length ?? 0;
                     var color = message.Contains("(DEBUG)") ? "DarkGray" :
                         message.Contains("(LOG)") ? "White" :
                         message.Contains("(WARN)") ? "Yellow" :
@@ -67,6 +52,8 @@ public partial class MainWindow : Window {
                     lastLineColor = color;
                     if (!string.IsNullOrEmpty(overrideColor))
                         color = overrideColor;
+
+                    // Simple newline handling logic from original
                     if (currentLength > 0)
                         AppendTextWithColor("\n" + message, Color.Parse(color));
                     else
@@ -75,92 +62,42 @@ public partial class MainWindow : Window {
                 }
             });
         };
-        SoftwareManager.RequestUpdateProgressBars += (x, y) => {
-            TotalProgressBar.Value = x;
-            TaskProgressBar.Value = y;
+
+        // Wire up SoftwareManager UI delegates
+        SoftwareManager.ShowMessage = (title, message, isError) => {
+            Dispatcher.UIThread.InvokeAsync(() => {
+                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
+                    ButtonDefinitions = ButtonEnum.Ok,
+                    ContentTitle = title,
+                    ContentMessage = message,
+                    WindowIcon = new WindowIcon(AssetTools.Icon),
+                    Icon = isError ? MessageBox.Avalonia.Enums.Icon.Error : MessageBox.Avalonia.Enums.Icon.Info,
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                }).Show();
+            });
         };
-        // Setup the Program Output
-        _textEditor = this.FindControl<TextEditor>("OutputTextBox");
-        var _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
-        _textEditor.InstallTextMate(_registryOptions);
-        _textEditor.TextArea.TextView.LineTransformers.Add(new RichTextColorizer(richTextModel));
-        // Update Button Text
-        LatestVersionLabel.Text = "Latest Version: " + SoftwareManager.GetLatestVersion();
-        InstalledVersionLabel.Text = "Installed Version: " + SoftwareManager.GetInstalledVersion();
-        if (!SoftwareManager.IsInstalled)
-            UpdateButton.Content = "INSTALL SOFTWARE";
-        // Multithreading Tasks
-        cancellationTokenSource = new CancellationTokenSource();
-        SecondaryThread = new Thread(async () => {
-            var attemptConnect = false;
-            while (!cancellationTokenSource.IsCancellationRequested) {
-                await Dispatcher.UIThread.InvokeAsync(async () => {
-                    StatusLabel.Content = "STATUS: ";
-                    StatusLabel.Content += SoftwareManager.IsSoftwareRunning ? "RUNNING" : "STOPPED";
 
-                    AppBridgeConnectedLabel.Text = "App Bridge Connection Status: ";
-                    AppBridgeConnectedLabel.Text +=
-                        _appBridge?.IsClientConnected ?? false ? "Connected" : "Not Connected";
+        SoftwareManager.RequestConfirmation = async (title, message) => {
+            return await Dispatcher.UIThread.InvokeAsync(async () => {
+                var result = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
+                    ButtonDefinitions = ButtonEnum.YesNo,
+                    ContentTitle = title,
+                    ContentMessage = message,
+                    WindowIcon = new WindowIcon(AssetTools.Icon),
+                    Icon = MessageBox.Avalonia.Enums.Icon.Error,
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                }).Show();
+                return (result & ButtonResult.Yes) != 0;
+            });
+        };
 
-                    TrayIconManager.Update(new TrayIconManager.UpdateTrayIconInformation {
-                        Status = SoftwareManager.IsSoftwareRunning ? "RUNNING" : "STOPPED"
-                    });
-                });
-                if (SoftwareManager.IsSoftwareRunning && !attemptConnect && !(_appBridge?.IsClientConnected ?? false)) {
-                    _appBridge = new AppBridge();
-                    _appBridge.OnAppBridgeMessage += async message => {
-                        await Dispatcher.UIThread.InvokeAsync(async () => {
-                            var avatarParameters = string.Empty;
-                            foreach (var currentAvatarParameter in message.CurrentAvatar?.parameters ??
-                                                                   new List<string>())
-                                avatarParameters += currentAvatarParameter + "\n";
-                            OutputIncomingData.Text = $"Current Source: {message.CurrentSourceName}\n\n" +
-                                                      "-- Parameters --\n" +
-                                                      $"onesHR: {message.onesHR}\n" +
-                                                      $"tensHR: {message.tensHR}\n" +
-                                                      $"hundredsHR: {message.hundredsHR}\n" +
-                                                      $"isHRConnected: {message.isHRConnected}\n" +
-                                                      $"isHRActive: {message.isHRActive}\n" +
-                                                      $"isHRBeat: {message.isHRBeat} (inaccurate over AppBridge)\n" +
-                                                      $"HRPercent: {message.HRPercent}\n" +
-                                                      $"FullHRPercent: {message.FullHRPercent}\n" +
-                                                      $"HR: {message.HR}\n\n" +
-                                                      "-- Current Avatar --\n" +
-                                                      $"name: {message.CurrentAvatar?.name ?? "unknown"}\n" +
-                                                      $"id: {message.CurrentAvatar?.id ?? "unknown"}\n" +
-                                                      "== parameters ==\n" +
-                                                      $"{avatarParameters}";
-                        });
-                    };
-                    _appBridge.OnClientDisconnect += async () => {
-                        _appBridge.StopClient();
-                        await Dispatcher.UIThread.InvokeAsync(async () => {
-                            OutputIncomingData.Clear();
-                        });
-                    };
-                    _appBridge.InitClient();
-                    attemptConnect = true;
-                }
-                else
-                    attemptConnect = false;
+        vm.RequestHide += Hide;
 
-                Thread.Sleep(10);
-            }
-        });
-        SecondaryThread.Start();
-        // Set Tray Icon Text
-        if (ConfigManager.LoadedUIConfig.AutoStart) {
-            ((NativeMenuItem)TrayIconManager.nativeMenuItems["AutoStart"]).Header = "✅ Auto Start";
-            ((NativeMenuItem)TrayIconManager.nativeMenuItems["AutoStart"]).IsChecked = true;
-        }
+        // Set Instances
+        TrayIconManager.MainWindow = this;
+        TrayIconManager.ArgumentsWindow = new Arguments();
 
-        if (ConfigManager.LoadedUIConfig.SkipVRCCheck) {
-            ((NativeMenuItem)TrayIconManager.nativeMenuItems["SkipVRCCheck"]).Header = "✅ Skip VRChat Check";
-            ((NativeMenuItem)TrayIconManager.nativeMenuItems["SkipVRCCheck"]).IsChecked = true;
-        }
-
-
-        // Check the SetupWozard
+        // Check the SetupWizard
         if (!Config.DoesConfigExist()) {
             Dispatcher.UIThread.InvokeAsync(async () => {
                 var b = await SetupWizard.AskToSetup();
@@ -172,138 +109,8 @@ public partial class MainWindow : Window {
         }
     }
 
-    // Left Bar Panel
-
-    public void HomeButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SelectCanvas(ProgramPanels.Home);
-    }
-
-    public void ProgramButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SelectCanvas(ProgramPanels.Program);
-    }
-
-    public void UpdatesButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SelectCanvas(ProgramPanels.Updates);
-    }
-
-    public void ConfigButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SelectCanvas(ProgramPanels.Config);
-    }
-
-    public void IncomingDataButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SelectCanvas(ProgramPanels.IncomingData);
-    }
-
-    private void SelectCanvas(ProgramPanels panel) {
-        // Hide All First
-        foreach (var (key, value) in WindowPanels)
-            value.IsVisible = false;
-        // Then show the Target One
-        WindowPanels[panel].IsVisible = true;
-    }
-
-    public void HideAppButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        TrayIconManager.Update(new TrayIconManager.UpdateTrayIconInformation { HideApplication = true });
-        Hide();
-    }
-
-    public void ExitAppButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        KillButtonPressed(null, null);
-        Environment.Exit(0);
-    }
-
-    public void GitHubButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        OpenBrowser("https://github.com/200Tigersbloxed/HRtoVRChat_OSC");
-    }
-
-    // Home Panel
-
-    public void HereButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        OpenBrowser(homeURL);
-    }
-
-    // Program Panel
-
-    public void StartButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        _textEditor.Clear();
-        SoftwareManager.OnConsoleUpdate(
-            $"HRtoVRChat_OSC {SoftwareManager.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
-        SoftwareManager.StartSoftware();
-    }
-
-    public void StopButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SoftwareManager.StopSoftware();
-    }
-
-    public void KillButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SoftwareManager.StopSoftware();
-        try {
-            foreach (var process in Process.GetProcessesByName("HRtoVRChat_OSC")) {
-                process.Kill();
-            }
-        }
-        catch (Exception) { }
-    }
-
-    public void OpenArgumentsButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        TrayIconManager.ArgumentsWindow.Show();
-    }
-
-    public void SendButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        SoftwareManager.SendCommand(CommandBox.Text);
-        CommandBox.Clear();
-    }
-
-    // Config Panel
-
-    public void SaveConfigButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        if (!string.IsNullOrEmpty(OnConfigRadioButtonPressed.SelectedConfigValue)) {
-            var targetField = ConfigManager.LoadedConfig.GetType()
-                .GetField(OnConfigRadioButtonPressed.SelectedConfigValue);
-            if (targetField != null) {
-                if (targetField.Name == "ParameterNames")
-                    return;
-                targetField.SetValue(ConfigManager.LoadedConfig,
-                    Convert.ChangeType(ConfigValue.Text, targetField.FieldType));
-                ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
-            }
-        }
-    }
-
-    // Update Software Portion
-
-    public async void UpdateSoftwareButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        await SoftwareManager.InstallSoftware(() => {
-            UpdateButton.Content = "UPDATE SOFTWARE";
-        });
-    }
-
-    public void UpdatesRefreshButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
-        LatestVersionLabel.Text = "Latest Version: " + SoftwareManager.GetLatestVersion();
-        InstalledVersionLabel.Text = "Installed Version: " + SoftwareManager.GetInstalledVersion();
-    }
-
-    // Tools
-
-    private void OpenBrowser(string url) {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") {
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            });
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            Process.Start("xdg-open", url);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("open", url);
-        }
-        else {
-            try {
-                Process.Start("https://github.com/200Tigersbloxed/HRtoVRChat_OSC");
-            }
-            catch (Exception) { }
-        }
+    private void InitializeComponent() {
+        AvaloniaXamlLoader.Load(this);
     }
 
     // HUGE thanks to this post

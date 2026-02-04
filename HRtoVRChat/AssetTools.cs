@@ -1,21 +1,18 @@
-﻿using System.Reflection;
+using System;
+using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace HRtoVRChat;
 
 public static class AssetTools {
-    public static IBitmap Icon { get; set; }
+    public static Bitmap Icon { get; private set; } = null!;
 
     public static void Init() {
-        Icon = GetBitmap("hrtovrchat_emb.ico");
-    }
-
-    private static IBitmap? GetBitmap(string fileName) {
-        using (var stream =
-               Assembly.GetExecutingAssembly().GetManifestResourceStream("HRtoVRChat.Assets." + fileName)) {
-            if (stream != null)
-                return new Bitmap(stream);
-            return null;
-        }
+        var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
+        if (assets == null) return;
+        var uri = new Uri("avares://HRtoVRChat/Assets/hrtovrchat_logo.ico");
+        using var stream = assets.Open(uri);
+        Icon = new Bitmap(stream);
     }
 }
