@@ -71,22 +71,28 @@ public static class ParamsManager {
         LogHelper.Debug($"Cleared {paramcount} parameters!");
     }
 
+    public static void UpdateHRValues(HROutput hro) {
+        foreach (var parameter in Parameters) {
+            parameter.Update(hro);
+        }
+    }
+
+    public static void UpdateHeartBeat(bool isHeartBeat) {
+        foreach (var parameter in Parameters) {
+            if (parameter is BoolParameter boolParam) {
+                boolParam.UpdateHeartBeat(isHeartBeat);
+            }
+        }
+    }
+
     public class IntParameter : HRParameter {
+        private Func<HROutput, int> _getVal;
+
         public IntParameter(Func<HROutput, int> getVal, string parameterName, string original) {
             OriginalParameterName = original;
             ParameterName = parameterName;
+            _getVal = getVal;
             LogHelper.Debug($"IntParameter with ParameterName: {parameterName}, has been created!");
-            Program.OnHRValuesUpdated += (ones, tens, hundreds, HR, isConnected, isActive) => {
-                var hro = new HROutput {
-                    ones = ones,
-                    tens = tens,
-                    hundreds = hundreds,
-                    isConnected = isConnected
-                };
-                var valueToSet = getVal.Invoke(hro);
-                ParamValue = valueToSet.ToString();
-                UpdateParameter();
-            };
         }
 
         public string OriginalParameterName { get; set; }
@@ -95,6 +101,12 @@ public static class ParamsManager {
 
         public string DefaultValue {
             get => "0";
+        }
+
+        public void Update(HROutput hro) {
+             var valueToSet = _getVal.Invoke(hro);
+             ParamValue = valueToSet.ToString();
+             UpdateParameter();
         }
 
         public void UpdateParameter(bool fromReset = false) {
@@ -106,23 +118,14 @@ public static class ParamsManager {
     }
 
     public class BoolParameter : HRParameter {
+        private Func<HROutput, bool> _getVal;
+        private BoolCheckType? _bct;
+
         public BoolParameter(Func<HROutput, bool> getVal, string parameterName, string original) {
             OriginalParameterName = original;
             ParameterName = parameterName;
+            _getVal = getVal;
             LogHelper.Debug($"BoolParameter with ParameterName: {parameterName}, has been created!");
-            Program.OnHRValuesUpdated += (ones, tens, hundreds, HR, isConnected, isActive) => {
-                var hro = new HROutput {
-                    ones = ones,
-                    tens = tens,
-                    hundreds = hundreds,
-                    HR = HR,
-                    isConnected = isConnected,
-                    isActive = isActive
-                };
-                var valueToSet = getVal.Invoke(hro);
-                ParamValue = valueToSet.ToString();
-                UpdateParameter();
-            };
         }
 
         public BoolParameter(BoolCheckType bct, string parameterName) {
@@ -131,18 +134,10 @@ public static class ParamsManager {
                     OriginalParameterName = "isHRBeat";
                     break;
             }
-
+            _bct = bct;
             ParameterName = parameterName;
             LogHelper.Debug(
                 $"BoolParameter with ParameterName: {parameterName} and BoolCheckType of: {bct}, has been created!");
-            Program.OnHeartBeatUpdate += (isHeartBeat, shouldRestart) => {
-                switch (bct) {
-                    case BoolCheckType.HeartBeat:
-                        ParamValue = isHeartBeat.ToString();
-                        UpdateParameter();
-                        break;
-                }
-            };
         }
 
         public string OriginalParameterName { get; set; }
@@ -151,6 +146,21 @@ public static class ParamsManager {
 
         public string DefaultValue {
             get => "false";
+        }
+
+        public void Update(HROutput hro) {
+            if (_getVal != null) {
+                var valueToSet = _getVal.Invoke(hro);
+                ParamValue = valueToSet.ToString();
+                UpdateParameter();
+            }
+        }
+
+        public void UpdateHeartBeat(bool isHeartBeat) {
+            if (_bct == BoolCheckType.HeartBeat) {
+                ParamValue = isHeartBeat.ToString();
+                UpdateParameter();
+            }
         }
 
         public void UpdateParameter(bool fromReset = false) {
@@ -162,23 +172,13 @@ public static class ParamsManager {
     }
 
     public class FloatParameter : HRParameter {
+        private Func<HROutput, float> _getVal;
+
         public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original) {
             OriginalParameterName = original;
             ParameterName = parameterName;
+            _getVal = getVal;
             LogHelper.Debug($"FloatParameter with ParameterName: {parameterName} has been created!");
-            Program.OnHRValuesUpdated += (ones, tens, hundreds, HR, isConnected, isActive) => {
-                var hro = new HROutput {
-                    ones = ones,
-                    tens = tens,
-                    hundreds = hundreds,
-                    HR = HR,
-                    isConnected = isConnected,
-                    isActive = isActive
-                };
-                var targetValue = getVal.Invoke(hro);
-                ParamValue = targetValue.ToString();
-                UpdateParameter();
-            };
         }
 
         public string OriginalParameterName { get; set; }
@@ -187,6 +187,12 @@ public static class ParamsManager {
 
         public string DefaultValue {
             get => "0";
+        }
+
+        public void Update(HROutput hro) {
+            var targetValue = _getVal.Invoke(hro);
+            ParamValue = targetValue.ToString();
+            UpdateParameter();
         }
 
         public void UpdateParameter(bool fromReset = false) {
@@ -211,6 +217,7 @@ public static class ParamsManager {
         string ParameterName { get; set; }
         string ParamValue { get; set; }
         string DefaultValue { get; }
+        void Update(HROutput hro);
         void UpdateParameter(bool fromReset = false);
     }
 }

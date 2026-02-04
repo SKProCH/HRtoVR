@@ -1,5 +1,6 @@
-﻿using HRtoVRChat_OSC_SDK;
+using HRtoVRChat_OSC_SDK;
 using HRtoVRChat_OSC.HRManagers;
+using HRtoVRChat_OSC.GameHandlers;
 
 namespace HRtoVRChat_OSC;
 
@@ -10,11 +11,7 @@ internal class Program {
     private static bool isRestarting;
     private static bool RunHeartBeat;
 
-    public static Action<int, int, int, int, bool, bool> OnHRValuesUpdated =
-        (ones, tens, hundreds, HR, isConnected, isActive) => { };
-
-    public static Action<bool, bool> OnHeartBeatUpdate = (isHeartBeat, shouldStart) => { };
-    private static NeosBridge _neosBridge;
+    private static List<IGameHandler> _gameHandlers = new();
 
     private static CustomTimer loopCheck;
 
@@ -40,10 +37,22 @@ internal class Program {
 
     public static string[] Gargs { get; private set; } = { };
 
+    private static bool _lastHeartBeatState;
+
     private static void Main(string[] args) {
         Gargs = args;
         ConfigManager.CreateConfig();
-        var foundOnStart = OSCManager.Detect();
+
+        // Initialize Game Handlers
+        _gameHandlers.Add(new VRChatOSCHandler());
+        if (args.Contains("--neos-bridge")) {
+            LogHelper.Log("Enabling NeosBridge Handler");
+            _gameHandlers.Add(new NeosHandler());
+            NeosHandler.OnCommand += command => HandleCommand(command, true);
+        }
+
+        bool foundOnStart = _gameHandlers.Any(gh => gh.IsGameRunning());
+
         OSCAvatarListener.Init();
         _appBridge.InitServer(() => {
             if (activeHRManager != null) {
@@ -52,20 +61,28 @@ internal class Program {
                         CurrentSourceName = activeHRManager.GetName(),
                         CurrentAvatar = OSCAvatarListener.CurrentAvatar?.ToAvatarInfo()
                     };
-                    foreach (var hrParameter in ParamsManager.Parameters) {
-                        if (hrParameter.OriginalParameterName != null && hrParameter.ParamValue != null) {
-                            try {
-                                var pi = apm.GetType().GetProperty(hrParameter.OriginalParameterName);
-                                if (pi != null)
-                                    pi.SetValue(apm, Convert.ChangeType(hrParameter.ParamValue, pi.PropertyType));
-                            }
-                            catch (Exception e) {
-                                LogHelper.Error(
-                                    "Failed to convert Parameter " + hrParameter.OriginalParameterName +
-                                    " for AppBridge!", e);
-                            }
-                        }
-                    }
+
+                    var hr = activeHRManager.GetHR();
+                    var split = intToHRSplit(hr);
+
+                    apm.HR = hr;
+                    apm.onesHR = split.ones;
+                    apm.tensHR = split.tens;
+                    apm.hundredsHR = split.hundreds;
+                    apm.isHRConnected = activeHRManager.IsOpen();
+                    apm.isHRActive = activeHRManager.IsActive();
+                    apm.isHRBeat = _lastHeartBeatState;
+
+                    // Calculate Percentages
+                    var maxhr = (float)ConfigManager.LoadedConfig.MaxHR;
+                    var minhr = (float)ConfigManager.LoadedConfig.MinHR;
+                    float targetFloat = 0;
+                    if (hr > maxhr) targetFloat = 1;
+                    else if (hr < minhr) targetFloat = 0;
+                    else targetFloat = (hr - minhr) / (maxhr - minhr);
+
+                    apm.HRPercent = targetFloat;
+                    apm.FullHRPercent = 2f * targetFloat - 1f;
 
                     return apm;
                 }
@@ -79,18 +96,13 @@ internal class Program {
         });
         if (!Directory.Exists(SDKManager.SDKsLocation))
             Directory.CreateDirectory(SDKManager.SDKsLocation);
-        if (args.Contains("--neos-bridge")) {
-            LogHelper.Log("Enabling NeosBridge");
-            _neosBridge = new NeosBridge();
-            NeosBridge.OnCommand += command => HandleCommand(command, true);
-        }
 
         if (foundOnStart) {
             Check();
         }
         else {
             if (args.Contains("--auto-start")) {
-                LogHelper.Log("VRChat not found! Waiting for VRChat...");
+                LogHelper.Log("No supported game found! Waiting...");
                 loopCheck = new CustomTimer(5000, ct => LoopCheck());
             }
             else {
@@ -102,20 +114,20 @@ internal class Program {
     }
 
     private static void LoopCheck() {
-        var foundVRC = OSCManager.Detect();
-        ;
-        if (foundVRC) {
-            LogHelper.Log("Found VRChat! Starting...");
+        var foundGame = _gameHandlers.Any(gh => gh.IsGameRunning());
+        if (foundGame) {
+            LogHelper.Log("Found Game! Starting...");
             Check();
         }
     }
 
     private static void Check() {
         var fromAutoStart = Gargs.Contains("--auto-start");
-        if (OSCManager.Detect() || Gargs.Contains("--skip-vrc-check")) {
+        bool gameRunning = _gameHandlers.Any(gh => gh.IsGameRunning());
+
+        if (gameRunning || Gargs.Contains("--skip-vrc-check")) {
             if (loopCheck?.IsRunning ?? false)
                 loopCheck.Close();
-            ParamsManager.InitParams();
             Start();
             HandleCommand(Console.ReadLine());
         }
@@ -129,7 +141,7 @@ internal class Program {
             var dt = DateTime.Now;
             LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
             // Exit
-            LogHelper.Warn("VRChat was not detected! Press any key to continue.");
+            LogHelper.Warn("No supported game was detected! Press any key to continue.");
             Console.ReadKey();
             Environment.Exit(1);
         }
@@ -183,7 +195,12 @@ internal class Program {
             case "refreshconfig":
                 ParamsManager.ResetParams();
                 ConfigManager.CreateConfig();
-                ParamsManager.InitParams();
+                // We might need to re-init params if VRChat handler is active
+                foreach(var handler in _gameHandlers) {
+                    if (handler is VRChatOSCHandler vrcHandler) {
+                        ParamsManager.InitParams();
+                    }
+                }
                 break;
             case "biassdk":
                 if (!string.IsNullOrEmpty(inputs[1]))
@@ -213,9 +230,9 @@ internal class Program {
         if (!Gargs.Contains("--skip-vrc-check")) {
             vvoToken = new CancellationTokenSource();
             VerifyVRCOpen = new Thread(() => {
-                var isOpen = OSCManager.Detect();
+                var isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
                 while (!vvoToken.IsCancellationRequested) {
-                    isOpen = OSCManager.Detect();
+                    isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
                     if (!isOpen)
                         vvoToken.Cancel();
                     Thread.Sleep(1500);
@@ -226,6 +243,16 @@ internal class Program {
                 Stop(!fromAutoStart, fromAutoStart);
             });
             VerifyVRCOpen.Start();
+        }
+
+        // Initialize and Start Handlers
+        foreach (var handler in _gameHandlers) {
+            try {
+                handler.Init();
+                handler.Start();
+            } catch (Exception e) {
+                LogHelper.Error($"Failed to start handler {handler.Name}", e);
+            }
         }
 
         // Continue
@@ -248,13 +275,20 @@ internal class Program {
 
         // Stop HR Listener
         StopHRListener();
-        // Clear Parameters
-        ParamsManager.ResetParams();
+
+        // Stop Handlers
+        foreach (var handler in _gameHandlers) {
+            try {
+                handler.Stop();
+            } catch (Exception e) {
+                LogHelper.Error($"Failed to stop handler {handler.Name}", e);
+            }
+        }
+
         // Stop Extraneous Tasks
         if (loopCheck?.IsRunning ?? false)
             loopCheck.Close();
-        if (_neosBridge != null)
-            _neosBridge.cts.Cancel();
+
         LogHelper.Log("Stopped");
         // Quit the App
         if (quitApp) {
@@ -268,7 +302,7 @@ internal class Program {
         }
 
         if (autoStart) {
-            LogHelper.Log("Restarting when VRChat Detected");
+            LogHelper.Log("Restarting when Game Detected");
             loopCheck = new CustomTimer(5000, ct => LoopCheck());
         }
     }
@@ -445,10 +479,18 @@ internal class Program {
             var isActive = activeHRManager.IsActive();
             // Cast to currentHRSplit
             chs = intToHRSplit(HR);
-            OnHRValuesUpdated.Invoke(chs.ones, chs.tens, chs.hundreds, HR, isOpen, isActive);
+
+            // Notify Handlers
+            foreach (var handler in _gameHandlers) {
+                handler.UpdateHR(chs.ones, chs.tens, chs.hundreds, HR, isOpen, isActive);
+            }
         }
-        else
-            OnHRValuesUpdated.Invoke(0, 0, 0, 0, false, false);
+        else {
+             // Notify Handlers of zero
+            foreach (var handler in _gameHandlers) {
+                handler.UpdateHR(0, 0, 0, 0, false, false);
+            }
+        }
     }
 
     private static void HeartBeat() {
@@ -469,7 +511,12 @@ internal class Program {
                                 waited = false;
                             }
 
-                            OnHeartBeatUpdate.Invoke(false, false);
+                            // HeartBeat OFF
+                             _lastHeartBeatState = false;
+                             foreach (var handler in _gameHandlers) {
+                                handler.UpdateHeartBeat(false, false);
+                            }
+
                             // Calculate wait interval
                             var waitTime = default(float);
                             // When lowering the HR significantly, this will cause issues with the beat bool
@@ -481,7 +528,13 @@ internal class Program {
                             }
 
                             Thread.Sleep((int)(waitTime * 1000));
-                            OnHeartBeatUpdate.Invoke(true, false);
+
+                            // HeartBeat ON
+                            _lastHeartBeatState = true;
+                            foreach (var handler in _gameHandlers) {
+                                handler.UpdateHeartBeat(true, false);
+                            }
+
                             Thread.Sleep(100);
                         }
                         else {
@@ -490,7 +543,10 @@ internal class Program {
                         }
                     }
                     else {
-                        OnHeartBeatUpdate.Invoke(false, true);
+                        foreach (var handler in _gameHandlers) {
+                             handler.UpdateHeartBeat(false, true);
+                        }
+
                         LogHelper.Debug("Waiting for ActiveHRManager for beating");
                         waited = true;
                         Thread.Sleep(1000);
