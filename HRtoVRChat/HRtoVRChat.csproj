@@ -31,24 +31,6 @@
         <PackageReference Include="XamlNameReferenceGenerator" Version="1.3.4" />
     </ItemGroup>
     <ItemGroup>
-      <None Remove="Assets\hrtovrchat_logo.ico" />
-      <AvaloniaResource Include="Assets\hrtovrchat_logo.ico" />
-      <None Remove="Assets\github.png" />
-    </ItemGroup>
-    <ItemGroup>
-      <AvaloniaResource Include="Assets\github.png" />
-    </ItemGroup>
-    <ItemGroup>
-      <None Remove="Assets\hrtovrchat_emb.ico" />
-      <EmbeddedResource Include="Assets\hrtovrchat_emb.ico" />
-    </ItemGroup>
-    <ItemGroup>
       <ProjectReference Include="..\HRtoVRChat_OSC_SDK\HRtoVRChat_OSC_SDK.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-      <Compile Update="Arguments.axaml.cs">
-        <DependentUpon>Arguments.axaml</DependentUpon>
-        <SubType>Code</SubType>
-      </Compile>
     </ItemGroup>
 </Project>

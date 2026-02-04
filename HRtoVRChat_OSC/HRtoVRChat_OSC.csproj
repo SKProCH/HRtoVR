@@ -8,16 +8,6 @@
         <LangVersion>10</LangVersion>
         <ApplicationIcon>hrtovrchat_logo.ico</ApplicationIcon>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Reference Include="AsyncIO, Version=0.1.25.0, Culture=neutral, PublicKeyToken=44a94435bd6f33f8">
-        <HintPath>..\..\..\HP\HP Omnicept SDK\1.13.1\bin\Release\csharp\AsyncIO.dll</HintPath>
-      </Reference>
-      <Reference Include="lib-client-csharp, Version=1.13.1.3402, Culture=neutral, PublicKeyToken=null">
-        <HintPath>..\..\..\HP\HP Omnicept SDK\1.13.1\bin\Release\csharp\lib-client-csharp.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
     <ItemGroup>
       <PackageReference Include="Google.Protobuf" Version="3.33.5" />
       <PackageReference Include="Lib.Harmony" Version="2.2.1" />
@@ -33,11 +23,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="HRManagers\WinBLEGATTManager.cs" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\HRtoVRChat_OSC_SDK\HRtoVRChat_OSC_SDK.csproj" />
     </ItemGroup>
-
 </Project>
