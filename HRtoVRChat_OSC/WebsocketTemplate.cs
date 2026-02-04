@@ -1,9 +1,9 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
 
-namespace HRtoVRChat_OSC
-{
-    public class WebsocketTemplate
+namespace HRtoVRChat_OSC;
+
+public class WebsocketTemplate
 {
     public string wsUri;
     private ClientWebSocket cws = null;
@@ -105,5 +105,4 @@ namespace HRtoVRChat_OSC
                 return false;
         return false;
     }
-}
 }

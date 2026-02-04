@@ -3,153 +3,152 @@ using System.Text.Json;
 using HRtoVRChat_OSC_SDK;
 using Vizcon.OSC;
 
-namespace HRtoVRChat_OSC
+namespace HRtoVRChat_OSC;
+
+public static class OSCManager
 {
-    public static class OSCManager
+    private static UDPListener listener;
+    public static Action<OscMessage?> OnOscMessage = oscm => { };
+
+    static OSCManager() => listener = new UDPListener(ConfigManager.LoadedConfig.receiverPort,
+        packet => OnOscMessage.Invoke((OscMessage?) packet));
+
+    public static bool Detect()
     {
-        private static UDPListener listener;
-        public static Action<OscMessage?> OnOscMessage = oscm => { };
+        int processes = Process.GetProcessesByName("VRChat").Length;
+        if (Program.Gargs.Contains("--neos-bridge"))
+            processes += Process.GetProcessesByName("Neos").Length;
+        if (ConfigManager.LoadedConfig.ExpandCVR)
+            processes += Process.GetProcessesByName("ChilloutVR").Length;
+        return processes > 0;
+    }
 
-        static OSCManager() => listener = new UDPListener(ConfigManager.LoadedConfig.receiverPort,
-            packet => OnOscMessage.Invoke((OscMessage?) packet));
-
-        public static bool Detect()
+    public static void SendMessage(string destination, object data)
+    {
+        object realdata = data;
+        // If it's a bool, it needs to be converted to a 0, 1 format
+        if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && Program.Gargs.Contains("--use-01-bool"))
         {
-            int processes = Process.GetProcessesByName("VRChat").Length;
-            if (Program.Gargs.Contains("--neos-bridge"))
-                processes += Process.GetProcessesByName("Neos").Length;
-            if (ConfigManager.LoadedConfig.ExpandCVR)
-                processes += Process.GetProcessesByName("ChilloutVR").Length;
-            return processes > 0;
+            bool dat = (bool) Convert.ChangeType(realdata, TypeCode.Boolean);
+            if (dat)
+                realdata = 1;
+            else
+                realdata = 0;
         }
+        OscMessage message = new OscMessage(destination, realdata);
+        UDPSender sender = new UDPSender(ConfigManager.LoadedConfig.ip, ConfigManager.LoadedConfig.port);
+        sender.Send(message);
+    }
+}
 
-        public static void SendMessage(string destination, object data)
+public static class OSCAvatarListener
+{
+    public static AvatarChangeMessage? CurrentAvatar { get; private set; }
+    public static Action<AvatarChangeMessage> OnAvatarChanged = message => { };
+
+    public static void Init()
+    {
+        OSCManager.OnOscMessage += message =>
         {
-            object realdata = data;
-            // If it's a bool, it needs to be converted to a 0, 1 format
-            if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && Program.Gargs.Contains("--use-01-bool"))
+            string msg = message?.ToString() ?? "unknown";
+            if (message != null && msg != "unknown")
             {
-                bool dat = (bool) Convert.ChangeType(realdata, TypeCode.Boolean);
-                if (dat)
-                    realdata = 1;
-                else
-                    realdata = 0;
+                switch (message?.Address)
+                {
+                    case "/avatar/change":
+                        // Find the AvatarFile
+                        try
+                        {
+                            string location = FindAvatarLocation((string) message.Arguments[0]);
+                            if (location != String.Empty && File.Exists(location))
+                            {
+                                // Read the file
+                                string text = File.ReadAllText(location);
+                                AvatarChangeMessage? acm = JsonSerializer.Deserialize<AvatarChangeMessage>(text);
+                                if (acm != null)
+                                {
+                                    CurrentAvatar = acm;
+                                    OnAvatarChanged.Invoke(acm);
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            LogHelper.Error("Failed to get avatar file!", e);
+                        }
+                        break;
+                }
             }
-            OscMessage message = new OscMessage(destination, realdata);
-            UDPSender sender = new UDPSender(ConfigManager.LoadedConfig.ip, ConfigManager.LoadedConfig.port);
-            sender.Send(message);
+        };
+    }
+
+    private static string FindAvatarLocation(string id)
+    {
+        // Since this is just for debug, any user directory will work fine
+        string fileLocation = String.Empty;
+        string vrchat_osc_data_location =
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/../LocalLow",
+                "VRChat/VRChat/OSC");
+        if (Directory.Exists(vrchat_osc_data_location))
+        {
+            foreach (string directory in Directory.GetDirectories(vrchat_osc_data_location))
+            {
+                if (Directory.Exists(Path.Combine(directory, "Avatars")))
+                {
+                    foreach (string file in Directory.GetFiles(Path.Combine(directory, "Avatars")))
+                    {
+                        string fn = Path.GetFileNameWithoutExtension(file);
+                        if (fn == id)
+                            fileLocation = file;
+                    }
+                }
+                else if(Program.Gargs.Contains("--no-avatars-folder"))
+                {
+                    // check this directory to see if the files are there (for whatever reason)
+                    foreach (string file in Directory.GetFiles(directory))
+                    {
+                        string fn = Path.GetFileNameWithoutExtension(file);
+                        if (fn == id)
+                            fileLocation = file;
+                    }
+                }
+            }
+        }
+        if(string.IsNullOrEmpty(fileLocation) || !File.Exists(fileLocation))
+            LogHelper.Warn("No Config File Found for avatar with id " + id);
+        return fileLocation;
+    }
+
+    public record AvatarChangeMessage
+    {
+        public string id { get; set; }
+        public string name { get; set; }
+        public List<AvatarParameters> parameters { get; set; }
+
+        public Messages.AvatarInfo ToAvatarInfo()
+        {
+            Messages.AvatarInfo ai = new Messages.AvatarInfo
+            {
+                id = id,
+                name = name,
+                parameters = new List<string>()
+            };
+            foreach (AvatarParameters avatarParameters in parameters)
+                ai.parameters.Add(avatarParameters.name);
+            return ai;
         }
     }
 
-    public static class OSCAvatarListener
+    public record AvatarParameters
     {
-        public static AvatarChangeMessage? CurrentAvatar { get; private set; }
-        public static Action<AvatarChangeMessage> OnAvatarChanged = message => { };
+        public string name { get; set; }
+        public AvatarInputOutput input { get; set; }
+        public AvatarInputOutput output { get; set; }
+    }
 
-        public static void Init()
-        {
-            OSCManager.OnOscMessage += message =>
-            {
-                string msg = message?.ToString() ?? "unknown";
-                if (message != null && msg != "unknown")
-                {
-                    switch (message?.Address)
-                    {
-                        case "/avatar/change":
-                            // Find the AvatarFile
-                            try
-                            {
-                                string location = FindAvatarLocation((string) message.Arguments[0]);
-                                if (location != String.Empty && File.Exists(location))
-                                {
-                                    // Read the file
-                                    string text = File.ReadAllText(location);
-                                    AvatarChangeMessage? acm = JsonSerializer.Deserialize<AvatarChangeMessage>(text);
-                                    if (acm != null)
-                                    {
-                                        CurrentAvatar = acm;
-                                        OnAvatarChanged.Invoke(acm);
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                LogHelper.Error("Failed to get avatar file!", e);
-                            }
-                            break;
-                    }
-                }
-            };
-        }
-
-        private static string FindAvatarLocation(string id)
-        {
-            // Since this is just for debug, any user directory will work fine
-            string fileLocation = String.Empty;
-            string vrchat_osc_data_location =
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/../LocalLow",
-                    "VRChat/VRChat/OSC");
-            if (Directory.Exists(vrchat_osc_data_location))
-            {
-                foreach (string directory in Directory.GetDirectories(vrchat_osc_data_location))
-                {
-                    if (Directory.Exists(Path.Combine(directory, "Avatars")))
-                    {
-                        foreach (string file in Directory.GetFiles(Path.Combine(directory, "Avatars")))
-                        {
-                            string fn = Path.GetFileNameWithoutExtension(file);
-                            if (fn == id)
-                                fileLocation = file;
-                        }
-                    }
-                    else if(Program.Gargs.Contains("--no-avatars-folder"))
-                    {
-                        // check this directory to see if the files are there (for whatever reason)
-                        foreach (string file in Directory.GetFiles(directory))
-                        {
-                            string fn = Path.GetFileNameWithoutExtension(file);
-                            if (fn == id)
-                                fileLocation = file;
-                        }
-                    }
-                }
-            }
-            if(string.IsNullOrEmpty(fileLocation) || !File.Exists(fileLocation))
-                LogHelper.Warn("No Config File Found for avatar with id " + id);
-            return fileLocation;
-        }
-
-        public record AvatarChangeMessage
-        {
-            public string id { get; set; }
-            public string name { get; set; }
-            public List<AvatarParameters> parameters { get; set; }
-
-            public Messages.AvatarInfo ToAvatarInfo()
-            {
-                Messages.AvatarInfo ai = new Messages.AvatarInfo
-                {
-                    id = id,
-                    name = name,
-                    parameters = new List<string>()
-                };
-                foreach (AvatarParameters avatarParameters in parameters)
-                    ai.parameters.Add(avatarParameters.name);
-                return ai;
-            }
-        }
-
-        public record AvatarParameters
-        {
-            public string name { get; set; }
-            public AvatarInputOutput input { get; set; }
-            public AvatarInputOutput output { get; set; }
-        }
-
-        public record AvatarInputOutput
-        {
-            public string address { get; set; }
-            public string type { get; set; }
-        }
+    public record AvatarInputOutput
+    {
+        public string address { get; set; }
+        public string type { get; set; }
     }
 }

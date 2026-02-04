@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
 using SuperSimpleTcp;
 
 namespace HRtoVRChat_OSC_SDK;
