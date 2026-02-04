@@ -14,32 +14,39 @@ using MessageBox.Avalonia.Enums;
 
 namespace HRtoVRChat;
 
-public static class SoftwareManager
-{
-    public static string LocalDirectory
-    {
-        get
-        {
+public static class SoftwareManager {
+    public static Action<string?, string> OnConsoleUpdate = (line, color) => { };
+    public static Action<int, int> RequestUpdateProgressBars = (x, y) => { };
+    private static Process? CurrentProcess;
+    private static StreamWriter? myStreamWriter;
+
+    private static readonly string[] ExcludeFilesOnDelete = {
+        "config.cfg"
+    };
+
+    private static readonly string[] ExcludeDirectoriesOnDelete = {
+        "SDKs",
+        "Logs"
+    };
+
+    public static string LocalDirectory {
+        get {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "HRtoVRChat");
-            return String.Empty;
+            return string.Empty;
         }
     }
 
-    public static string OutputPath
-    {
-        get
-        {
-            if (LocalDirectory != String.Empty)
+    public static string OutputPath {
+        get {
+            if (LocalDirectory != string.Empty)
                 return Path.Combine(LocalDirectory, "HRtoVRChat_OSC");
             return "HRtoVRChat_OSC";
         }
     }
 
-    public static string ExecutableName
-    {
-        get
-        {
+    public static string ExecutableName {
+        get {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return "HRtoVRChat_OSC.exe";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -47,78 +54,76 @@ public static class SoftwareManager
             return "HRtoVRChat_OSC-linux";
         }
     }
-    public static string ExecutableLocation => Path.Combine(OutputPath, ExecutableName);
-    public static bool IsInstalled => Directory.Exists(OutputPath) && File.Exists(ExecutableLocation);
-    public static string gitUrl => "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/releases/latest";
-    public static string latestDownload =>
-        "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/releases/latest/download/HRtoVRChat_OSC.zip";
 
-    public static bool IsUpdating { get; private set; } = false;
+    public static string ExecutableLocation {
+        get => Path.Combine(OutputPath, ExecutableName);
+    }
 
-    public static Action<string?, string> OnConsoleUpdate = (line, color) => { };
-    public static Action<int, int> RequestUpdateProgressBars = (x, y) => { };
-    private static Process? CurrentProcess;
-    private static StreamWriter? myStreamWriter;
+    public static bool IsInstalled {
+        get => Directory.Exists(OutputPath) && File.Exists(ExecutableLocation);
+    }
 
-    public static bool IsSoftwareRunning
-    {
-        get
-        {
+    public static string gitUrl {
+        get => "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/releases/latest";
+    }
+
+    public static string latestDownload {
+        get => "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/releases/latest/download/HRtoVRChat_OSC.zip";
+    }
+
+    public static bool IsUpdating { get; private set; }
+
+    public static bool IsSoftwareRunning {
+        get {
             bool nativeRunning;
-            try
-            {
+            try {
                 nativeRunning = !(CurrentProcess?.HasExited ?? true);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 // Last resort, try the Process Way
                 nativeRunning = Process.GetProcessesByName("HRtoVRChat_OSC").Length > 0;
             }
+
             return nativeRunning;
         }
     }
 
-    private static string GetArgs()
-    {
+    private static string GetArgs() {
         List<string> Args = new();
-        if (ConfigManager.LoadedUIConfig != null)
-        {
-            if(ConfigManager.LoadedUIConfig.AutoStart)
+        if (ConfigManager.LoadedUIConfig != null) {
+            if (ConfigManager.LoadedUIConfig.AutoStart)
                 Args.Add("--auto-start");
-            if(ConfigManager.LoadedUIConfig.SkipVRCCheck)
+            if (ConfigManager.LoadedUIConfig.SkipVRCCheck)
                 Args.Add("--skip-vrc-check");
-            if(ConfigManager.LoadedUIConfig.NeosBridge)
+            if (ConfigManager.LoadedUIConfig.NeosBridge)
                 Args.Add("--neos-bridge");
-            if(ConfigManager.LoadedUIConfig.UseLegacyBool)
+            if (ConfigManager.LoadedUIConfig.UseLegacyBool)
                 Args.Add("--use-01-bool");
-            try
-            {
-                foreach (string s in ConfigManager.LoadedUIConfig.OtherArgs.Split(' '))
+            try {
+                foreach (var s in ConfigManager.LoadedUIConfig.OtherArgs.Split(' '))
                     Args.Add(s);
-            }catch(Exception){}
+            }
+            catch (Exception) { }
         }
-        string newargs = String.Empty;
-        foreach (string arg in Args)
+
+        var newargs = string.Empty;
+        foreach (var arg in Args)
             newargs += arg + " ";
         return newargs;
     }
 
-    private static void ContinueStartSoftware()
-    {
+    private static void ContinueStartSoftware() {
         CurrentProcess.Start();
         CurrentProcess.StandardInput.AutoFlush = true;
         myStreamWriter = CurrentProcess.StandardInput;
         CurrentProcess.BeginOutputReadLine();
     }
 
-    public static void StartSoftware()
-    {
-        if (IsInstalled)
-        {
-            bool chmodHandle = false;
+    public static void StartSoftware() {
+        if (IsInstalled) {
+            var chmodHandle = false;
             CurrentProcess = new Process();
-            CurrentProcess.StartInfo = new ProcessStartInfo
-            {
+            CurrentProcess.StartInfo = new ProcessStartInfo {
                 WorkingDirectory = OutputPath,
                 Arguments = GetArgs(),
                 UseShellExecute = false,
@@ -129,36 +134,30 @@ public static class SoftwareManager
             };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 CurrentProcess.StartInfo.FileName = Path.Combine(OutputPath, ExecutableName);
-            else
-            {
+            else {
                 chmodHandle = true;
                 // Make sure the file is executable first
-                Process chmodProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo("chmod", $"+x {Path.Combine(OutputPath, ExecutableName)}")
-                    {
+                var chmodProcess = new Process {
+                    StartInfo = new ProcessStartInfo("chmod", $"+x {Path.Combine(OutputPath, ExecutableName)}") {
                         CreateNoWindow = true
                     },
                     EnableRaisingEvents = true
                 };
-                chmodProcess.Exited += (sender, args) =>
-                {
+                chmodProcess.Exited += (sender, args) => {
                     CurrentProcess.StartInfo.FileName = Path.Combine(OutputPath, ExecutableName);
                     ContinueStartSoftware();
                 };
                 chmodProcess.Start();
             }
-            CurrentProcess.OutputDataReceived += (sender, eventArgs) =>
-            {
-                OnConsoleUpdate.Invoke(eventArgs.Data, String.Empty);
+
+            CurrentProcess.OutputDataReceived += (sender, eventArgs) => {
+                OnConsoleUpdate.Invoke(eventArgs.Data, string.Empty);
             };
-            if(!chmodHandle)
+            if (!chmodHandle)
                 ContinueStartSoftware();
         }
-        else
-        {
-            MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-            {
+        else {
+            MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                 ButtonDefinitions = ButtonEnum.Ok,
                 ContentTitle = "HRtoVRChat",
                 ContentMessage = "HRtoVRChat_OSC is not installed! Please navigate to the Updates tab and install it.",
@@ -169,19 +168,14 @@ public static class SoftwareManager
         }
     }
 
-    public static void SendCommand(string command)
-    {
-        if (IsSoftwareRunning && myStreamWriter != null)
-        {
-            try
-            {
+    public static void SendCommand(string command) {
+        if (IsSoftwareRunning && myStreamWriter != null) {
+            try {
                 myStreamWriter?.WriteLine(command);
                 OnConsoleUpdate.Invoke("> " + command, "Purple");
             }
-            catch (Exception)
-            {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-                {
+            catch (Exception) {
+                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                     ButtonDefinitions = ButtonEnum.Ok,
                     ContentTitle = "HRtoVRChat",
                     ContentMessage = "Failed to send command due to an error!",
@@ -193,65 +187,46 @@ public static class SoftwareManager
         }
     }
 
-    public static void StopSoftware()
-    {
-        if (IsSoftwareRunning)
-        {
-            try
-            {
+    public static void StopSoftware() {
+        if (IsSoftwareRunning) {
+            try {
                 SendCommand("exit");
                 myStreamWriter?.Close();
             }
-            catch(Exception){}
+            catch (Exception) { }
         }
     }
-    
-    private static string[] ExcludeFilesOnDelete =
-    {
-        "config.cfg"
-    };
 
-    private static string[] ExcludeDirectoriesOnDelete =
-    {
-        "SDKs",
-        "Logs"
-    };
-
-    public static async Task InstallSoftware(Action? callback = null)
-    {
-        if (!IsUpdating)
-        {
-            if (!IsSoftwareRunning)
-            {
+    public static async Task InstallSoftware(Action? callback = null) {
+        if (!IsUpdating) {
+            if (!IsSoftwareRunning) {
                 UpdateProgressBars(0, 0);
                 // Make sure the Directory Exists
                 if (!Directory.Exists(OutputPath))
                     Directory.CreateDirectory(OutputPath);
                 // Check if there's any files in the Directory
-                if (Directory.GetFiles(OutputPath).Length > 0)
-                {
-                    var messageBox = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-                    {
+                if (Directory.GetFiles(OutputPath).Length > 0) {
+                    var messageBox = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                         ButtonDefinitions = ButtonEnum.YesNo,
                         ContentTitle = "HRtoVRChat",
-                        ContentMessage = "All files in " + Path.GetFullPath(OutputPath) + " are going to be deleted! Are you sure?",
+                        ContentMessage = "All files in " + Path.GetFullPath(OutputPath) +
+                                         " are going to be deleted! Are you sure?",
                         WindowIcon = new WindowIcon(AssetTools.Icon),
                         Icon = Icon.Error,
                         WindowStartupLocation = WindowStartupLocation.CenterScreen
                     }).Show();
-                    if ((messageBox & ButtonResult.Yes) != 0)
-                    {
+                    if ((messageBox & ButtonResult.Yes) != 0) {
                         IsUpdating = true;
                         // Delete all files
-                        foreach (string file in Directory.GetFiles(OutputPath))
-                        {
-                            if(!ExcludeFilesOnDelete.Contains(Path.GetFileName(file)))
+                        foreach (var file in Directory.GetFiles(OutputPath)) {
+                            if (!ExcludeFilesOnDelete.Contains(Path.GetFileName(file)))
                                 DeleteFileAndWait(file);
                         }
+
                         // Delete all directories
-                        foreach (string directory in Directory.GetDirectories(OutputPath))
-                        {
-                            if(!ExcludeDirectoriesOnDelete.Contains(new DirectoryInfo(Path.GetDirectoryName(directory)).Name))
+                        foreach (var directory in Directory.GetDirectories(OutputPath)) {
+                            if (!ExcludeDirectoriesOnDelete.Contains(new DirectoryInfo(Path.GetDirectoryName(directory))
+                                    .Name))
                                 DeleteDirectoryAndWait(directory);
                         }
                     }
@@ -261,11 +236,9 @@ public static class SoftwareManager
 
                 UpdateProgressBars(0, 25);
                 // Download the file
-                using (WebClient client = new WebClient())
-                {
-                    string outputFile = Path.Combine(OutputPath, "HRtoVRChat_OSC.zip");
-                    client.DownloadFileCompleted += (sender, args) =>
-                    {
+                using (var client = new WebClient()) {
+                    var outputFile = Path.Combine(OutputPath, "HRtoVRChat_OSC.zip");
+                    client.DownloadFileCompleted += (sender, args) => {
                         UpdateProgressBars(0, 50);
                         // Extract the Zip
                         ZipFile.ExtractToDirectory(outputFile, OutputPath);
@@ -281,118 +254,106 @@ public static class SoftwareManager
                     client.DownloadFileAsync(new Uri(latestDownload), outputFile);
                 }
             }
-            else
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-                {
+            else {
+                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                     ButtonDefinitions = ButtonEnum.Ok,
                     ContentTitle = "HRtoVRChat",
-                    ContentMessage = "There's an instance of HRtoVRChat_OSC running, please close out of it before continuing!",
+                    ContentMessage =
+                        "There's an instance of HRtoVRChat_OSC running, please close out of it before continuing!",
                     WindowIcon = new WindowIcon(AssetTools.Icon),
                     Icon = Icon.Error,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen
                 }).Show();
+            }
         }
     }
 
-    private static void UpdateProgressBars(int x, int y) => RequestUpdateProgressBars.Invoke(x, y);
-    
+    private static void UpdateProgressBars(int x, int y) {
+        RequestUpdateProgressBars.Invoke(x, y);
+    }
+
     /// <summary>
-    /// Method made by JPK from Stackoverflow
-    /// No edits were made
-    /// https://stackoverflow.com/a/39254732/12968919
+    ///     Method made by JPK from Stackoverflow
+    ///     No edits were made
+    ///     https://stackoverflow.com/a/39254732/12968919
     /// </summary>
     /// <param name="filepath">Path of the file</param>
     /// <param name="timeout">Optional Timeout</param>
-    private static void DeleteFileAndWait(string filepath, int timeout = 30000)
-    {
+    private static void DeleteFileAndWait(string filepath, int timeout = 30000) {
         using (var fw = new FileSystemWatcher(Path.GetDirectoryName(filepath), Path.GetFileName(filepath)))
-        using (var mre = new ManualResetEventSlim())
-        {
+        using (var mre = new ManualResetEventSlim()) {
             fw.EnableRaisingEvents = true;
-            fw.Deleted += (object sender, FileSystemEventArgs e) =>
-            {
+            fw.Deleted += (sender, e) => {
                 mre.Set();
             };
             File.Delete(filepath);
             mre.Wait(timeout);
         }
     }
-        
-    private static void DeleteDirectoryAndWait(string directory, int timeout = 30000)
-    {
+
+    private static void DeleteDirectoryAndWait(string directory, int timeout = 30000) {
         using (var fw = new FileSystemWatcher(Path.GetDirectoryName(directory)))
-        using (var mre = new ManualResetEventSlim())
-        {
+        using (var mre = new ManualResetEventSlim()) {
             fw.EnableRaisingEvents = true;
-            fw.Deleted += (object sender, FileSystemEventArgs e) =>
-            {
+            fw.Deleted += (sender, e) => {
                 mre.Set();
             };
             Directory.Delete(directory, true);
             mre.Wait(timeout);
         }
     }
-    
-    public static string GetLatestVersion()
-    {
+
+    public static string GetLatestVersion() {
         // Get the URL
-        string url = GetFinalRedirect(gitUrl);
-        if (!string.IsNullOrEmpty(url))
-        {
+        var url = GetFinalRedirect(gitUrl);
+        if (!string.IsNullOrEmpty(url)) {
             // Parse the Url
-            string[] slashSplit = url.Split('/');
-            string tag = slashSplit[slashSplit.Length - 1];
+            var slashSplit = url.Split('/');
+            var tag = slashSplit[slashSplit.Length - 1];
             return tag;
         }
-        return String.Empty;
+
+        return string.Empty;
     }
 
-    public static string GetInstalledVersion()
-    {
-        if (IsInstalled)
-        {
-            string file = Path.Combine(OutputPath, "version.txt");
-            if (File.Exists(file))
-            {
-                using (StreamReader sr = new StreamReader(file))
-                {
-                    string text = sr.ReadToEnd();
+    public static string GetInstalledVersion() {
+        if (IsInstalled) {
+            var file = Path.Combine(OutputPath, "version.txt");
+            if (File.Exists(file)) {
+                using (var sr = new StreamReader(file)) {
+                    var text = sr.ReadToEnd();
                     return text;
                 }
             }
-            else
-                return "unknown";
-        }
-        else
+
             return "unknown";
+        }
+
+        return "unknown";
     }
-    
+
     /// <summary>
-    /// Method by Marcelo Calbucci and edited by Uwe Keim. 
-    /// No changes to this method were made. 
-    /// https://stackoverflow.com/a/28424940/12968919
+    ///     Method by Marcelo Calbucci and edited by Uwe Keim.
+    ///     No changes to this method were made.
+    ///     https://stackoverflow.com/a/28424940/12968919
     /// </summary>
     /// <param name="url"></param>
     /// <returns></returns>
-    private static string GetFinalRedirect(string url)
-    {
-        if(string.IsNullOrWhiteSpace(url))
+    private static string GetFinalRedirect(string url) {
+        if (string.IsNullOrWhiteSpace(url))
             return url;
-        
-        int maxRedirCount = 8;  // prevent infinite loops
-        string newUrl = url;
-        do
-        {
+
+        var maxRedirCount = 8; // prevent infinite loops
+        var newUrl = url;
+        do {
             HttpWebRequest req = null;
             HttpWebResponse resp = null;
-            try
-            {
-                req = (HttpWebRequest) HttpWebRequest.Create(url);
+            try {
+                req = (HttpWebRequest)HttpWebRequest.Create(url);
                 req.Method = "HEAD";
                 req.AllowAutoRedirect = false;
                 resp = (HttpWebResponse)req.GetResponse();
-                switch (resp.StatusCode)
-                {
+                switch (resp.StatusCode) {
                     case HttpStatusCode.OK:
                         return newUrl;
                     case HttpStatusCode.Redirect:
@@ -402,35 +363,33 @@ public static class SoftwareManager
                         newUrl = resp.Headers["Location"];
                         if (newUrl == null)
                             return url;
-        
-                        if (newUrl.IndexOf("://", System.StringComparison.Ordinal) == -1)
-                        {
+
+                        if (newUrl.IndexOf("://", StringComparison.Ordinal) == -1) {
                             // Doesn't have a URL Schema, meaning it's a relative or absolute URL
-                            Uri u = new Uri(new Uri(url), newUrl);
+                            var u = new Uri(new Uri(url), newUrl);
                             newUrl = u.ToString();
                         }
+
                         break;
                     default:
                         return newUrl;
                 }
+
                 url = newUrl;
             }
-            catch (WebException)
-            {
+            catch (WebException) {
                 // Return the last known good URL
                 return newUrl;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 return null;
             }
-            finally
-            {
+            finally {
                 if (resp != null)
                     resp.Close();
             }
-        } 
-        while (maxRedirCount-- > 0);
-            return newUrl;
+        } while (maxRedirCount-- > 0);
+
+        return newUrl;
     }
 }

@@ -8,14 +8,14 @@
         x:Class="HRtoVRChatLauncher.MainWindow"
         xmlns:gif="clr-namespace:AvaloniaGif;assembly=AvaloniaGif"
         Title="HRtoVRChat HRtoVRChatLauncher">
-    <Canvas>
-        <gif:GifImage Width="500" Name="GifVector" IsVisible="False"></gif:GifImage>
-        <Image Source="Assets/sad.png" Width="500" Name="SadImageVector" IsVisible="False"></Image>
-        <Image Source="Assets/OfflineImage.png" Width="500" Name="ImageVector"></Image>
-        <Rectangle Fill="#141414" Width="500" Height="75" Canvas.Bottom="0"></Rectangle>
-        <Image Source="Assets/hrtovrchat_logo.ico" Width="50" Canvas.Right="5" Canvas.Bottom="15"></Image>
-        <TextBlock Canvas.Bottom="45" Canvas.Left="5" Foreground="White" FontSize="24">HRtoVRChat</TextBlock>
-        <TextBlock Canvas.Bottom="30" Canvas.Left="5" Foreground="White" FontSize="14" Name="ActionText"></TextBlock>
-        <ProgressBar Width="500" Value="0" Foreground="Red" Canvas.Bottom="0" Name="ProgressBar"></ProgressBar>
-    </Canvas>
+  <Canvas>
+    <gif:GifImage Width="500" Name="GifVector" IsVisible="False" />
+    <Image Source="Assets/sad.png" Width="500" Name="SadImageVector" IsVisible="False" />
+    <Image Source="Assets/OfflineImage.png" Width="500" Name="ImageVector" />
+    <Rectangle Fill="#141414" Width="500" Height="75" Canvas.Bottom="0" />
+    <Image Source="Assets/hrtovrchat_logo.ico" Width="50" Canvas.Right="5" Canvas.Bottom="15" />
+    <TextBlock Canvas.Bottom="45" Canvas.Left="5" Foreground="White" FontSize="24">HRtoVRChat</TextBlock>
+    <TextBlock Canvas.Bottom="30" Canvas.Left="5" Foreground="White" FontSize="14" Name="ActionText" />
+    <ProgressBar Width="500" Value="0" Foreground="Red" Canvas.Bottom="0" Name="ProgressBar" />
+  </Canvas>
 </Window>

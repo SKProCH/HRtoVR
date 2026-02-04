@@ -3,85 +3,87 @@ using SuperSimpleTcp;
 
 namespace HRtoVRChat_OSC_SDK;
 
-public abstract class HRSDK
-{
+public abstract class HRSDK {
+    public enum LogLevel {
+        Debug,
+        Log,
+        Warn,
+        Error
+    }
+
     private SimpleTcpClient? client;
-    
+
     /// <summary>
-    /// The Options; mainly used for Reflection, but are still required to be set.
+    ///     The Options; mainly used for Reflection, but are still required to be set.
     /// </summary>
     public abstract HRSDKOptions Options { get; }
 
     /// <summary>
-    /// Whether or not the client is connected to the server
+    ///     Whether or not the client is connected to the server
     /// </summary>
-    public bool IsSDKConnected => (client?.IsConnected ?? false) || IsReflected;
-
-    private bool _isReflected = false;
+    public bool IsSDKConnected {
+        get => (client?.IsConnected ?? false) || IsReflected;
+    }
 
     /// <summary>
-    /// Whether or not the SDK was loaded through Reflection.
+    ///     Whether or not the SDK was loaded through Reflection.
     /// </summary>
-    public bool IsReflected => _isReflected;
-    
+    public bool IsReflected { get; } = false;
+
     /// <summary>
-    /// The current HeartRate
+    ///     The current HeartRate
     /// </summary>
     public abstract int HR { get; set; }
-    
+
     /// <summary>
-    /// If the device transmitting data to the source is connected.
-    /// If your service does not support this, then you can point it to IsActive
+    ///     If the device transmitting data to the source is connected.
+    ///     If your service does not support this, then you can point it to IsActive
     /// </summary>
     public abstract bool IsOpen { get; set; }
-    
+
     /// <summary>
-    /// If there's an active connection to the source
+    ///     If there's an active connection to the source
     /// </summary>
     public abstract bool IsActive { get; set; }
 
     /// <summary>
-    /// Callback for when the client opens a connection with the server
+    ///     Callback for when the client opens a connection with the server
     /// </summary>
-    public virtual void OnSDKOpened(){}
-    
+    public virtual void OnSDKOpened() { }
+
     /// <summary>
-    /// Callback for when the client is updated by the server
+    ///     Callback for when the client is updated by the server
     /// </summary>
-    public virtual void OnSDKUpdate(){}
-    
+    public virtual void OnSDKUpdate() { }
+
     /// <summary>
-    /// Callback for when the client gets a message from the server
+    ///     Callback for when the client gets a message from the server
     /// </summary>
     /// <param name="message"></param>
-    public virtual void OnSDKData(Messages.HRMessage message){}
-    
+    public virtual void OnSDKData(Messages.HRMessage message) { }
+
     /// <summary>
-    /// Callback for when the client's connection to the server is closed
+    ///     Callback for when the client's connection to the server is closed
     /// </summary>
-    public virtual void OnSDKClosed(){}
+    public virtual void OnSDKClosed() { }
 
     // Used for Patching
-    private void on_push_data(Messages.HRMessage hrm){}
-    private void on_pull_data(string requesting_sdk){}
+    private void on_push_data(Messages.HRMessage hrm) { }
+    private void on_pull_data(string requesting_sdk) { }
 
     /// <summary>
-    /// Updates the current HeartRate data to the server
+    ///     Updates the current HeartRate data to the server
     /// </summary>
-    public void PushData()
-    {
-        if (IsSDKConnected)
-        {
-            Messages.HRMessage hrm = new Messages.HRMessage
-            {
+    public void PushData() {
+        if (IsSDKConnected) {
+            var hrm = new Messages.HRMessage {
                 SDKName = Options.SDKName,
                 HR = HR,
                 IsOpen = IsOpen,
                 IsActive = IsActive
             };
-            if (!IsReflected)
-            {
-                byte[] data = hrm.Serialize();
+            if (!IsReflected) {
+                var data = hrm.Serialize();
                 client?.Send(data);
             }
             else
@@ -90,17 +92,14 @@ public abstract class HRSDK
     }
 
     /// <summary>
-    /// Requests the current HeartRate data that the server has.
-    /// This is called back in the OnSDKData virtual void.
+    ///     Requests the current HeartRate data that the server has.
+    ///     This is called back in the OnSDKData virtual void.
     /// </summary>
-    public void PullData()
-    {
-        if (IsSDKConnected)
-        {
-            if (!IsReflected)
-            {
-                Messages.GetHRData ghrd = new Messages.GetHRData();
-                byte[] data = ghrd.Serialize();
+    public void PullData() {
+        if (IsSDKConnected) {
+            if (!IsReflected) {
+                var ghrd = new Messages.GetHRData();
+                var data = ghrd.Serialize();
                 client?.Send(data);
             }
             else
@@ -109,26 +108,21 @@ public abstract class HRSDK
     }
 
     /// <summary>
-    /// Open a connection to the server
+    ///     Open a connection to the server
     /// </summary>
-    public void Open()
-    {
-        if (client == null && !IsSDKConnected && !IsReflected)
-        {
+    public void Open() {
+        if (client == null && !IsSDKConnected && !IsReflected) {
             client = new SimpleTcpClient(Options.IpPort);
             client.Events.Connected += (sender, args) => OnSDKOpened();
             client.Events.Disconnected += (sender, args) => OnSDKClosed();
-            client.Events.DataReceived += (sender, args) =>
-            {
-                try
-                {
-                    byte[] data = args.Data;
-                    object? fakeDeserialize = Messages.DeserializeMessage(data);
-                    string messageType = Messages.GetMessageType(fakeDeserialize);
-                    switch (messageType)
-                    {
+            client.Events.DataReceived += (sender, args) => {
+                try {
+                    var data = args.Data;
+                    var fakeDeserialize = Messages.DeserializeMessage(data);
+                    var messageType = Messages.GetMessageType(fakeDeserialize);
+                    switch (messageType) {
                         case "HRMessage":
-                            Messages.HRMessage hrm = Messages.DeserializeMessage<Messages.HRMessage>(data);
+                            var hrm = Messages.DeserializeMessage<Messages.HRMessage>(data);
                             OnSDKData(hrm);
                             break;
                         case "UpdateMessage":
@@ -136,37 +130,36 @@ public abstract class HRSDK
                             break;
                     }
                 }
-                catch(Exception){}
+                catch (Exception) { }
             };
             client?.Connect();
         }
     }
 
     /// <summary>
-    /// Close the connection to the server
+    ///     Close the connection to the server
     /// </summary>
-    public void Close()
-    {
+    public void Close() {
         if (!IsReflected)
             client?.Disconnect();
     }
-    
-    private void on_log(HRSDK instance, LogLevel logLevel, object msg, ConsoleColor color = ConsoleColor.White, Exception? e = null){}
-    
+
+    private void on_log(HRSDK instance, LogLevel logLevel, object msg, ConsoleColor color = ConsoleColor.White,
+        Exception? e = null) {
+    }
+
     /// <summary>
-    /// LogHelper duplication for HRSDK.
-    /// Will implement native if used with Reflection.
-    /// Highly recommended to use this for logging, alongside any other logger. 
+    ///     LogHelper duplication for HRSDK.
+    ///     Will implement native if used with Reflection.
+    ///     Highly recommended to use this for logging, alongside any other logger.
     /// </summary>
     /// <param name="logLevel">The Level to Log on</param>
     /// <param name="msg">The message to log</param>
     /// <param name="color">The color of the log (ConsoleColor/UI Only)</param>
     /// <param name="e">An optional Exception (Error level log only!)</param>
-    public void Log(LogLevel logLevel, object msg, ConsoleColor color = ConsoleColor.White, Exception? e = null)
-    {
-        string time = DateTime.Now.ToString(CultureInfo.CurrentCulture).Split(' ')[1];
-        if (!IsReflected)
-        {
+    public void Log(LogLevel logLevel, object msg, ConsoleColor color = ConsoleColor.White, Exception? e = null) {
+        var time = DateTime.Now.ToString(CultureInfo.CurrentCulture).Split(' ')[1];
+        if (!IsReflected) {
             if (e != null && logLevel != LogLevel.Error)
                 msg += " | Exception: " + e;
             /*StackFrame frame = new StackFrame(1);
@@ -200,24 +193,15 @@ public abstract class HRSDK
                     Console.ForegroundColor = ConsoleColor.White;
                     break;
             }*/
-            Messages.HRLogMessage hrLogMessage = new Messages.HRLogMessage
-            {
+            var hrLogMessage = new Messages.HRLogMessage {
                 LogLevel = logLevel,
                 Message = msg.ToString(),
                 Color = color
             };
-            byte[] data = hrLogMessage.Serialize();
+            var data = hrLogMessage.Serialize();
             client?.Send(data);
         }
         else
             on_log(this, logLevel, msg, color, e);
-    }
-    
-    public enum LogLevel
-    {
-        Debug,
-        Log,
-        Warn,
-        Error
     }
 }

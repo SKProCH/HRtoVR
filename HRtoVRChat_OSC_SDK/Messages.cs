@@ -2,155 +2,119 @@
 
 namespace HRtoVRChat_OSC_SDK;
 
-public class Messages
-{
-    public static string GetMessageType(object? message) => (string) Convert.ChangeType(
-        message.GetType().GetField("MessageType").GetValue(message), typeof(string));
+public class Messages {
+    public static string GetMessageType(object? message) {
+        return (string)Convert.ChangeType(
+            message.GetType().GetField("MessageType").GetValue(message), typeof(string));
+    }
 
-    public static object? DeserializeMessage(byte[] data)
-    {
+    public static object? DeserializeMessage(byte[] data) {
         object? message = default;
-        using (MemoryStream ms = new MemoryStream(data))
-        {
-            foreach (Type derrivedType in MessageCache.MessageTypes)
-            {
-                object tempMessage = Serializer.Deserialize(derrivedType, ms);
-                if (tempMessage != null)
-                {
+        using (var ms = new MemoryStream(data)) {
+            foreach (var derrivedType in MessageCache.MessageTypes) {
+                var tempMessage = Serializer.Deserialize(derrivedType, ms);
+                if (tempMessage != null) {
                     message = tempMessage;
                     break;
                 }
             }
         }
+
         return message;
     }
 
-    public static T DeserializeMessage<T>(byte[] data)
-    {
+    public static T DeserializeMessage<T>(byte[] data) {
         T message;
-        using (MemoryStream ms = new MemoryStream(data))
-        {
+        using (var ms = new MemoryStream(data)) {
             message = Serializer.Deserialize<T>(ms);
         }
+
         return message;
-    }
-    
-    [ProtoContract]
-    public class HRMessage : MessageTools
-    {
-        [ProtoMember(1)]
-        public readonly string MessageType = "HRMessage";
-        
-        [ProtoMember(2)]
-        public string SDKName { get; set; }
-        
-        [ProtoMember(3)]
-        public int HR { get; set; }
-        
-        [ProtoMember(4)]
-        public bool IsOpen { get; set; }
-        
-        [ProtoMember(5)]
-        public bool IsActive { get; set; }
     }
 
     [ProtoContract]
-    public class HRLogMessage : MessageTools
-    {
-        [ProtoMember(1)]
-        public readonly string MessageType = "HRLogMessage";
+    public class HRMessage : MessageTools {
+        [ProtoMember(1)] public readonly string MessageType = "HRMessage";
+
+        [ProtoMember(2)] public string SDKName { get; set; }
+
+        [ProtoMember(3)] public int HR { get; set; }
+
+        [ProtoMember(4)] public bool IsOpen { get; set; }
+
+        [ProtoMember(5)] public bool IsActive { get; set; }
+    }
+
+    [ProtoContract]
+    public class HRLogMessage : MessageTools {
+        [ProtoMember(1)] public readonly string MessageType = "HRLogMessage";
 
         [ProtoMember(2)] public HRSDK.LogLevel LogLevel { get; set; } = HRSDK.LogLevel.Debug;
 
-        [ProtoMember(3)]
-        public string Message { get; set; } = String.Empty;
+        [ProtoMember(3)] public string Message { get; set; } = string.Empty;
 
         [ProtoMember(4)] public ConsoleColor Color { get; set; } = ConsoleColor.White;
     }
-    
+
     [ProtoContract]
-    public class GetHRData : MessageTools
-    {
-        [ProtoMember(1)]
-        public readonly string MessageType = "GetHRData";
+    public class GetHRData : MessageTools {
+        [ProtoMember(1)] public readonly string MessageType = "GetHRData";
     }
 
     [ProtoContract]
-    public class UpdateMessage : MessageTools
-    {
-        [ProtoMember(1)]
-        public readonly string MessageType = "UpdateMessage";
-    }
-    
-    [ProtoContract]
-    public class AppBridgeMessage : MessageTools
-    {
-        [ProtoMember(1)]
-        public readonly string MessageType = "AppBridgeMessage";
-        
-        [ProtoMember(2)]
-        public string CurrentSourceName { get; set; }
-        
-        [ProtoMember(3)]
-        public int onesHR { get; set; }
-        
-        [ProtoMember(4)]
-        public int tensHR { get; set; }
-        
-        [ProtoMember(5)]
-        public int hundredsHR { get; set; }
-        
-        [ProtoMember(6)]
-        public bool isHRConnected { get; set; }
-        
-        [ProtoMember(7)]
-        public bool isHRActive { get; set; }
-        
-        [ProtoMember(8)]
-        public bool isHRBeat { get; set; }
-        
-        [ProtoMember(9)]
-        public float HRPercent { get; set; }
-        
-        [ProtoMember(13)]
-        public float FullHRPercent { get; set; }
-        
-        [ProtoMember(10)]
-        public int HR { get; set; }
-        
-        [ProtoMember(11)]
-        public AvatarInfo? CurrentAvatar { get; set; }
+    public class UpdateMessage : MessageTools {
+        [ProtoMember(1)] public readonly string MessageType = "UpdateMessage";
     }
 
     [ProtoContract]
-    public class AvatarInfo
-    {
-        [ProtoMember(1)]
-        public string id { get; set; }
-        [ProtoMember(2)]
-        public string name { get; set; }
-        [ProtoMember(3)]
-        public List<string> parameters { get; set; }
+    public class AppBridgeMessage : MessageTools {
+        [ProtoMember(1)] public readonly string MessageType = "AppBridgeMessage";
+
+        [ProtoMember(2)] public string CurrentSourceName { get; set; }
+
+        [ProtoMember(3)] public int onesHR { get; set; }
+
+        [ProtoMember(4)] public int tensHR { get; set; }
+
+        [ProtoMember(5)] public int hundredsHR { get; set; }
+
+        [ProtoMember(6)] public bool isHRConnected { get; set; }
+
+        [ProtoMember(7)] public bool isHRActive { get; set; }
+
+        [ProtoMember(8)] public bool isHRBeat { get; set; }
+
+        [ProtoMember(9)] public float HRPercent { get; set; }
+
+        [ProtoMember(13)] public float FullHRPercent { get; set; }
+
+        [ProtoMember(10)] public int HR { get; set; }
+
+        [ProtoMember(11)] public AvatarInfo? CurrentAvatar { get; set; }
+    }
+
+    [ProtoContract]
+    public class AvatarInfo {
+        [ProtoMember(1)] public string id { get; set; }
+
+        [ProtoMember(2)] public string name { get; set; }
+
+        [ProtoMember(3)] public List<string> parameters { get; set; }
     }
 }
 
-public class MessageTools
-{
-    public byte[] Serialize()
-    {
-        using (MemoryStream ms = new MemoryStream())
-        {
+public class MessageTools {
+    public byte[] Serialize() {
+        using (var ms = new MemoryStream()) {
             Serializer.Serialize(ms, this);
-            byte[] bytes = ms.ToArray();
+            var bytes = ms.ToArray();
             return bytes;
         }
     }
 }
 
-public static class MessageCache
-{
-    public static readonly List<Type> MessageTypes = new List<Type>
-    {
+public static class MessageCache {
+    public static readonly List<Type> MessageTypes = new() {
         typeof(Messages.HRMessage),
         typeof(Messages.HRLogMessage),
         typeof(Messages.GetHRData)

@@ -28,7 +28,7 @@ namespace HRtoVRChat.HRManagers
         // https://stackoverflow.com/a/194223/12968919
         private static string ProgramFilesx86()
         {
-            if( 8 == IntPtr.Size 
+            if( 8 == IntPtr.Size
                 || (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432"))))
             {
                 return Environment.GetEnvironmentVariable("ProgramFiles(x86)");
@@ -36,7 +36,7 @@ namespace HRtoVRChat.HRManagers
 
             return Environment.GetEnvironmentVariable("ProgramFiles");
         }
-        
+
         private void load_generichr_resource()
         {
             // load UniversalApiContract
@@ -121,7 +121,7 @@ namespace HRtoVRChat.HRManagers
             NeedsUpdate,
             IsAlive
         }
-        
+
         private bool generichrdevice_getboolproperty(generichrdevice_boolproperties boolproperties, object instance)
         {
             switch (boolproperties)
@@ -184,7 +184,7 @@ namespace HRtoVRChat.HRManagers
             else
                 LogHelper.Error("WinBLEGATTManager", "Failed to Dispose!");
         }
-        
+
         private void VerifyClosedDevice()
         {
             if (global_generichr_instance != null)
@@ -253,11 +253,11 @@ namespace HRtoVRChat.HRManagers
         public bool isDeviceConnected { get; private set; } = false;
 
         private bool LoadedAssemblies = false;
-        
+
         // https://stackoverflow.com/a/194223/12968919
         private static string ProgramFilesx86()
         {
-            if( 8 == IntPtr.Size 
+            if( 8 == IntPtr.Size
                 || (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432"))))
             {
                 return Environment.GetEnvironmentVariable("ProgramFiles(x86)");
@@ -265,7 +265,7 @@ namespace HRtoVRChat.HRManagers
 
             return Environment.GetEnvironmentVariable("ProgramFiles");
         }
-        
+
         public void LoadWindowsContracts()
         {
             string programFilesPath = String.Empty;
@@ -277,7 +277,7 @@ namespace HRtoVRChat.HRManagers
 
             Assembly.LoadFile(Path.Combine(new[]
                 {ProgramFilesx86(), "Windows Kits", "10", "UnionMetadata", "10.0.19041.0", "Windows.winmd"}));
-            
+
             if (!string.IsNullOrEmpty(programFilesPath) && !LoadedAssemblies)
             {
                 foreach (string sdkVersion in Directory.GetDirectories(programFilesPath))
@@ -373,7 +373,7 @@ namespace HRtoVRChat.HRManagers
                 IL2CPP.il2cpp_thread_attach(IL2CPP.il2cpp_domain_get());
                 VerifyClosedDevice();
                 ghrd = new GenericHRDevice();
-                try { ghrd.FindAndConnect(); isDeviceConnected = true; } catch (HRDeviceException e) { LogHelper.Error("HRManagers/WinBLEGATTManager.cs", 
+                try { ghrd.FindAndConnect(); isDeviceConnected = true; } catch (HRDeviceException e) { LogHelper.Error("HRManagers/WinBLEGATTManager.cs",
                     "Failed to FindAndConnect() to HR Device! Exception: " + e); isDeviceConnected = false; }
                 if (isDeviceConnected)
                 {
@@ -406,3 +406,4 @@ namespace HRtoVRChat.HRManagers
     }
 }
 */
+

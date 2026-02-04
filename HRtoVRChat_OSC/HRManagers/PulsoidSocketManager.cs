@@ -2,18 +2,15 @@
 
 namespace HRtoVRChat_OSC.HRManagers;
 
-class PulsoidSocketManager : HRManager
-{
-    CancellationTokenSource shouldUpdate = new CancellationTokenSource();
-    string pubUrl = String.Empty;
-    int HR = 0;
-
-    private Thread? _thread = null;
+internal class PulsoidSocketManager : HRManager {
+    private Thread? _thread;
+    private int HR;
+    private string pubUrl = string.Empty;
+    private CancellationTokenSource shouldUpdate = new();
 
     private WebsocketTemplate? wst;
 
-    public bool Init(string url)
-    {
+    public bool Init(string url) {
         shouldUpdate = new CancellationTokenSource();
         pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + url;
         StartThread();
@@ -21,24 +18,40 @@ class PulsoidSocketManager : HRManager
         return true;
     }
 
-    void VerifyClosedThread()
-    {
-        if (_thread != null)
-        {
+    public void Stop() {
+        shouldUpdate.Cancel();
+        VerifyClosedThread();
+    }
+
+    public string GetName() {
+        return "Pulsoid";
+    }
+
+    public int GetHR() {
+        return HR;
+    }
+
+    public bool IsOpen() {
+        return (wst?.IsAlive ?? false) && HR > 0;
+    }
+
+    public bool IsActive() {
+        return wst?.IsAlive ?? false;
+    }
+
+    private void VerifyClosedThread() {
+        if (_thread != null) {
             if (_thread.IsAlive)
                 Stop();
         }
     }
 
-    void StartThread()
-    {
+    private void StartThread() {
         VerifyClosedThread();
-        _thread = new Thread(async () =>
-        {
+        _thread = new Thread(async () => {
             wst = new WebsocketTemplate(pubUrl);
             await wst.Start();
-            while (!shouldUpdate.IsCancellationRequested)
-            {
+            while (!shouldUpdate.IsCancellationRequested) {
                 // old method RIP ;(
                 /*
                 int parsedHR = default(int);
@@ -78,32 +91,28 @@ class PulsoidSocketManager : HRManager
                 }
                 HR = parsedHR;
                 */
-                int parsedHR = default(int);
-                if (wst != null && wst.IsAlive)
-                {
+                var parsedHR = default(int);
+                if (wst != null && wst.IsAlive) {
                     // Update stuff
-                    string data = await wst.ReceiveMessage();
-                    if (!string.IsNullOrEmpty(data))
-                    {
+                    var data = await wst.ReceiveMessage();
+                    if (!string.IsNullOrEmpty(data)) {
                         // Parse HR
                         JObject jo = null;
-                        try
-                        {
+                        try {
                             jo = JObject.Parse(data);
                         }
-                        catch (Exception e)
-                        {
+                        catch (Exception e) {
                             LogHelper.Error("Failed to parse JObject! Exception: " + e);
                         }
-                        if (jo != null)
-                            try
-                            {
+
+                        if (jo != null) {
+                            try {
                                 parsedHR = jo["data"]["heart_rate"].Value<int>();
                             }
-                            catch (Exception)
-                            {
+                            catch (Exception) {
                                 LogHelper.Error("Failed to parse Herat Rate!");
                             }
+                        }
                     }
                 }
 
@@ -112,15 +121,4 @@ class PulsoidSocketManager : HRManager
         });
         _thread.Start();
     }
-
-    public void Stop()
-    {
-        shouldUpdate.Cancel();
-        VerifyClosedThread();
-    }
-
-    public string GetName() => "Pulsoid";
-    public int GetHR() => HR;
-    public bool IsOpen() => (wst?.IsAlive ?? false) && HR > 0;
-    public bool IsActive() => wst?.IsAlive ?? false;
 }

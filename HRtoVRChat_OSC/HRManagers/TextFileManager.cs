@@ -1,18 +1,14 @@
 ﻿namespace HRtoVRChat_OSC.HRManagers;
 
-class TextFileManager : HRManager
-{
-    CancellationTokenSource shouldUpdate = new CancellationTokenSource();
-    string pubFe = String.Empty;
-    int HR = 0;
+internal class TextFileManager : HRManager {
+    private Thread _thread;
+    private int HR;
+    private string pubFe = string.Empty;
+    private CancellationTokenSource shouldUpdate = new();
 
-    private Thread _thread = null;
-
-    public bool Init(string fileLocation)
-    {
-        bool fe = File.Exists(fileLocation);
-        if (fe)
-        {
+    public bool Init(string fileLocation) {
+        var fe = File.Exists(fileLocation);
+        if (fe) {
             LogHelper.Log("Found text file!");
             pubFe = fileLocation;
             shouldUpdate = new CancellationTokenSource();
@@ -20,48 +16,61 @@ class TextFileManager : HRManager
         }
         else
             LogHelper.Error("Failed to find text file!");
+
         return fe;
     }
 
-    void VerifyClosedThread()
-    {
-        if (_thread != null)
-        {
+    public void Stop() {
+        shouldUpdate.Cancel();
+        VerifyClosedThread();
+    }
+
+    public string GetName() {
+        return "TextFile";
+    }
+
+    public int GetHR() {
+        return HR;
+    }
+
+    public bool IsOpen() {
+        return !shouldUpdate.IsCancellationRequested && HR > 0;
+    }
+
+    public bool IsActive() {
+        return !shouldUpdate.IsCancellationRequested;
+    }
+
+    private void VerifyClosedThread() {
+        if (_thread != null) {
             if (_thread.IsAlive)
                 shouldUpdate.Cancel();
         }
     }
 
-    void StartThread()
-    {
+    private void StartThread() {
         VerifyClosedThread();
-        _thread = new Thread(() =>
-        {
-            while (!shouldUpdate.IsCancellationRequested)
-            {
-                bool failed = false;
-                int tempHR = 0;
+        _thread = new Thread(() => {
+            while (!shouldUpdate.IsCancellationRequested) {
+                var failed = false;
+                var tempHR = 0;
                 // get text
-                string text = String.Empty;
-                try { text = File.ReadAllText(pubFe); } catch (Exception e) { LogHelper.Error("Failed to find Text File! Exception: ", e); failed = true; }
+                var text = string.Empty;
+                try { text = File.ReadAllText(pubFe); }
+                catch (Exception e) {
+                    LogHelper.Error("Failed to find Text File! Exception: ", e);
+                    failed = true;
+                }
+
                 // cast to int
                 if (!failed)
-                    try { tempHR = Convert.ToInt32(text); } catch (Exception e) { LogHelper.Error("Failed to parse to int! Exception: ", e); }
+                    try { tempHR = Convert.ToInt32(text); }
+                    catch (Exception e) { LogHelper.Error("Failed to parse to int! Exception: ", e); }
+
                 HR = tempHR;
                 Thread.Sleep(500);
             }
         });
         _thread.Start();
     }
-
-    public void Stop()
-    {
-        shouldUpdate.Cancel();
-        VerifyClosedThread();
-    }
-
-    public string GetName() => "TextFile";
-    public int GetHR() => HR;
-    public bool IsOpen() => !shouldUpdate.IsCancellationRequested && HR > 0;
-    public bool IsActive() => !shouldUpdate.IsCancellationRequested;
 }

@@ -2,14 +2,11 @@
 
 namespace HRtoVRChat_OSC;
 
-public class CustomTimer
-{
-    public bool IsRunning { get; private set; }
-    private Timer _timer;
+public class CustomTimer {
+    private readonly Timer _timer;
 
-    public CustomTimer(int ms, Action<CustomTimer> callback)
-    {
-        if(_timer != null)
+    public CustomTimer(int ms, Action<CustomTimer> callback) {
+        if (_timer != null)
             Close();
         _timer = new Timer(ms);
         _timer.AutoReset = true;
@@ -18,33 +15,30 @@ public class CustomTimer
         IsRunning = true;
     }
 
-    public void Close()
-    {
-        if (_timer != null)
-        {
+    public bool IsRunning { get; private set; }
+
+    public void Close() {
+        if (_timer != null) {
             _timer.Stop();
             _timer.Close();
         }
+
         IsRunning = false;
     }
 }
 
-public class ExecuteInTime
-{
-    public bool IsWaiting { get; private set; }
-    private Timer _timer;
+public class ExecuteInTime {
+    private readonly Timer _timer;
 
-    public ExecuteInTime(int ms, Action<ExecuteInTime> callback)
-    {
-        if (_timer != null)
-        {
+    public ExecuteInTime(int ms, Action<ExecuteInTime> callback) {
+        if (_timer != null) {
             _timer.Stop();
             _timer.Close();
         }
+
         _timer = new Timer(ms);
         _timer.AutoReset = false;
-        _timer.Elapsed += (sender, args) =>
-        {
+        _timer.Elapsed += (sender, args) => {
             callback.Invoke(this);
             IsWaiting = false;
             _timer.Stop();
@@ -53,4 +47,6 @@ public class ExecuteInTime
         _timer.Start();
         IsWaiting = true;
     }
+
+    public bool IsWaiting { get; private set; }
 }

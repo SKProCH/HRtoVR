@@ -1,7 +1,6 @@
 ﻿namespace HRtoVRChat_OSC;
 
-public interface HRManager
-{
+public interface HRManager {
     bool Init(string d1);
     string GetName();
     int GetHR();

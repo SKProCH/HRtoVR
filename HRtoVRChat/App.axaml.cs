@@ -4,20 +4,16 @@ using Avalonia.Markup.Xaml;
 
 namespace HRtoVRChat;
 
-public partial class App : Application
-{
-    public override void Initialize()
-    {
+public class App : Application {
+    public override void Initialize() {
         // Cache any assets
         AssetTools.Init();
         // Continue
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override void OnFrameworkInitializationCompleted()
-    {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
+    public override void OnFrameworkInitializationCompleted() {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             desktop.MainWindow = new MainWindow();
         }
 
@@ -25,6 +21,4 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
-
-        
 }

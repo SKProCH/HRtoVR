@@ -3,71 +3,94 @@ using System.Text;
 
 namespace HRtoVRChat_OSC.HRManagers;
 
-public class FitbitManager : HRManager
-{
-    private ClientWebSocket cws = null;
+public class FitbitManager : HRManager {
     private Thread _thread;
-    private CancellationTokenSource tokenSource = new CancellationTokenSource();
+    private ClientWebSocket cws;
 
-    private bool IsConnected => cws?.State == WebSocketState.Open;
-    public bool FitbitIsConnected { get; private set; } = false;
-    public int HR { get; private set; } = 0;
+    private int sendreceiveeror;
+    private CancellationTokenSource tokenSource = new();
 
-    public bool Init(string url)
-    {
+    private bool IsConnected {
+        get => cws?.State == WebSocketState.Open;
+    }
+
+    public bool FitbitIsConnected { get; private set; }
+    public int HR { get; private set; }
+
+    public bool Init(string url) {
         tokenSource = new CancellationTokenSource();
         StartThread(url);
         LogHelper.Log("Initialized WebSocket!");
         return IsConnected;
     }
 
-    int sendreceiveeror = 0;
-    private async Task SendAndReceiveMessage(string message)
-    {
-        if(cws != null)
-        {
-            if(cws.State == WebSocketState.Open)
-            {
-                bool didSend = false;
-                bool didReceive = false;
+    public string GetName() {
+        return "FitbitHRtoWS";
+    }
 
-                byte[] sendBody = Encoding.UTF8.GetBytes(message);
-                try
-                {
-                    await cws.SendAsync(new ArraySegment<byte>(sendBody), WebSocketMessageType.Text, true, CancellationToken.None);
+    public int GetHR() {
+        return HR;
+    }
+
+    public void Stop() {
+        if (cws != null) {
+            tokenSource.Cancel();
+            LogHelper.Debug("Sent message to Stop WebSocket");
+        }
+        else
+            LogHelper.Warn("WebSocket is already null! Did you mean to Initialize()?");
+    }
+
+    public bool IsOpen() {
+        return IsConnected && FitbitIsConnected;
+    }
+
+    public bool IsActive() {
+        return IsConnected;
+    }
+
+    private async Task SendAndReceiveMessage(string message) {
+        if (cws != null) {
+            if (cws.State == WebSocketState.Open) {
+                var didSend = false;
+                var didReceive = false;
+
+                var sendBody = Encoding.UTF8.GetBytes(message);
+                try {
+                    await cws.SendAsync(new ArraySegment<byte>(sendBody), WebSocketMessageType.Text, true,
+                        CancellationToken.None);
                     didSend = true;
                 }
-                catch(Exception e)
-                {
+                catch (Exception e) {
                     LogHelper.Error("Failed to Send Message to Fitbit Server! Exception: ", e);
                 }
+
                 var clientbuffer = new ArraySegment<byte>(new byte[1024]);
                 WebSocketReceiveResult result = null;
-                try
-                {
+                try {
                     result = await cws.ReceiveAsync(clientbuffer, CancellationToken.None);
                     didReceive = true;
                 }
-                catch(Exception e)
-                {
+                catch (Exception e) {
                     LogHelper.Error("Failed to Recieve Message from Fitbit Server! Exception: ", e);
                 }
-                if(result != null)
-                    if (result.Count != 0 || result.CloseStatus == WebSocketCloseStatus.Empty)
-                    {
-                        string msg = Encoding.ASCII.GetString(clientbuffer.Array);
+
+                if (result != null) {
+                    if (result.Count != 0 || result.CloseStatus == WebSocketCloseStatus.Empty) {
+                        var msg = Encoding.ASCII.GetString(clientbuffer.Array);
                         if (msg.Contains("yes"))
                             FitbitIsConnected = true;
                         else if (msg.Contains("no"))
                             FitbitIsConnected = false;
                         else
-                            try { HR = Convert.ToInt32(msg); } catch (Exception) { }
+                            try { HR = Convert.ToInt32(msg); }
+                            catch (Exception) { }
                     }
-                if(!(didSend && didReceive))
-                {
+                }
+
+                if (!(didSend && didReceive)) {
                     sendreceiveeror++;
-                    if(sendreceiveeror >= 15)
-                    {
+                    if (sendreceiveeror >= 15) {
                         await Close();
                         LogHelper.Warn("Failed to Send and Receive message too many times! Closed Socket.");
                     }
@@ -76,75 +99,52 @@ public class FitbitManager : HRManager
         }
     }
 
-    public void StartThread(string url)
-    {
-        _thread = new Thread(async () =>
-        {
+    public void StartThread(string url) {
+        _thread = new Thread(async () => {
             cws = new ClientWebSocket();
-            bool noerror = true;
-            try
-            {
+            var noerror = true;
+            try {
                 await cws.ConnectAsync(new Uri(url), CancellationToken.None);
             }
-            catch(Exception e)
-            {
+            catch (Exception e) {
                 LogHelper.Error("Failed to connect to Fitbit Server! Exception: ", e);
                 noerror = false;
             }
-            if (noerror)
-            {
-                while (!tokenSource.IsCancellationRequested)
-                {
-                    if(!IsConnected)
+
+            if (noerror) {
+                while (!tokenSource.IsCancellationRequested) {
+                    if (!IsConnected)
                         Stop();
                     await SendAndReceiveMessage("getHR");
                     await SendAndReceiveMessage("checkFitbitConnection");
                     Thread.Sleep(500);
                 }
             }
+
             await Close();
         });
         _thread.Start();
     }
 
-    public string GetName() => "FitbitHRtoWS";
-
-    public int GetHR() => HR;
-
-    private async Task Close()
-    {
-        if (cws != null)
-            if (cws.State == WebSocketState.Open)
-                try
-                {
-                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client Disconnect", CancellationToken.None);
+    private async Task Close() {
+        if (cws != null) {
+            if (cws.State == WebSocketState.Open) {
+                try {
+                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client Disconnect",
+                        CancellationToken.None);
                     cws.Dispose();
                     cws = null;
                 }
-                catch(Exception e)
-                {
+                catch (Exception e) {
                     LogHelper.Error("Failed to Close connection with the Fitbit Server! Exception: ", e);
                 }
+            }
             else
                 LogHelper.Warn("WebSocket is not alive! Did you mean to Dispose()?");
+        }
         else
             LogHelper.Warn("WebSocket is null! Did you mean to Initialize()?");
     }
-
-    public void Stop()
-    {
-        if (cws != null)
-        {
-            tokenSource.Cancel();
-            LogHelper.Debug("Sent message to Stop WebSocket");
-        }
-        else
-            LogHelper.Warn("WebSocket is already null! Did you mean to Initialize()?");
-    }
-
-    public bool IsOpen() => IsConnected && FitbitIsConnected;
-
-    public bool IsActive() => IsConnected;
 }
 
 /*
@@ -484,7 +484,6 @@ public class FitbitManager : HRManager
     public bool IsActive() => IsConnected;
 }
 */
-
 /*
 public class FitbitManager : HRManager
 {

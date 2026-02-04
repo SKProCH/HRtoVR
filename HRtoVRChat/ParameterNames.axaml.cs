@@ -12,12 +12,15 @@ using MessageBox.Avalonia.Enums;
 
 namespace HRtoVRChat;
 
-public partial class ParameterNames : Window
-{
+public partial class ParameterNames : Window {
     public static bool IsOpen;
-    
-    public ParameterNames()
-    {
+    public TextBox ParameterNameValue;
+    public TextBlock SelectedParameterDescription;
+
+    public TextBlock SelectedParameterName;
+    public TextBlock SelectedParameterType;
+
+    public ParameterNames() {
         InitializeComponent();
 #if DEBUG
         this.AttachDevTools();
@@ -25,38 +28,30 @@ public partial class ParameterNames : Window
         Closed += (sender, args) => IsOpen = false;
     }
 
-    private void InitializeComponent()
-    {
+    private void InitializeComponent() {
         AvaloniaXamlLoader.Load(this);
     }
 
-    public TextBlock SelectedParameterName;
-    public TextBlock SelectedParameterType;
-    public TextBlock SelectedParameterDescription;
-    public TextBox ParameterNameValue;
-
-    public override void Show()
-    {
+    public override void Show() {
         base.Show();
         IsOpen = true;
         // idk why this has to be done JIT, it just throws an error when done pre-compiled
         // CONTENT
-        Canvas content = new Canvas();
+        var content = new Canvas();
         Content = content;
-        StackPanel ParameterNamesStackPanel = new StackPanel();
+        var ParameterNamesStackPanel = new StackPanel();
         ParameterNamesStackPanel.SetValue(Canvas.TopProperty, 5);
         ParameterNamesStackPanel.SetValue(Canvas.LeftProperty, 5);
         content.Children.Add(ParameterNamesStackPanel);
         // RADIOBUTTONS
-        foreach (KeyValuePair<string,string> keyValuePair in new Config().ParameterNames)
-        {
-            RadioButton nb = NewRadioButton(keyValuePair.Key);
+        foreach (var keyValuePair in new Config().ParameterNames) {
+            var nb = NewRadioButton(keyValuePair.Key);
             ParameterNamesStackPanel.Children.Add(nb);
         }
+
         // LABELS
         // -- name
-        TextBlock ParameterNameLabel = new TextBlock
-        {
+        var ParameterNameLabel = new TextBlock {
             Text = "Parameter Name",
             FontSize = 26,
             FontWeight = FontWeight.Bold
@@ -64,8 +59,7 @@ public partial class ParameterNames : Window
         ParameterNameLabel.SetValue(Canvas.LeftProperty, 250);
         ParameterNameLabel.SetValue(Canvas.TopProperty, 6);
         content.Children.Add(ParameterNameLabel);
-        SelectedParameterName = new TextBlock
-        {
+        SelectedParameterName = new TextBlock {
             Text = "Select a Parameter",
             FontSize = 16
         };
@@ -73,8 +67,7 @@ public partial class ParameterNames : Window
         SelectedParameterName.SetValue(Canvas.TopProperty, 56);
         content.Children.Add(SelectedParameterName);
         // -- type
-        TextBlock ParameterTypeLabel = new TextBlock
-        {
+        var ParameterTypeLabel = new TextBlock {
             Text = "Parameter Type",
             FontSize = 26,
             FontWeight = FontWeight.Bold
@@ -82,8 +75,7 @@ public partial class ParameterNames : Window
         ParameterTypeLabel.SetValue(Canvas.LeftProperty, 250);
         ParameterTypeLabel.SetValue(Canvas.TopProperty, 96);
         content.Children.Add(ParameterTypeLabel);
-        SelectedParameterType = new TextBlock
-        {
+        SelectedParameterType = new TextBlock {
             Text = "unknown",
             FontSize = 16
         };
@@ -91,8 +83,7 @@ public partial class ParameterNames : Window
         SelectedParameterType.SetValue(Canvas.TopProperty, 146);
         content.Children.Add(SelectedParameterType);
         // -- description
-        TextBlock ParameterDescriptionLabel = new TextBlock
-        {
+        var ParameterDescriptionLabel = new TextBlock {
             Text = "Parameter Description",
             FontSize = 26,
             FontWeight = FontWeight.Bold
@@ -100,8 +91,7 @@ public partial class ParameterNames : Window
         ParameterDescriptionLabel.SetValue(Canvas.LeftProperty, 250);
         ParameterDescriptionLabel.SetValue(Canvas.TopProperty, 186);
         content.Children.Add(ParameterDescriptionLabel);
-        SelectedParameterDescription = new TextBlock
-        {
+        SelectedParameterDescription = new TextBlock {
             Text = "Description",
             FontSize = 16,
             TextWrapping = TextWrapping.Wrap,
@@ -111,8 +101,7 @@ public partial class ParameterNames : Window
         SelectedParameterDescription.SetValue(Canvas.TopProperty, 236);
         content.Children.Add(SelectedParameterDescription);
         // -- TextBox
-        ParameterNameValue = new TextBox
-        {
+        ParameterNameValue = new TextBox {
             Width = 600,
             Watermark = "Insert a new Parameter Name",
             TextAlignment = TextAlignment.Center
@@ -121,53 +110,54 @@ public partial class ParameterNames : Window
         ParameterNameValue.SetValue(Canvas.LeftProperty, 5);
         content.Children.Add(ParameterNameValue);
         // -- Button
-        Button ApplyButton = new Button
-        {
-            Content = new TextBlock
-            {
+        var ApplyButton = new Button {
+            Content = new TextBlock {
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
                 Text = "SAVE"
             },
-             Width = 600,
-             Command = new ApplyButtonClicked(this)
+            Width = 600,
+            Command = new ApplyButtonClicked(this)
         };
         ApplyButton.SetValue(Canvas.TopProperty, 460);
         ApplyButton.SetValue(Canvas.LeftProperty, 5);
         content.Children.Add(ApplyButton);
     }
 
-    private RadioButton NewRadioButton(string name) => new RadioButton
-    {
-        Content = name,
-        Command = new ParameterNameRadioButtonSelected(this, name),
-        GroupName = "ParameterNameConfigValues"
-    };
+    private RadioButton NewRadioButton(string name) {
+        return new RadioButton {
+            Content = name,
+            Command = new ParameterNameRadioButtonSelected(this, name),
+            GroupName = "ParameterNameConfigValues"
+        };
+    }
 
-    private class ParameterNameRadioButtonSelected : ICommand
-    {
-        private ParameterNames instance;
-        private string Name;
-        public bool CanExecute(object? parameter) => true;
+    private class ParameterNameRadioButtonSelected : ICommand {
+        private readonly ParameterNames instance;
+        private readonly string Name;
 
-        public void Execute(object? parameter)
-        {
+        public ParameterNameRadioButtonSelected(ParameterNames instance, string Name) {
+            this.Name = Name;
+            this.instance = instance;
+        }
+
+        public bool CanExecute(object? parameter) {
+            return true;
+        }
+
+        public void Execute(object? parameter) {
             // Get the Parameter Name, Type, and Description
             string value;
             ConfigManager.LoadedConfig.ParameterNames.TryGetValue(Name, out value);
-            if (!string.IsNullOrEmpty(value))
-            {
+            if (!string.IsNullOrEmpty(value)) {
                 instance.SelectedParameterName.Text = Name;
-                try
-                {
-                    ParameterData pd = ParameterData.ParameterDatas[Name];
+                try {
+                    var pd = ParameterData.ParameterDatas[Name];
                     instance.SelectedParameterType.Text = pd.type;
                     instance.SelectedParameterDescription.Text = pd.description;
                 }
-                catch (Exception)
-                {
-                    MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-                    {
+                catch (Exception) {
+                    MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                         ButtonDefinitions = ButtonEnum.YesNo,
                         ContentTitle = "ParameterNames",
                         ContentMessage = "Failed to get ParameterData for parameter " + Name,
@@ -176,37 +166,34 @@ public partial class ParameterNames : Window
                         WindowStartupLocation = WindowStartupLocation.CenterScreen
                     }).Show();
                 }
+
                 instance.ParameterNameValue.Text = value;
             }
         }
 
         public event EventHandler? CanExecuteChanged = (sender, args) => { };
+    }
 
-        public ParameterNameRadioButtonSelected(ParameterNames instance, string Name)
-        {
-            this.Name = Name;
+    private class ApplyButtonClicked : ICommand {
+        private readonly ParameterNames instance;
+
+        public ApplyButtonClicked(ParameterNames instance) {
             this.instance = instance;
         }
-    }
-    
-    private class ApplyButtonClicked : ICommand
-    {
-        private ParameterNames instance;
-        public bool CanExecute(object? parameter) => true;
 
-        public void Execute(object? parameter)
-        {
+        public bool CanExecute(object? parameter) {
+            return true;
+        }
+
+        public void Execute(object? parameter) {
             // try and set the value
-            try
-            {
+            try {
                 ConfigManager.LoadedConfig.ParameterNames[instance.SelectedParameterName.Text] =
                     instance.ParameterNameValue.Text;
                 ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
             }
-            catch (Exception)
-            {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-                {
+            catch (Exception) {
+                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
                     ButtonDefinitions = ButtonEnum.YesNo,
                     ContentTitle = "ParameterNames",
                     ContentMessage = "Failed to save Parameter " + instance.SelectedParameterName.Text + "!",
@@ -218,61 +205,50 @@ public partial class ParameterNames : Window
         }
 
         public event EventHandler? CanExecuteChanged = (sender, args) => { };
-        public ApplyButtonClicked(ParameterNames instance) => this.instance = instance;
     }
 
-    public class ParameterData
-    {
-        public static readonly Dictionary<string, ParameterData> ParameterDatas = new Dictionary<string, ParameterData>
-        {
-            ["onesHR"] = new ParameterData
-            {
+    public class ParameterData {
+        public static readonly Dictionary<string, ParameterData> ParameterDatas = new() {
+            ["onesHR"] = new ParameterData {
                 type = "int",
                 description = "Ones spot in the Heart Rate reading; 12**3** *(legacy)*"
             },
-            ["tensHR"] = new ParameterData
-            {
+            ["tensHR"] = new ParameterData {
                 type = "int",
                 description = "Tens spot in the Heart Rate reading; 1**2**3 *(legacy)*"
             },
-            ["hundredsHR"] = new ParameterData
-            {
+            ["hundredsHR"] = new ParameterData {
                 type = "int",
                 description = "Hundreds spot in the Heart Rate reading; **1**23 *(legacy)*"
             },
-            ["isHRConnected"] = new ParameterData
-            {
+            ["isHRConnected"] = new ParameterData {
                 type = "bool",
                 description = "Returns whether the device's connection is valid or not"
             },
-            ["isHRActive"] = new ParameterData
-            {
+            ["isHRActive"] = new ParameterData {
                 type = "bool",
                 description = "Returns whether the connection is valid or not"
             },
-            ["isHRBeat"] = new ParameterData
-            {
+            ["isHRBeat"] = new ParameterData {
                 type = "bool",
                 description = "Estimation on when the heart is beating"
             },
-            ["HRPercent"] = new ParameterData
-            {
+            ["HRPercent"] = new ParameterData {
                 type = "float",
                 description = "Range of HR between the MinHR and MaxHR config value"
             },
-            ["FullHRPercent"] = new ParameterData
-            {
+            ["FullHRPercent"] = new ParameterData {
                 type = "float",
                 description = "Range of HR between the MinHR and the MaxHR config value, from -1 to 1"
             },
-            ["HR"] = new ParameterData
-            {
+            ["HR"] = new ParameterData {
                 type = "int",
                 description = "Returns the raw HR, ranged from 0 - 255. *(required)*"
-            },
+            }
         };
 
-        public string type;
         public string description;
+
+        public string type;
     }
 }
