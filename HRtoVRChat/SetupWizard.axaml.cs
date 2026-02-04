@@ -76,11 +76,19 @@ public partial class SetupWizard : Window {
             Icon = new WindowIcon(AssetTools.Icon),
             Title = selector.Name + " Extra"
         };
-        var canvas = new Canvas();
-        var sp = new StackPanel();
-        canvas.Children.Add(sp);
-        sp.SetValue(Canvas.TopProperty, 5);
-        sp.SetValue(Canvas.LeftProperty, 5);
+        var grid = new Grid {
+            RowDefinitions = new RowDefinitions("*,Auto")
+        };
+
+        var sp = new StackPanel {
+            Margin = new Thickness(10)
+        };
+
+        var scrollViewer = new ScrollViewer {
+            Content = sp
+        };
+        grid.Children.Add(scrollViewer);
+
         Dictionary<HRTypeExtraInfo, TextBox> texts = new();
         foreach (var hrTypeExtraInfo in selector.ExtraInfos) {
             var title = new Label {
@@ -92,7 +100,7 @@ public partial class SetupWizard : Window {
             };
             var tb = new TextBox {
                 Watermark = "example: " + hrTypeExtraInfo.example,
-                Width = 490
+                // Width = 490 // Let layout handle width
             };
             texts.Add(hrTypeExtraInfo, tb);
             sp.Children.Add(title);
@@ -101,7 +109,9 @@ public partial class SetupWizard : Window {
         }
 
         var doneButton = new Button {
-            Content = "DONE"
+            Content = "DONE",
+            Margin = new Thickness(10),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
         };
 
         doneButton.Click += (sender, args) => {
@@ -115,10 +125,10 @@ public partial class SetupWizard : Window {
              newWindow.Close();
         };
 
-        canvas.Children.Add(doneButton);
-        doneButton.SetValue(Canvas.TopProperty, 465);
-        doneButton.SetValue(Canvas.LeftProperty, 5);
-        newWindow.Content = canvas;
+        grid.Children.Add(doneButton);
+        Grid.SetRow(doneButton, 1);
+
+        newWindow.Content = grid;
         newWindow.Show();
     }
 }

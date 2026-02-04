@@ -19,46 +19,56 @@
       <converters:EnumToBooleanConverter x:Key="EnumToBool" />
   </Window.Resources>
 
-  <Canvas>
-    <Label FontSize="24">Setup Wizard</Label>
+  <Grid RowDefinitions="Auto, *, Auto" Margin="10">
+    <Label Grid.Row="0" FontSize="24">Setup Wizard</Label>
 
-    <!-- HR Type Panel -->
-    <Canvas Name="hrtypepanel" Canvas.Top="75" Canvas.Left="5" IsVisible="{Binding CurrentPage, Converter={StaticResource EnumToBool}, ConverterParameter=HrType}">
-      <Label FontSize="16">HRType</Label>
-      <Label Canvas.Top="40">Select the service you wish to use</Label>
-      <StackPanel Canvas.Top="75" Name="sp11">
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="fhr">FitbitHRtoWS</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="hrp">HRProxy</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="hr">HypeRate</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="ps">Pulsoid (Deprecated)</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="pss">PulsoidSocket</RadioButton>
-      </StackPanel>
-      <StackPanel Canvas.Top="75" Canvas.Left="375" Name="sp12">
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="sn">Stromno</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="tf">TextFile</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="oc">Omnicept</RadioButton>
-        <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="sdk">SDK</RadioButton>
-      </StackPanel>
-      <Button Canvas.Top="340" Canvas.Left="450" Command="{Binding ContinueCommand}">Continue</Button>
-    </Canvas>
+    <Panel Grid.Row="1">
+      <!-- HR Type Panel -->
+      <Grid Name="hrtypepanel" RowDefinitions="Auto, Auto, *" IsVisible="{Binding CurrentPage, Converter={StaticResource EnumToBool}, ConverterParameter=HrType}">
+        <Label Grid.Row="0" FontSize="16">HRType</Label>
+        <Label Grid.Row="1">Select the service you wish to use</Label>
 
-    <!-- Endpoint Panel -->
-    <Canvas Name="endpointpanel" Canvas.Top="75" Canvas.Left="5" IsVisible="{Binding CurrentPage, Converter={StaticResource EnumToBool}, ConverterParameter=Endpoint}">
-      <Label>What device will the target Application be Running on?</Label>
-      <RadioButton Canvas.Top="50" Canvas.Left="50" GroupName="td" IsChecked="{Binding IsThisDevice}">This Device</RadioButton>
-      <RadioButton Canvas.Top="50" Canvas.Left="300" GroupName="td" IsChecked="{Binding IsAnotherDevice}">Another Device</RadioButton>
+        <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,10">
+          <StackPanel Name="sp11" Spacing="5">
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="fhr">FitbitHRtoWS</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="hrp">HRProxy</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="hr">HypeRate</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="ps">Pulsoid (Deprecated)</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="pss">PulsoidSocket</RadioButton>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Name="sp12" Spacing="5">
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="sn">Stromno</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="tf">TextFile</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="oc">Omnicept</RadioButton>
+            <RadioButton GroupName="hrtypeselect" Command="{Binding SelectHrTypeCommand}" CommandParameter="sdk">SDK</RadioButton>
+          </StackPanel>
+        </Grid>
+      </Grid>
 
-      <Canvas Canvas.Top="100" Name="showextra2" IsVisible="{Binding IsAnotherDevice}">
-        <Label>What is the IP of this Device?</Label>
-        <TextBox Canvas.Top="25" Width="525" Text="{Binding Ip}" />
-        <Label Canvas.Top="60">What Port should we send OSC Messages to?</Label>
-        <TextBox Canvas.Top="85" Width="525" Text="{Binding SendPort}" />
-        <Label Canvas.Top="120">What Port should we listen for OSC Messages?</Label>
-        <TextBox Canvas.Top="145" Width="525" Text="{Binding ListenPort}" />
-      </Canvas>
+      <!-- Endpoint Panel -->
+      <Grid Name="endpointpanel" RowDefinitions="Auto, Auto, *" IsVisible="{Binding CurrentPage, Converter={StaticResource EnumToBool}, ConverterParameter=Endpoint}">
+        <Label Grid.Row="0">What device will the target Application be Running on?</Label>
 
-      <Button Canvas.Top="340" Canvas.Left="450" Command="{Binding ContinueCommand}">Continue</Button>
-      <Button Canvas.Top="340" Canvas.Left="370" Command="{Binding BackCommand}">Go Back</Button>
-    </Canvas>
-  </Canvas>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="20" Margin="20,10">
+          <RadioButton GroupName="td" IsChecked="{Binding IsThisDevice}">This Device</RadioButton>
+          <RadioButton GroupName="td" IsChecked="{Binding IsAnotherDevice}">Another Device</RadioButton>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Name="showextra2" IsVisible="{Binding IsAnotherDevice}" Spacing="5">
+          <Label>What is the IP of this Device?</Label>
+          <TextBox Text="{Binding Ip}" />
+          <Label>What Port should we send OSC Messages to?</Label>
+          <TextBox Text="{Binding SendPort}" />
+          <Label>What Port should we listen for OSC Messages?</Label>
+          <TextBox Text="{Binding ListenPort}" />
+        </StackPanel>
+      </Grid>
+    </Panel>
+
+    <!-- Footer Buttons -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+        <Button Command="{Binding BackCommand}" IsVisible="{Binding CurrentPage, Converter={StaticResource EnumToBool}, ConverterParameter=Endpoint}">Go Back</Button>
+        <Button Command="{Binding ContinueCommand}">Continue</Button>
+    </StackPanel>
+  </Grid>
 </Window>

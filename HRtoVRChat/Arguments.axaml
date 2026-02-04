@@ -14,32 +14,46 @@
       <vm:ArgumentsViewModel />
   </Design.DataContext>
 
-  <Canvas>
-    <Label Canvas.Top="5" FontSize="24" Canvas.Left="5">Auto Start</Label>
-    <Label Canvas.Top="40" Canvas.Left="5">Will Start and Stop HRtoVRChat_OSC as a compatible game opens and closes</Label>
-    <CheckBox Canvas.Top="60" Canvas.Left="25"
-              Name="AutoStartCheckBox" IsChecked="{Binding AutoStart}">
-      Auto Start
-    </CheckBox>
-    <Label Canvas.Top="95" FontSize="24" Canvas.Left="5">Skip VRChat Check</Label>
-    <Label Canvas.Top="130" Canvas.Left="5">Will not check to see if a compatible game is open before starting</Label>
-    <CheckBox Canvas.Top="150" Canvas.Left="25"
-              Name="SkipVRCCheckBox" IsChecked="{Binding SkipVRCCheck}">
-      Skip VRChat Check
-    </CheckBox>
-    <Label Canvas.Top="185" FontSize="24" Canvas.Left="5">Neos Bridge</Label>
-    <Label Canvas.Top="220" Canvas.Left="5">Sends specially serialized data over a WebSocket for Neos</Label>
-    <CheckBox Canvas.Top="240" Canvas.Left="25"
-              Name="NeosBridgeCheckBox" IsChecked="{Binding NeosBridge}">
-      Neos Bridge
-    </CheckBox>
-    <Label Canvas.Top="275" FontSize="24" Canvas.Left="5">Use Legacy Bools</Label>
-    <Label Canvas.Top="310" Canvas.Left="5">Casts Bools to Floats before sending over OSC</Label>
-    <CheckBox Canvas.Top="330" Canvas.Left="25"
-              Name="LegacyBoolCheckBox" IsChecked="{Binding UseLegacyBool}">
-      Use Legacy Bools
-    </CheckBox>
-    <Label Canvas.Left="5" Canvas.Bottom="40">Other Launch Arguments:</Label>
-    <TextBox Canvas.Bottom="5" Canvas.Left="5" Width="600" Name="OtherLaunchArgs" Text="{Binding OtherArgs}" />
-  </Canvas>
+  <DockPanel Margin="10">
+    <StackPanel DockPanel.Dock="Bottom" Spacing="5">
+      <Label>Other Launch Arguments:</Label>
+      <TextBox Name="OtherLaunchArgs" Text="{Binding OtherArgs}" />
+    </StackPanel>
+
+    <ScrollViewer>
+      <StackPanel Spacing="15">
+        <StackPanel>
+          <Label FontSize="24">Auto Start</Label>
+          <Label>Will Start and Stop HRtoVRChat_OSC as a compatible game opens and closes</Label>
+          <CheckBox Margin="20,0,0,0" Name="AutoStartCheckBox" IsChecked="{Binding AutoStart}">
+            Auto Start
+          </CheckBox>
+        </StackPanel>
+
+        <StackPanel>
+          <Label FontSize="24">Skip VRChat Check</Label>
+          <Label>Will not check to see if a compatible game is open before starting</Label>
+          <CheckBox Margin="20,0,0,0" Name="SkipVRCCheckBox" IsChecked="{Binding SkipVRCCheck}">
+            Skip VRChat Check
+          </CheckBox>
+        </StackPanel>
+
+        <StackPanel>
+          <Label FontSize="24">Neos Bridge</Label>
+          <Label>Sends specially serialized data over a WebSocket for Neos</Label>
+          <CheckBox Margin="20,0,0,0" Name="NeosBridgeCheckBox" IsChecked="{Binding NeosBridge}">
+            Neos Bridge
+          </CheckBox>
+        </StackPanel>
+
+        <StackPanel>
+          <Label FontSize="24">Use Legacy Bools</Label>
+          <Label>Casts Bools to Floats before sending over OSC</Label>
+          <CheckBox Margin="20,0,0,0" Name="LegacyBoolCheckBox" IsChecked="{Binding UseLegacyBool}">
+            Use Legacy Bools
+          </CheckBox>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
 </Window>

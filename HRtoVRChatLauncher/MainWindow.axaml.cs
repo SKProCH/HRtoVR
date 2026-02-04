@@ -11,6 +11,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using Bitmap = Avalonia.Media.Imaging.Bitmap;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
+using WinImage = System.Drawing.Image;
 
 namespace HRtoVRChatLauncher;
 
@@ -19,6 +20,7 @@ public partial class MainWindow : Window {
 
     public MainWindow() {
         InitializeComponent();
+
         Install.RequestInfoTextUpdate += s => Dispatcher.UIThread.InvokeAsync(() => ActionText.Text = s);
         Install.RequestProgressBarUpdate +=
             percentage => Dispatcher.UIThread.InvokeAsync(() => ProgressBar.Value = percentage);
