@@ -77,7 +77,7 @@
       </TextBlock>
       <TextBlock Canvas.Left="5" Canvas.Top="80" Width="440"
                  TextWrapping="Wrap" TextAlignment="Center">
-        Currently, the WebView is only supported on Windows, as there are significant issues with it on macOS, and it isn't even supported on Linux.
+        Welcome to HRtoVRChat!
       </TextBlock>
       <TextBlock Canvas.Top="250" Canvas.Left="45">You can still access the latest news page</TextBlock>
       <Button Canvas.Top="245" Canvas.Left="330" Click="HereButtonPressed">here</Button>

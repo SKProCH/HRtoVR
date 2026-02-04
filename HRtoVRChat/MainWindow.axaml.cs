@@ -13,7 +13,6 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.TextMate;
 using HRtoVRChat_OSC_SDK;
 using TextMateSharp.Grammars;
-using WebViewControl;
 
 namespace HRtoVRChat;
 
@@ -33,18 +32,12 @@ public partial class MainWindow : Window {
 
     private readonly Thread SecondaryThread;
 
-    private readonly WebView webview;
     private readonly Dictionary<ProgramPanels, IControl> WindowPanels = new();
 
     private AppBridge _appBridge;
     private string lastLineColor = "White";
 
     public MainWindow() {
-        // Set Settings
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            WebView.Settings.PersistCache = false;
-            WebView.Settings.LogFile = "ceflog.txt";
-        }
 
         if (!string.IsNullOrEmpty(SoftwareManager.LocalDirectory) && !Directory.Exists(SoftwareManager.LocalDirectory))
             Directory.CreateDirectory(SoftwareManager.LocalDirectory);
@@ -166,15 +159,6 @@ public partial class MainWindow : Window {
             ((NativeMenuItem)TrayIconManager.nativeMenuItems["SkipVRCCheck"]).IsChecked = true;
         }
 
-        // Setup Home WebView
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            webview = new WebView {
-                Address = homeURL,
-                Width = 450,
-                Height = 500
-            };
-            HomeCanvas.Children.Add(webview);
-        }
 
         // Check the SetupWozard
         if (!Config.DoesConfigExist()) {
@@ -216,10 +200,6 @@ public partial class MainWindow : Window {
             value.IsVisible = false;
         // Then show the Target One
         WindowPanels[panel].IsVisible = true;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && webview != null) {
-            if (panel == ProgramPanels.Home)
-                webview.Reload(true);
-        }
     }
 
     public void HideAppButtonPressed(object? sender, RoutedEventArgs routedEventArgs) {
