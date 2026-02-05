@@ -86,7 +86,7 @@ public class PulsoidManager : HRManager {
                     }
                     else {
                         // Restart
-                        Program.RestartHRListener();
+                        HRService.RestartHRListener();
                     }
 
                     Thread.Sleep(1);

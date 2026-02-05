@@ -3,8 +3,8 @@
 namespace HRtoVRChat_OSC;
 
 public class ConfigManager {
-    public static readonly string ConfigLocation = "config.cfg";
-    public static Config LoadedConfig { get; private set; }
+    public static string ConfigLocation = "config.cfg";
+    public static Config LoadedConfig { get; private set; } = new Config();
 
     public static void CreateConfig() {
         if (File.Exists(ConfigLocation)) {

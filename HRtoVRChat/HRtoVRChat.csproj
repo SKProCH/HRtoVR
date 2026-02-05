@@ -37,5 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HRtoVRChat_OSC_SDK\HRtoVRChat_OSC_SDK.csproj" />
+    <ProjectReference Include="..\HRtoVRChat_OSC\HRtoVRChat_OSC.csproj" />
   </ItemGroup>
 </Project>

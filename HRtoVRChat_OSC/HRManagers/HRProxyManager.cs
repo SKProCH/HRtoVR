@@ -85,7 +85,7 @@ public class HRProxyManager : HRManager {
                     }
                     else {
                         // Stop and Restart
-                        Program.RestartHRListener();
+                        HRService.RestartHRListener();
                     }
 
                     Thread.Sleep(1);

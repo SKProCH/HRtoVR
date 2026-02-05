@@ -9,14 +9,17 @@ public static class OSCManager {
     private static UDPListener listener;
     public static Action<OscMessage?> OnOscMessage = oscm => { };
 
-    static OSCManager() {
+    public static void Init() {
+        if (listener != null) {
+             try { listener.Close(); } catch {}
+        }
         listener = new UDPListener(ConfigManager.LoadedConfig.receiverPort,
             packet => OnOscMessage.Invoke((OscMessage?)packet));
     }
 
     public static bool Detect() {
         var processes = Process.GetProcessesByName("VRChat").Length;
-        if (Program.Gargs.Contains("--neos-bridge"))
+        if (HRService.Gargs.Contains("--neos-bridge"))
             processes += Process.GetProcessesByName("Neos").Length;
         if (ConfigManager.LoadedConfig.ExpandCVR)
             processes += Process.GetProcessesByName("ChilloutVR").Length;
@@ -26,7 +29,7 @@ public static class OSCManager {
     public static void SendMessage(string destination, object data) {
         var realdata = data;
         // If it's a bool, it needs to be converted to a 0, 1 format
-        if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && Program.Gargs.Contains("--use-01-bool")) {
+        if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && HRService.Gargs.Contains("--use-01-bool")) {
             var dat = (bool)Convert.ChangeType(realdata, TypeCode.Boolean);
             if (dat)
                 realdata = 1;
@@ -88,7 +91,7 @@ public static class OSCAvatarListener {
                             fileLocation = file;
                     }
                 }
-                else if (Program.Gargs.Contains("--no-avatars-folder")) {
+                else if (HRService.Gargs.Contains("--no-avatars-folder")) {
                     // check this directory to see if the files are there (for whatever reason)
                     foreach (var file in Directory.GetFiles(directory)) {
                         var fn = Path.GetFileNameWithoutExtension(file);
