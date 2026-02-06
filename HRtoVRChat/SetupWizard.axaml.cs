@@ -40,9 +40,6 @@ public partial class SetupWizard : Window {
         };
     }
 
-    private void InitializeComponent() {
-        AvaloniaXamlLoader.Load(this);
-    }
 
     public static async Task<bool> AskToSetup() {
         var br = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {

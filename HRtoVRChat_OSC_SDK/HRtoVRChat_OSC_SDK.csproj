@@ -10,6 +10,5 @@
   <ItemGroup>
     <PackageReference Include="protobuf-net" Version="3.0.101"/>
     <PackageReference Include="SuperSimpleTcp" Version="2.6.0.7"/>
-    <PackageReference Include="System.Net.Http" Version="4.3.4"/>
   </ItemGroup>
 </Project>

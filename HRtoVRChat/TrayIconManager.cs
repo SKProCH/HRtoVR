@@ -5,7 +5,6 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using Avalonia.Shared.PlatformSupport;
 using HRtoVRChat.ViewModels;
 
 namespace HRtoVRChat;
@@ -64,7 +63,7 @@ public static class TrayIconManager {
         }
     };
 
-    public static void Init(AvaloniaObject o) {
+    public static void Init(Application o) {
         var nm = new NativeMenu();
         foreach (var (key, value) in nativeMenuItems)
             nm.Add(value);

@@ -17,9 +17,6 @@ public partial class ParameterNames : Window {
         Closed += (sender, args) => IsOpen = false;
     }
 
-    private void InitializeComponent() {
-        AvaloniaXamlLoader.Load(this);
-    }
 
     public override void Show() {
         base.Show();

@@ -7,6 +7,7 @@ using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using HRtoVRChat;
 
 namespace HRtoVRChat.ViewModels;
 

@@ -20,7 +20,4 @@ public partial class Arguments : Window {
         };
     }
 
-    private void InitializeComponent() {
-        AvaloniaXamlLoader.Load(this);
-    }
 }

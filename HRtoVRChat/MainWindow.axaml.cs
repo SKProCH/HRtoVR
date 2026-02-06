@@ -109,9 +109,6 @@ public partial class MainWindow : Window {
         }
     }
 
-    private void InitializeComponent() {
-        AvaloniaXamlLoader.Load(this);
-    }
 
     // HUGE thanks to this post
     // https://github.com/icsharpcode/AvalonEdit/issues/244#issuecomment-725214919

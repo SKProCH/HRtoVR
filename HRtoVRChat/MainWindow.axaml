@@ -159,7 +159,7 @@
 
         <Grid Grid.Row="1" Name="ConfigSelections" ColumnDefinitions="*,*">
           <StackPanel Grid.Column="0" Spacing="5" Name="LeftStackPanelConfig">
-              <ItemsControl Items="{Binding ConfigItemsLeft}">
+              <ItemsControl ItemsSource="{Binding ConfigItemsLeft}">
                   <ItemsControl.ItemTemplate>
                       <DataTemplate>
                           <RadioButton GroupName="ConfigValues" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -170,7 +170,7 @@
               </ItemsControl>
           </StackPanel>
           <StackPanel Grid.Column="1" Spacing="5" Name="RightStackPanelConfig">
-               <ItemsControl Items="{Binding ConfigItemsRight}">
+               <ItemsControl ItemsSource="{Binding ConfigItemsRight}">
                   <ItemsControl.ItemTemplate>
                       <DataTemplate>
                           <RadioButton GroupName="ConfigValues" Content="{Binding Name}"

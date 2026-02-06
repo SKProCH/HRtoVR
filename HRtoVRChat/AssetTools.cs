@@ -9,10 +9,8 @@ public static class AssetTools {
     public static Bitmap Icon { get; private set; } = null!;
 
     public static void Init() {
-        var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
-        if (assets == null) return;
         var uri = new Uri("avares://HRtoVRChat/Assets/hrtovrchat_logo.ico");
-        using var stream = assets.Open(uri);
+        using var stream = AssetLoader.Open(uri);
         Icon = new Bitmap(stream);
     }
 }
