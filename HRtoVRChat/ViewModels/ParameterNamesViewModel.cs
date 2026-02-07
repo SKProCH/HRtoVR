@@ -6,6 +6,7 @@ using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -26,11 +27,13 @@ public class ParameterNamesViewModel : ViewModelBase
 
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<ParameterNamesViewModel> _logger;
 
-    public ParameterNamesViewModel(IOptionsMonitor<AppOptions> appOptions, IConfiguration configuration)
+    public ParameterNamesViewModel(IOptionsMonitor<AppOptions> appOptions, IConfiguration configuration, ILogger<ParameterNamesViewModel> logger)
     {
         _appOptions = appOptions;
         _configuration = configuration;
+        _logger = logger;
 
         // Load keys
         foreach (var prop in typeof(ParameterNamesOptions).GetProperties())
@@ -84,17 +87,9 @@ public class ParameterNamesViewModel : ViewModelBase
                 _configuration[$"ParameterNames:{SelectedParameterKey}"] = ParameterValue;
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams
-            {
-                ButtonDefinitions = ButtonEnum.Ok,
-                ContentTitle = "ParameterNames",
-                ContentMessage = "Failed to save Parameter " + SelectedParameterKey + "!",
-                WindowIcon = new WindowIcon(AssetTools.Icon),
-                Icon = Icon.Error,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            }).Show();
+            _logger.LogError(e, "Failed to save Parameter {Key}!", SelectedParameterKey);
         }
     }
 

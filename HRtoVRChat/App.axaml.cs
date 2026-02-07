@@ -72,7 +72,6 @@ public class App : Application {
 
         // Initialize Services
         var softwareService = Services.GetRequiredService<ISoftwareService>();
-        InitializeSoftwareServiceUI(softwareService);
 
         var trayIconService = Services.GetRequiredService<ITrayIconService>();
         trayIconService.Init(this);
@@ -127,35 +126,5 @@ public class App : Application {
         services.AddSingleton<IncomingDataViewModel>();
         services.AddSingleton<ArgumentsViewModel>();
         services.AddSingleton<ParameterNamesViewModel>();
-    }
-
-    private void InitializeSoftwareServiceUI(ISoftwareService softwareService)
-    {
-        softwareService.ShowMessage = (title, message, isError) => {
-            Dispatcher.UIThread.InvokeAsync(() => {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.Ok,
-                    ContentTitle = title,
-                    ContentMessage = message,
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = isError ? Icon.Error : Icon.Info,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
-            });
-        };
-
-        softwareService.RequestConfirmation = async (title, message) => {
-            return await Dispatcher.UIThread.InvokeAsync(async () => {
-                var result = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.YesNo,
-                    ContentTitle = title,
-                    ContentMessage = message,
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = Icon.Error,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
-                return (result & ButtonResult.Yes) != 0;
-            });
-        };
     }
 }

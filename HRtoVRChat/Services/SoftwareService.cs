@@ -13,8 +13,6 @@ public interface ISoftwareService
     string OutputPath { get; }
     bool IsInstalled { get; }
     bool IsSoftwareRunning { get; }
-    Action<string, string?, bool> ShowMessage { get; set; }
-    Func<string, string, Task<bool>> RequestConfirmation { get; set; }
     Action<int, int> RequestUpdateProgressBars { get; set; }
 
     string GetLatestVersion();
@@ -43,10 +41,6 @@ public class SoftwareService : ISoftwareService
     public bool IsInstalled => SoftwareManager.IsInstalled;
     public bool IsSoftwareRunning { get; private set; }
 
-    public Action<string, string?, bool> ShowMessage { get; set; } = (_, _, _) => { };
-
-    public Func<string, string, Task<bool>> RequestConfirmation { get; set; } = (_, _) => Task.FromResult(false);
-
     public Action<int, int> RequestUpdateProgressBars { get; set; } = (_, _) => { };
 
     public string GetLatestVersion() => SoftwareManager.GetLatestVersion();
@@ -55,7 +49,7 @@ public class SoftwareService : ISoftwareService
     public async Task InstallSoftware(Action onFinish)
     {
         // Stubs for compatibility with ViewModel calls
-        ShowMessage?.Invoke("HRtoVRChat", "The backend is now integrated and does not need installation.", false);
+        _logger.LogInformation("The backend is now integrated and does not need installation.");
         onFinish?.Invoke();
         await Task.CompletedTask;
     }
@@ -76,7 +70,7 @@ public class SoftwareService : ISoftwareService
                 });
             }
             catch (Exception e) {
-                ShowMessage?.Invoke("HRtoVRChat", "Failed to start service: " + e.Message, true);
+                _logger.LogError(e, "Failed to start service: {Message}", e.Message);
                 IsSoftwareRunning = false;
             }
         }
@@ -100,8 +94,8 @@ public class SoftwareService : ISoftwareService
                 _logger.LogInformation("> {Command}", command);
                 _hrService.HandleCommand(command);
             }
-            catch (Exception) {
-                ShowMessage?.Invoke("HRtoVRChat", "Failed to send command due to an error!", true);
+            catch (Exception e) {
+                _logger.LogError(e, "Failed to send command due to an error!");
             }
         }
     }
