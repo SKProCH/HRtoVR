@@ -1,19 +1,22 @@
-﻿using System;
+using System;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Websocket.Client;
 
 namespace HRtoVRChat;
 
 public class WebsocketTemplate {
     private WebsocketClient? _client;
+    private readonly ILogger? _logger;
     public Action<string>? OnMessage;
     public Action? OnReconnect;
 
     public string wsUri;
 
-    public WebsocketTemplate(string wsUri) {
+    public WebsocketTemplate(string wsUri, ILogger? logger = null) {
         this.wsUri = wsUri;
+        _logger = logger;
     }
 
     public bool IsAlive => _client?.IsRunning ?? false;
@@ -31,7 +34,7 @@ public class WebsocketTemplate {
             return true;
         }
         catch (Exception e) {
-            LogHelper.Error("Failed to connect to WebSocket server! Exception: ", e);
+            _logger?.LogError(e, "Failed to connect to WebSocket server!");
             return false;
         }
     }
@@ -53,7 +56,7 @@ public class WebsocketTemplate {
                     return true;
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to close connection to WebSocket Server!", e);
+                    _logger?.LogError(e, "Failed to close connection to WebSocket Server!");
                     return false;
                 }
             }

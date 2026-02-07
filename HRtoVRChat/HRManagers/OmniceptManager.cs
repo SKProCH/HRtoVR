@@ -1,20 +1,25 @@
-﻿// using HP.Omnicept;
+// using HP.Omnicept;
 // using HP.Omnicept.Messaging;
 // using HP.Omnicept.Messaging.Messages;
+// using Microsoft.Extensions.Logging;
 //
 // namespace HRtoVRChat.HRManagers;
 //
 // public class OmniceptManager : HRManager
 // {
 //     public int HR { get; set; }
-//     
+//
 //     private Glia m_gliaClient;
 //     private GliaValueCache m_gliaValCache;
 //     private bool m_isConnected;
 //     private HeartRate lastHeartRate;
-//     
+//
 //     private Thread _worker;
 //     private CancellationTokenSource token;
+//     private ILogger _logger;
+//
+//     public void SetLogger(ILogger logger) => _logger = logger;
+//
 //     private void VerifyDeadThread()
 //     {
 //         if (_worker != null)
@@ -25,9 +30,9 @@
 //         }
 //         token = new CancellationTokenSource();
 //     }
-//     
+//
 //     private void StopGlia()
-//     { 
+//     {
 //         // Verify Glia is Disposed
 //         if(m_gliaValCache != null)
 //             m_gliaValCache?.Stop();
@@ -44,7 +49,7 @@
 //         // Verify Glia is Disposed
 //         StopGlia();
 //         bool ret;
-//         
+//
 //         // Start Glia
 //         try
 //         {
@@ -74,7 +79,7 @@
 //             return ret;
 //         return m_isConnected;
 //     }
-//     
+//
 //     void HandleMessage(ITransportMessage msg)
 //     {
 //         switch (msg.Header.MessageType)
@@ -84,7 +89,7 @@
 //                 break;
 //         }
 //     }
-//         
+//
 //     ITransportMessage RetrieveMessage()
 //     {
 //         ITransportMessage msg = null;
@@ -96,31 +101,31 @@
 //             }
 //             catch (HP.Omnicept.Errors.TransportError e)
 //             {
-//                 LogHelper.Error(e.Message);
+//                 _logger?.LogError(e.Message);
 //             }
 //         }
 //         return msg;
 //     }
-//     
+//
 //     public bool Init(string d1)
 //     {
 //         bool status = StartGlia(true);
 //         if (status)
 //         {
-//             LogHelper.Log("Started Omnicept!");
+//             _logger?.LogInformation("Started Omnicept!");
 //             StartThread();
 //         }
 //         else
-//             LogHelper.Error("Failed to start Omnicept!");
+//             _logger?.LogError("Failed to start Omnicept!");
 //         return status;
 //     }
-//     
+//
 //     public void StartThread()
 //     {
 //         VerifyDeadThread();
 //         _worker = new Thread(() =>
 //         {
-//             LogHelper.Debug("Omnicept Thread Started");
+//             _logger?.LogDebug("Omnicept Thread Started");
 //             StartGlia();
 //             while (!token.IsCancellationRequested)
 //             {
@@ -136,7 +141,7 @@
 //                 }
 //                 catch (Exception e)
 //                 {
-//                     LogHelper.Error("Failed to get message! " + e);
+//                     _logger?.LogError("Failed to get message! " + e);
 //                 }
 //                 if (lastHeartRate != null)
 //                 {
@@ -149,7 +154,7 @@
 //         });
 //         _worker.Start();
 //     }
-//     
+//
 //     public string GetName() => "Omnicept";
 //
 //     public int GetHR() => HR;
@@ -164,4 +169,3 @@
 //
 //     public bool IsActive() => m_isConnected;
 // }
-

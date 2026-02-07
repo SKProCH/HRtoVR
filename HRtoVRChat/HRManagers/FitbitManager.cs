@@ -1,15 +1,21 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using HRtoVRChat;
+using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat.HRManagers;
 
 public class FitbitManager : HRManager {
-    private Thread _thread;
-    private WebsocketTemplate wst;
+    private Thread? _thread;
+    private WebsocketTemplate? wst;
+    private readonly ILogger<FitbitManager> _logger;
 
     private CancellationTokenSource tokenSource = new();
+
+    public FitbitManager(ILogger<FitbitManager> logger)
+    {
+        _logger = logger;
+    }
 
     private bool IsConnected {
         get {
@@ -27,7 +33,7 @@ public class FitbitManager : HRManager {
     public bool Init(string url) {
         tokenSource = new CancellationTokenSource();
         StartThread(url);
-        LogHelper.Log("Initialized WebSocket!");
+        _logger.LogInformation("Initialized WebSocket!");
         return IsConnected;
     }
 
@@ -42,7 +48,7 @@ public class FitbitManager : HRManager {
     public void Stop() {
         tokenSource.Cancel();
         if (wst != null) {
-             LogHelper.Debug("Sent message to Stop WebSocket");
+             _logger.LogDebug("Sent message to Stop WebSocket");
              // wst.Stop() is called in thread or we can call it here if we want to be sure
         }
     }
@@ -67,7 +73,7 @@ public class FitbitManager : HRManager {
 
     public void StartThread(string url) {
         _thread = new Thread(async () => {
-            wst = new WebsocketTemplate(url);
+            wst = new WebsocketTemplate(url, _logger);
             wst.OnMessage = HandleMessage;
 
             var noerror = true;
@@ -75,7 +81,7 @@ public class FitbitManager : HRManager {
                 await wst.Start();
             }
             catch (Exception e) {
-                LogHelper.Error("Failed to connect to Fitbit Server! Exception: ", e);
+                _logger.LogError(e, "Failed to connect to Fitbit Server!");
                 noerror = false;
             }
 
@@ -108,13 +114,13 @@ public class FitbitManager : HRManager {
                     wst = null;
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to Close connection with the Fitbit Server! Exception: ", e);
+                    _logger.LogError(e, "Failed to Close connection with the Fitbit Server!");
                 }
             }
             else
-                LogHelper.Warn("WebSocket is not alive! Did you mean to Dispose()?");
+                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
         }
         else
-            LogHelper.Warn("WebSocket is null! Did you mean to Initialize()?");
+            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }

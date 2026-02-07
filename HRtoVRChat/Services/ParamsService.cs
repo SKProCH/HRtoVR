@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using HRtoVRChat.Configs;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
@@ -17,23 +18,25 @@ public class ParamsService : IParamsService
 {
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOSCService _oscService;
+    private readonly ILogger<ParamsService> _logger;
 
     public List<IHRParameter> Parameters = new();
 
-    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService)
+    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, ILogger<ParamsService> logger)
     {
         _appOptions = appOptions;
         _oscService = oscService;
+        _logger = logger;
     }
 
     public void InitParams()
     {
         Parameters.Add(new IntParameter(hro => hro.ones, _appOptions.CurrentValue.ParameterNames.OnesHR,
-            "onesHR", _oscService));
+            "onesHR", _oscService, _logger));
         Parameters.Add(new IntParameter(hro => hro.tens, _appOptions.CurrentValue.ParameterNames.TensHR,
-            "tensHR", _oscService));
+            "tensHR", _oscService, _logger));
         Parameters.Add(new IntParameter(hro => hro.hundreds,
-            _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", _oscService));
+            _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", _oscService, _logger));
         Parameters.Add(new IntParameter(hro =>
         {
             var HRstring = $"{hro.hundreds}{hro.tens}{hro.ones}";
@@ -51,7 +54,7 @@ public class ParamsService : IParamsService
             if (HR < 0)
                 HR = 0;
             return HR;
-        }, _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
@@ -65,7 +68,7 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return targetFloat;
-        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _appOptions, _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _appOptions, _oscService, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
@@ -79,13 +82,13 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return 2f * targetFloat - 1f;
-        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _appOptions, _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _appOptions, _oscService, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isActive,
-            _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", _oscService));
+            _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", _oscService, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isConnected,
-            _appOptions.CurrentValue.ParameterNames.IsHRConnected, "isHRConnected", _oscService));
+            _appOptions.CurrentValue.ParameterNames.IsHRConnected, "isHRConnected", _oscService, _logger));
         Parameters.Add(
-            new BoolParameter(BoolCheckType.HeartBeat, _appOptions.CurrentValue.ParameterNames.IsHRBeat, _oscService));
+            new BoolParameter(BoolCheckType.HeartBeat, _appOptions.CurrentValue.ParameterNames.IsHRBeat, _oscService, _logger));
     }
 
     public void ResetParams()
@@ -94,7 +97,7 @@ public class ParamsService : IParamsService
         foreach (var hrParameter in Parameters)
             hrParameter.UpdateParameter(true);
         Parameters.Clear();
-        LogHelper.Debug($"Cleared {paramcount} parameters!");
+        _logger.LogDebug("Cleared {ParamCount} parameters!", paramcount);
     }
 
     public void UpdateHRValues(HROutput hro)
@@ -120,15 +123,17 @@ public class ParamsService : IParamsService
     {
         private Func<HROutput, int> _getVal;
         private readonly IOSCService _oscService;
+        private readonly ILogger _logger;
 
-        public IntParameter(Func<HROutput, int> getVal, string parameterName, string original, IOSCService oscService)
+        public IntParameter(Func<HROutput, int> getVal, string parameterName, string original, IOSCService oscService, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
             _oscService = oscService;
+            _logger = logger;
             ParamValue = "0";
-            LogHelper.Debug($"IntParameter with ParameterName: {parameterName}, has been created!");
+            _logger.LogDebug("IntParameter with ParameterName: {ParameterName}, has been created!", parameterName);
         }
 
         public string OriginalParameterName { get; set; }
@@ -161,18 +166,20 @@ public class ParamsService : IParamsService
         private Func<HROutput, bool>? _getVal;
         private BoolCheckType? _bct;
         private readonly IOSCService _oscService;
+        private readonly ILogger _logger;
 
-        public BoolParameter(Func<HROutput, bool> getVal, string parameterName, string original, IOSCService oscService)
+        public BoolParameter(Func<HROutput, bool> getVal, string parameterName, string original, IOSCService oscService, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
             _oscService = oscService;
+            _logger = logger;
             ParamValue = "false";
-            LogHelper.Debug($"BoolParameter with ParameterName: {parameterName}, has been created!");
+            _logger.LogDebug("BoolParameter with ParameterName: {ParameterName}, has been created!", parameterName);
         }
 
-        public BoolParameter(BoolCheckType bct, string parameterName, IOSCService oscService)
+        public BoolParameter(BoolCheckType bct, string parameterName, IOSCService oscService, ILogger logger)
         {
             switch (bct)
             {
@@ -187,9 +194,10 @@ public class ParamsService : IParamsService
             _bct = bct;
             ParameterName = parameterName;
             _oscService = oscService;
+            _logger = logger;
             ParamValue = "false";
-            LogHelper.Debug(
-                $"BoolParameter with ParameterName: {parameterName} and BoolCheckType of: {bct}, has been created!");
+            _logger.LogDebug(
+                "BoolParameter with ParameterName: {ParameterName} and BoolCheckType of: {Bct}, has been created!", parameterName, bct);
         }
 
         public string OriginalParameterName { get; set; }
@@ -234,16 +242,18 @@ public class ParamsService : IParamsService
         private Func<HROutput, float> _getVal;
         private readonly IOptionsMonitor<AppOptions> _appOptions;
         private readonly IOSCService _oscService;
+        private readonly ILogger _logger;
 
-        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<AppOptions> appOptions, IOSCService oscService)
+        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
             _appOptions = appOptions;
             _oscService = oscService;
+            _logger = logger;
             ParamValue = "0";
-            LogHelper.Debug($"FloatParameter with ParameterName: {parameterName} has been created!");
+            _logger.LogDebug("FloatParameter with ParameterName: {ParameterName} has been created!", parameterName);
         }
 
         public string OriginalParameterName { get; set; }

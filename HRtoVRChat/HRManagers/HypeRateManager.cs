@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace HRtoVRChat.HRManagers;
@@ -9,6 +10,12 @@ public class HypeRateManager : HRManager {
     private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
+    private readonly ILogger<HypeRateManager> _logger;
+
+    public HypeRateManager(ILogger<HypeRateManager> logger)
+    {
+        _logger = logger;
+    }
 
     private bool IsConnected {
         get {
@@ -21,12 +28,12 @@ public class HypeRateManager : HRManager {
     }
 
     public int HR { get; private set; }
-    public string Timestamp { get; private set; }
+    public string Timestamp { get; private set; } = string.Empty;
 
     public bool Init(string id) {
         tokenSource = new CancellationTokenSource();
         StartThread(id);
-        LogHelper.Log("Initialized WebSocket!");
+        _logger.LogInformation("Initialized WebSocket!");
         return IsConnected;
     }
 
@@ -56,11 +63,11 @@ public class HypeRateManager : HRManager {
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                if (wst != null) await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
-                HR = Convert.ToInt32(jo["hr"].Value<string>());
-                Timestamp = jo["timestamp"].Value<string>();
+                HR = Convert.ToInt32(jo["hr"]?.Value<string>());
+                Timestamp = jo["timestamp"]?.Value<string>() ?? string.Empty;
             }
         }
         catch (Exception) { }
@@ -68,24 +75,26 @@ public class HypeRateManager : HRManager {
 
     public void StartThread(string id) {
         _thread = new Thread(async () => {
-            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy");
+            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
             wst.OnMessage = HandleMessage;
             wst.OnReconnect = () =>
             {
-                Task.Run(async () => await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
-                                                           "\", \"service\": \"vrchat\"}"));
+                Task.Run(async () => {
+                    if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
+                                                           "\", \"service\": \"vrchat\"}");
+                });
             };
             var noerror = true;
             try {
                 await wst.Start();
             }
             catch (Exception e) {
-                LogHelper.Error("Failed to connect to HypeRate server!", e);
+                _logger.LogError(e, "Failed to connect to HypeRate server!");
                 noerror = false;
             }
 
             if (noerror) {
-                await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
+                if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
                                       "\", \"service\": \"vrchat\"}");
                 while (!tokenSource.IsCancellationRequested) {
                     if (IsConnected) {
@@ -101,7 +110,7 @@ public class HypeRateManager : HRManager {
             }
 
             await Close();
-            LogHelper.Log("Closed HypeRate");
+            _logger.LogInformation("Closed HypeRate");
         });
         _thread.Start();
     }
@@ -114,304 +123,13 @@ public class HypeRateManager : HRManager {
                     wst = null;
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to close connection to HypeRate Server! Exception: ", e);
+                    _logger.LogError(e, "Failed to close connection to HypeRate Server!");
                 }
             }
             else
-                LogHelper.Warn("WebSocket is not alive! Did you mean to Dispose()?");
+                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
         }
         else
-            LogHelper.Warn("WebSocket is null! Did you mean to Initialize()?");
+            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }
-
-/*
-public class HypeRateManager : HRManager
-{
-    private object hypeRate = null;
-    private Assembly hypeRate_assembly = null;
-
-    public void hyperate_create(string id)
-    {
-        if (hypeRate_assembly == null)
-            hypeRate_assembly = DependencyManager.GetAssemblyByName("HypeRate.NET.dll");
-        Type hypeRate_type = hypeRate_assembly.GetType("HypeRate.NET.HeartRate");
-        if (hypeRate_type != null)
-        {
-            object[] parameters = new object[hypeRate_type.GetConstructors()[0].GetParameters().Length];
-            parameters[0] = id;
-            object hypeRate_instance = Activator.CreateInstance(hypeRate_type, parameters);
-            if (hypeRate_instance != null)
-            {
-                hypeRate = hypeRate_instance;
-                LogHelper.Debug("HypeRateManager", "Created hypeRate Instance!");
-            }
-            else
-                LogHelper.Error("HypeRateManager", "Failed to create HeartRate Instance!");
-        }
-        else
-            LogHelper.Error("HypeRateManager", "Failed to find HeartRate Type!");
-    }
-
-    public void hyperate_subscribe()
-    {
-        if(hypeRate != null)
-        {
-            Type hypeRate_type = hypeRate_assembly.GetType("HypeRate.NET.HeartRate");
-            if (hypeRate_type != null)
-            {
-                MethodInfo subMethod = hypeRate_type.GetMethod("Subscribe");
-                if(subMethod != null)
-                {
-                    object[] subParameters = new object[subMethod.GetParameters().Length];
-                    subMethod.Invoke(hypeRate, subParameters);
-                }
-                else
-                    LogHelper.Error("HypeRateManager", "Failed to find Subscribe method!");
-            }
-            else
-                LogHelper.Error("HypeRateManager", "Failed to find HeartRate Type!");
-        }
-    }
-
-    public void hyperate_unsubscribe()
-    {
-        if (hypeRate != null)
-        {
-            Type hypeRate_type = hypeRate_assembly.GetType("HypeRate.NET.HeartRate");
-            if (hypeRate_type != null)
-            {
-                MethodInfo unsubMethod = hypeRate_type.GetMethod("Unsubscribe");
-                if (unsubMethod != null)
-                {
-                    object[] unsubParameters = new object[unsubMethod.GetParameters().Length];
-                    unsubMethod.Invoke(hypeRate, unsubParameters);
-                }
-                else
-                    LogHelper.Error("HypeRateManager", "Failed to find Unsubscribe method!");
-            }
-            else
-                LogHelper.Error("HypeRateManager", "Failed to find HeartRate Type!");
-        }
-    }
-
-    public int hyperate_gethr()
-    {
-        int hr = 0;
-        if(hypeRate != null)
-        {
-            Type hypeRate_type = hypeRate_assembly.GetType("HypeRate.NET.HeartRate");
-            if (hypeRate_type != null)
-            {
-                PropertyInfo hrp = hypeRate_type.GetProperty("HR");
-                if (hrp != null)
-                {
-                    object value = null;
-                    try
-                    {
-                        hrp.GetValue(hypeRate);
-                        hr = (int)value;
-                    }
-                    catch (Exception e) { LogHelper.Error("HypeRateManager", "Failed to get or convert HR value! Exception: " + e); }
-                }
-                else
-                    LogHelper.Error("HypeRateManager", "Failed to find HR Property!");
-            }
-            else
-                LogHelper.Error("HypeRateManager", "Failed to find HeartRate Type!");
-        }
-        return hr;
-    }
-
-    public bool hyperate_getissubscribed()
-    {
-        bool issubscribed = false;
-        if (hypeRate != null)
-        {
-            Type hypeRate_type = hypeRate_assembly.GetType("HypeRate.NET.HeartRate");
-            if (hypeRate_type != null)
-            {
-                PropertyInfo issub = hypeRate_type.GetProperty("isSubscribed");
-                if (issub != null)
-                {
-                    object value = null;
-                    try
-                    {
-                        issub.GetValue(hypeRate);
-                        issubscribed = (bool)value;
-                    }
-                    catch (Exception e) { LogHelper.Error("HypeRateManager", "Failed to get or convert isSubscribed value! Exception: " + e); }
-                }
-                else
-                    LogHelper.Error("HypeRateManager", "Failed to find isSubscribed Property!");
-            }
-            else
-                LogHelper.Error("HypeRateManager", "Failed to find HeartRate Type!");
-        }
-        return issubscribed;
-    }
-
-    private Thread _thread = null;
-    private int forwardedHR = 0;
-
-    public bool Init(string sessionId)
-    {
-        StartThread(sessionId);
-        return IsOpen();
-    }
-
-    void VerifyClosedThread()
-    {
-        if (_thread != null)
-        {
-            if (_thread.IsAlive)
-                _thread.Abort();
-        }
-    }
-
-    void StartThread(string sessionId)
-    {
-        VerifyClosedThread();
-        _thread = new Thread(() =>
-        {
-            IL2CPP.il2cpp_thread_attach(IL2CPP.il2cpp_domain_get());
-            if (hypeRate == null)
-            {
-                hyperate_create(sessionId);
-                LogHelper.Log("HypeRateManager", "HypeRate Initialized!");
-                Subscribe();
-            }
-            else
-                LogHelper.Warn("HypeRateManager", "hypeRate already initialized! Please Unsubscribe() then Dispose() before continuing!");
-            while (hyperate_getissubscribed())
-            {
-                forwardedHR = hyperate_gethr();
-                Thread.Sleep(10);
-            }
-        });
-        _thread.Start();
-    }
-
-    private void Subscribe()
-    {
-        if (hypeRate != null)
-        {
-            hyperate_subscribe();
-            LogHelper.Log("HypeRateManager", "Subscribed to HypeRate Data!");
-        }
-        else
-            LogHelper.Warn("HypeRateManager", "hypeRate is null! Did you Initialize()?");
-    }
-
-    public int GetHR() => forwardedHR;
-
-    public void Stop()
-    {
-        if (hypeRate != null)
-        {
-            hyperate_unsubscribe();
-            LogHelper.Log("HypeRateManager", "Unsubscribed from HypeRate Data!");
-            hypeRate = null;
-            VerifyClosedThread();
-            forwardedHR = 0;
-            LogHelper.Log("HypeRateManager", "HypeRate disposed!");
-        }
-        else
-            LogHelper.Warn("HypeRateManager", "hypeRate is already Disposed! Did you mean to Initialize()?");
-    }
-
-    public bool IsOpen()
-    {
-        if (hypeRate != null)
-            return hyperate_getissubscribed();
-        else
-            return false;
-    }
-
-    public bool IsActive() => IsOpen();
-}
-*/
-/*
-public class HypeRateManager : HRManager
-{
-    public HeartRate hypeRate;
-    private Thread _thread = null;
-    private int forwardedHR = 0;
-
-    public bool Init(string sessionId)
-    {
-        StartThread(sessionId);
-        return IsOpen();
-    }
-
-    void VerifyClosedThread()
-    {
-        if (_thread != null)
-        {
-            if (_thread.IsAlive)
-                _thread.Abort();
-        }
-    }
-
-    void StartThread(string sessionId)
-    {
-        VerifyClosedThread();
-        _thread = new Thread(() =>
-        {
-            IL2CPP.il2cpp_thread_attach(IL2CPP.il2cpp_domain_get());
-            if (hypeRate == null)
-            {
-                hypeRate = new HeartRate(sessionId);
-                LogHelper.Log("HypeRateManager", "HypeRate Initialized!");
-                Subscribe();
-            }
-            else
-                LogHelper.Warn("HypeRateManager", "hypeRate already initialized! Please Unsubscribe() then Dispose() before continuing!");
-            while (hypeRate.isSubscribed)
-            {
-                forwardedHR = hypeRate.HR;
-                Thread.Sleep(10);
-            }
-        });
-        _thread.Start();
-    }
-
-    private void Subscribe()
-    {
-        if (hypeRate != null)
-        {
-            hypeRate.Subscribe();
-            LogHelper.Log("HypeRateManager", "Subscribed to HypeRate Data!");
-        }
-        else
-            LogHelper.Warn("HypeRateManager", "hypeRate is null! Did you Initialize()?");
-    }
-
-    public int GetHR() => forwardedHR;
-
-    public void Stop()
-    {
-        if (hypeRate != null)
-        {
-            hypeRate.Unsubscribe();
-            LogHelper.Log("HypeRateManager", "Unsubscribed from HypeRate Data!");
-            hypeRate = null;
-            VerifyClosedThread();
-            forwardedHR = 0;
-            LogHelper.Log("HypeRateManager", "HypeRate disposed!");
-        }
-        else
-            LogHelper.Warn("HypeRateManager", "hypeRate is already Disposed! Did you mean to Initialize()?");
-    }
-
-    public bool IsOpen()
-    {
-        if (hypeRate != null)
-            return hypeRate.isSubscribed;
-        else
-            return false;
-    }
-
-    public bool IsActive() => IsOpen();
-}
-*/

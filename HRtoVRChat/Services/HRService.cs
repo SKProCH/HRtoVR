@@ -8,16 +8,20 @@ using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
 using HRtoVRChat.HRManagers;
 using HRtoVRChat_OSC_SDK;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
 
 public class HRService : IHRService
 {
+    private readonly ILogger<HRService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOSCService _oscService;
     private readonly IParamsService _paramsService;
     private readonly IOSCAvatarListener _oscAvatarListener;
+    private readonly Factories.IHRManagerFactory _hrManagerFactory;
 
     private HRType hrType = HRType.Unknown;
     private HRManager? activeHRManager;
@@ -53,12 +57,22 @@ public class HRService : IHRService
 
     private bool _lastHeartBeatState;
 
-    public HRService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, IParamsService paramsService, IOSCAvatarListener oscAvatarListener)
+    public HRService(
+        ILogger<HRService> logger,
+        ILoggerFactory loggerFactory,
+        IOptionsMonitor<AppOptions> appOptions,
+        IOSCService oscService,
+        IParamsService paramsService,
+        IOSCAvatarListener oscAvatarListener,
+        Factories.IHRManagerFactory hrManagerFactory)
     {
+        _logger = logger;
+        _loggerFactory = loggerFactory;
         _appOptions = appOptions;
         _oscService = oscService;
         _paramsService = paramsService;
         _oscAvatarListener = oscAvatarListener;
+        _hrManagerFactory = hrManagerFactory;
     }
 
     public void Start(string[] args)
@@ -69,13 +83,17 @@ public class HRService : IHRService
 
         // Initialize Game Handlers
         _gameHandlers.Clear();
-        var vrcHandler = new VRChatOSCHandler(_paramsService, _appOptions);
+        // Manually creating handlers for now, but injecting dependencies where possible or passing them
+        // Ideal would be DI, but for refactor speed we'll construct them.
+        // We need loggers for them.
+
+        var vrcHandler = new VRChatOSCHandler(_paramsService, _appOptions, _loggerFactory.CreateLogger<VRChatOSCHandler>());
         _gameHandlers.Add(vrcHandler);
 
         if (Enumerable.Contains(args, "--neos-bridge"))
         {
-            LogHelper.Log("Enabling NeosBridge Handler");
-            var neosHandler = new NeosHandler(_appOptions);
+            _logger.LogInformation("Enabling NeosBridge Handler");
+            var neosHandler = new NeosHandler(_appOptions, _loggerFactory.CreateLogger<NeosHandler>());
             _gameHandlers.Add(neosHandler);
             NeosHandler.OnCommand += command => HandleCommand(command, true);
         }
@@ -121,7 +139,7 @@ public class HRService : IHRService
                 }
                 catch (Exception e)
                 {
-                    LogHelper.Error("Failed to forward data from activeHRManager to AppBridge!", e);
+                    _logger.LogError(e, "Failed to forward data from activeHRManager to AppBridge!");
                     return null;
                 }
             }
@@ -139,7 +157,7 @@ public class HRService : IHRService
         {
             if (Enumerable.Contains(args, "--auto-start"))
             {
-                LogHelper.Log("No supported game found! Waiting...");
+                _logger.LogInformation("No supported game found! Waiting...");
                 loopCheck = new CustomTimer(5000, ct => LoopCheck());
             }
             else
@@ -154,7 +172,7 @@ public class HRService : IHRService
         var foundGame = _gameHandlers.Any(gh => gh.IsGameRunning());
         if (foundGame)
         {
-            LogHelper.Log("Found Game! Starting...");
+            _logger.LogInformation("Found Game! Starting...");
             Check();
         }
     }
@@ -178,11 +196,11 @@ public class HRService : IHRService
                 loopCheck = new CustomTimer(5000, ct => LoopCheck());
             }
 
-            // Save all logs to file
-            var dt = DateTime.Now;
-            LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
+            // Save all logs to file - Handled by Serilog File Sink
+            // var dt = DateTime.Now;
+            // LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
             // Exit
-            LogHelper.Warn("No supported game was detected!");
+            _logger.LogWarning("No supported game was detected!");
         }
     }
 
@@ -199,7 +217,7 @@ public class HRService : IHRService
         switch (inputs[0].ToLower())
         {
             case "help":
-                LogHelper.Log(HelpCommandString);
+                _logger.LogInformation(HelpCommandString);
                 break;
             case "exit":
                 Stop(true);
@@ -215,7 +233,7 @@ public class HRService : IHRService
                 break;
             case "startbeat":
                 if (BeatThread?.IsAlive ?? false)
-                    LogHelper.Warn("Cannot start beat as it's already started!");
+                    _logger.LogWarning("Cannot start beat as it's already started!");
                 else
                 {
                     RunHeartBeat = true;
@@ -226,7 +244,7 @@ public class HRService : IHRService
                         HeartBeat();
                     });
                     BeatThread.Start();
-                    LogHelper.Log("Started HeartBeat");
+                    _logger.LogInformation("Started HeartBeat");
                 }
 
                 break;
@@ -237,12 +255,12 @@ public class HRService : IHRService
                     {
                         btToken.Cancel();
                     }
-                    catch (Exception e) { LogHelper.Debug(e); }
+                    catch (Exception e) { _logger.LogDebug(e, "Exception cancelling beat thread"); }
 
                     RunHeartBeat = false;
                 }
 
-                LogHelper.Log("Stopped HRBeat");
+                _logger.LogInformation("Stopped HRBeat");
                 break;
             case "refreshconfig":
                 _paramsService.ResetParams();
@@ -274,7 +292,7 @@ public class HRService : IHRService
 
                 break;
             default:
-                LogHelper.Warn($"Unknown Command \"{inputs[0]}\"!");
+                _logger.LogWarning("Unknown Command \"{Input}\"!", inputs[0]);
                 break;
         }
     }
@@ -295,7 +313,7 @@ public class HRService : IHRService
                     Thread.Sleep(1500);
                 }
 
-                LogHelper.Log("Thread Stopped");
+                _logger.LogInformation("Thread Stopped");
                 var fromAutoStart = Enumerable.Contains(Gargs, "--auto-start");
                 Stop(!fromAutoStart, fromAutoStart);
             });
@@ -312,7 +330,7 @@ public class HRService : IHRService
             }
             catch (Exception e)
             {
-                LogHelper.Error($"Failed to start handler {handler.Name}", e);
+                _logger.LogError(e, "Failed to start handler {HandlerName}", handler.Name);
             }
         }
 
@@ -320,7 +338,7 @@ public class HRService : IHRService
         StartHRListener();
         // Start Coroutine
         BoopUwUTimer = new CustomTimer(1000, ct => BoopUwU());
-        LogHelper.Log("Started");
+        _logger.LogInformation("Started");
     }
 
     public void Stop(bool quitApp = false, bool autoStart = false)
@@ -334,7 +352,7 @@ public class HRService : IHRService
             }
             catch (Exception e)
             {
-                LogHelper.Error("Failed to stop ActiveHRManager", e);
+                _logger.LogError(e, "Failed to stop ActiveHRManager");
             }
         }
 
@@ -350,7 +368,7 @@ public class HRService : IHRService
             }
             catch (Exception e)
             {
-                LogHelper.Error($"Failed to stop handler {handler.Name}", e);
+                _logger.LogError(e, "Failed to stop handler {HandlerName}", handler.Name);
             }
         }
 
@@ -358,13 +376,13 @@ public class HRService : IHRService
         if (loopCheck?.IsRunning ?? false)
             loopCheck.Close();
 
-        LogHelper.Log("Stopped");
+        _logger.LogInformation("Stopped");
         // Quit the App
         if (quitApp)
         {
-            // Save all logs to file
-            var dt = DateTime.Now;
-            LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
+            // Save all logs to file - handled by Serilog
+            // var dt = DateTime.Now;
+            // LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
             // Stop AppBridge
             _appBridge.StopServer();
             // Exit
@@ -373,7 +391,7 @@ public class HRService : IHRService
 
         if (autoStart)
         {
-            LogHelper.Log("Restarting when Game Detected");
+            _logger.LogInformation("Restarting when Game Detected");
             loopCheck = new CustomTimer(5000, ct => LoopCheck());
         }
     }
@@ -432,6 +450,8 @@ public class HRService : IHRService
             case "sdk":
                 hrt = HRType.SDK;
                 break;
+            default:
+                break;
         }
 
         return hrt;
@@ -446,7 +466,7 @@ public class HRService : IHRService
         {
             if (activeHRManager.IsActive())
             {
-                LogHelper.Warn("HRListener is currently active! Stop it first");
+                _logger.LogWarning("HRListener is currently active! Stop it first");
                 return;
             }
         }
@@ -454,19 +474,19 @@ public class HRService : IHRService
         switch (hrType)
         {
             case HRType.FitbitHRtoWS:
-                activeHRManager = new FitbitManager();
-                activeHRManager.Init(_appOptions.CurrentValue.FitbitOptions.Url);
+                activeHRManager = _hrManagerFactory.CreateManager("fitbithrtows");
+                activeHRManager?.Init(_appOptions.CurrentValue.FitbitOptions.Url);
                 break;
             case HRType.HRProxy:
-                activeHRManager = new HRProxyManager();
-                activeHRManager.Init(_appOptions.CurrentValue.HRProxyOptions.Id);
+                activeHRManager = _hrManagerFactory.CreateManager("hrproxy");
+                activeHRManager?.Init(_appOptions.CurrentValue.HRProxyOptions.Id);
                 break;
             case HRType.HypeRate:
-                activeHRManager = new HypeRateManager();
-                activeHRManager.Init(_appOptions.CurrentValue.HypeRateOptions.SessionId);
+                activeHRManager = _hrManagerFactory.CreateManager("hyperate");
+                activeHRManager?.Init(_appOptions.CurrentValue.HypeRateOptions.SessionId);
                 break;
             case HRType.Pulsoid:
-                LogHelper.Warn(
+                _logger.LogWarning(
                     "\n=========================================================================================\n" +
                     "WARNING ABOUT PULSOID\n" +
                     "It is detected that you're using the Pulsoid Method for grabbing HR Data,\n" +
@@ -476,20 +496,20 @@ public class HRService : IHRService
                     "=========================================================================================\n\n" +
                     "Starting Pulsoid in 25 Seconds...");
                 Thread.Sleep(25000);
-                activeHRManager = new PulsoidManager();
-                activeHRManager.Init(_appOptions.CurrentValue.PulsoidOptions.Widget);
+                activeHRManager = _hrManagerFactory.CreateManager("pulsoid");
+                activeHRManager?.Init(_appOptions.CurrentValue.PulsoidOptions.Widget);
                 break;
             case HRType.Stromno:
-                activeHRManager = new PulsoidManager();
-                activeHRManager.Init(_appOptions.CurrentValue.StromnoOptions.Widget);
+                activeHRManager = _hrManagerFactory.CreateManager("stromno");
+                activeHRManager?.Init(_appOptions.CurrentValue.StromnoOptions.Widget);
                 break;
             case HRType.PulsoidSocket:
-                activeHRManager = new PulsoidSocketManager();
-                activeHRManager.Init(_appOptions.CurrentValue.PulsoidSocketOptions.Key);
+                activeHRManager = _hrManagerFactory.CreateManager("pulsoidsocket");
+                activeHRManager?.Init(_appOptions.CurrentValue.PulsoidSocketOptions.Key);
                 break;
             case HRType.TextFile:
-                activeHRManager = new TextFileManager();
-                activeHRManager.Init(_appOptions.CurrentValue.TextFileOptions.Location);
+                activeHRManager = _hrManagerFactory.CreateManager("textfile");
+                activeHRManager?.Init(_appOptions.CurrentValue.TextFileOptions.Location);
                 break;
             // TODO Omnicept Temporarily Disabled
             // case HRType.Omnicept:
@@ -497,14 +517,16 @@ public class HRService : IHRService
             //     activeHRManager.Init(String.Empty);
             //     break;
             case HRType.SDK:
-                activeHRManager = new SDKManager();
-                activeHRManager.Init("127.0.0.1:9000");
+                activeHRManager = _hrManagerFactory.CreateManager("sdk");
+                activeHRManager?.Init("127.0.0.1:9000");
                 break;
             default:
-                LogHelper.Warn("No hrType was selected! Please see README if you think this is an error!");
+                _logger.LogWarning("No hrType was selected! Please see README if you think this is an error!");
                 Stop(true);
                 break;
         }
+
+        // Set Logger for the created manager - No longer needed as it is injected
 
         // Start HeartBeats if there was a valid choice
         if (!RunHeartBeat)
@@ -523,14 +545,14 @@ public class HRService : IHRService
             btToken = new CancellationTokenSource();
             BeatThread = new Thread(() =>
             {
-                LogHelper.Log("Starting Beating!");
+                _logger.LogInformation("Starting Beating!");
                 RunHeartBeat = true;
                 HeartBeat();
             });
             BeatThread.Start();
         }
         else if (activeHRManager == null)
-            LogHelper.Warn("Can't start beat as ActiveHRManager is null!");
+            _logger.LogWarning("Can't start beat as ActiveHRManager is null!");
     }
 
     public void StopHRListener()
@@ -539,7 +561,7 @@ public class HRService : IHRService
         {
             if (!activeHRManager.IsActive())
             {
-                LogHelper.Warn("HRListener is currently inactive! Attempting to stop anyways.");
+                _logger.LogWarning("HRListener is currently inactive! Attempting to stop anyways.");
                 //return;
             }
 
@@ -609,7 +631,7 @@ public class HRService : IHRService
                         {
                             if (waited)
                             {
-                                LogHelper.Log("Found ActiveHRManager! Starting HeartBeat.");
+                                _logger.LogInformation("Found ActiveHRManager! Starting HeartBeat.");
                                 waited = false;
                             }
 
@@ -644,7 +666,7 @@ public class HRService : IHRService
                         }
                         else
                         {
-                            LogHelper.Warn("Cannot beat as HR is Less than or equal to zero");
+                            _logger.LogWarning("Cannot beat as HR is Less than or equal to zero");
                             Thread.Sleep(1000);
                         }
                     }
@@ -655,14 +677,14 @@ public class HRService : IHRService
                             handler.UpdateHeartBeat(false, true);
                         }
 
-                        LogHelper.Debug("Waiting for ActiveHRManager for beating");
+                        _logger.LogDebug("Waiting for ActiveHRManager for beating");
                         waited = true;
                         Thread.Sleep(1000);
                     }
                 }
                 else
                 {
-                    LogHelper.Warn("Cannot beat as ActiveHRManager is null!");
+                    _logger.LogWarning("Cannot beat as ActiveHRManager is null!");
                     Thread.Sleep(1000);
                 }
             }
@@ -673,7 +695,7 @@ public class HRService : IHRService
     {
         var chs = new currentHRSplit();
         if (hr < 0)
-            LogHelper.Error("HeartRate is below zero.");
+            _logger.LogError("HeartRate is below zero.");
         else
         {
             var currentNumber = hr.ToString().Select(x => int.Parse(x.ToString()));

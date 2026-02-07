@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace HRtoVRChat.HRManagers;
@@ -9,14 +10,20 @@ internal class PulsoidSocketManager : HRManager {
     private int HR;
     private string pubUrl = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
+    private readonly ILogger<PulsoidSocketManager> _logger;
 
     private WebsocketTemplate? wst;
+
+    public PulsoidSocketManager(ILogger<PulsoidSocketManager> logger)
+    {
+        _logger = logger;
+    }
 
     public bool Init(string url) {
         shouldUpdate = new CancellationTokenSource();
         pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + url;
         StartThread();
-        LogHelper.Log("PulsoidSocketManager Initialized!");
+        _logger.LogInformation("PulsoidSocketManager Initialized!");
         return true;
     }
 
@@ -51,31 +58,31 @@ internal class PulsoidSocketManager : HRManager {
     private void StartThread() {
         VerifyClosedThread();
         _thread = new Thread(async () => {
-            wst = new WebsocketTemplate(pubUrl);
+            wst = new WebsocketTemplate(pubUrl, _logger);
             wst.OnMessage = (message) =>
             {
                 if (!string.IsNullOrEmpty(message))
                 {
                     // Parse HR
-                    JObject jo = null;
+                    JObject? jo = null;
                     try
                     {
                         jo = JObject.Parse(message);
                     }
                     catch (Exception e)
                     {
-                        LogHelper.Error("Failed to parse JObject! Exception: " + e);
+                        _logger.LogError(e, "Failed to parse JObject!");
                     }
 
                     if (jo != null)
                     {
                         try
                         {
-                            HR = jo["data"]["heart_rate"].Value<int>();
+                            HR = jo["data"]?["heart_rate"]?.Value<int>() ?? 0;
                         }
                         catch (Exception)
                         {
-                            LogHelper.Error("Failed to parse Herat Rate!");
+                            _logger.LogError("Failed to parse Heart Rate!");
                         }
                     }
                 }

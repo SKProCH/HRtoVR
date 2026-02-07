@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using HRtoVRChat.Configs;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WatsonWebsocket;
 
@@ -13,10 +14,12 @@ public class NeosHandler : IGameHandler {
     private WatsonWsServer? _server;
     private NeosMessage _neosMessage = new();
     private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly ILogger _logger;
 
-    public NeosHandler(IOptionsMonitor<AppOptions> appOptions)
+    public NeosHandler(IOptionsMonitor<AppOptions> appOptions, ILogger<NeosHandler> logger)
     {
         _appOptions = appOptions;
+        _logger = logger;
     }
 
     public string Name => "Neos";
@@ -45,7 +48,7 @@ public class NeosHandler : IGameHandler {
         }
         catch (Exception e)
         {
-            LogHelper.Error("Failed to start Neos Server", e);
+            _logger.LogError(e, "Failed to start Neos Server");
         }
     }
 
@@ -84,7 +87,7 @@ public class NeosHandler : IGameHandler {
             }
         }
         catch (Exception e) {
-            LogHelper.Warn("Failed to broadcast message to Neos! Exception: " + e);
+            _logger.LogWarning(e, "Failed to broadcast message to Neos!");
         }
     }
 

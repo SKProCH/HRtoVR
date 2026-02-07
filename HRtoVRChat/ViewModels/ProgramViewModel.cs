@@ -43,11 +43,6 @@ public class ProgramViewModel : ViewModelBase
 
     private void Initialize()
     {
-        _softwareService.OnConsoleUpdate += (message, overrideColor) =>
-        {
-             OnLogReceived?.Invoke(message, overrideColor ?? "");
-        };
-
         // Initial status update
         UpdateStatus();
         StartBackgroundThread();
@@ -61,8 +56,8 @@ public class ProgramViewModel : ViewModelBase
     private void StartSoftware()
     {
         OnLogReceived?.Invoke(null, "CLEAR");
-        _softwareService.OnConsoleUpdate(
-            $"HRtoVRChat {_softwareService.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
+        OnLogReceived?.Invoke($"HRtoVRChat {_softwareService.GetInstalledVersion()} Created by 200Tigersbloxed\n", "");
+
         _softwareService.StartSoftware();
         UpdateStatus();
     }

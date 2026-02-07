@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using HRtoVRChat.Services;
 using HRtoVRChat_OSC_SDK;
+using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat.Services;
 
@@ -16,13 +19,15 @@ public interface IOSCAvatarListener
 public class OSCAvatarListener : IOSCAvatarListener
 {
     private readonly IOSCService _oscService;
+    private readonly ILogger<OSCAvatarListener> _logger;
 
     public Action<AvatarChangeMessage> OnAvatarChanged { get; set; } = _ => { };
     public AvatarChangeMessage? CurrentAvatar { get; private set; }
 
-    public OSCAvatarListener(IOSCService oscService)
+    public OSCAvatarListener(IOSCService oscService, ILogger<OSCAvatarListener> logger)
     {
         _oscService = oscService;
+        _logger = logger;
     }
 
     public void Init()
@@ -53,7 +58,7 @@ public class OSCAvatarListener : IOSCAvatarListener
                         }
                         catch (Exception e)
                         {
-                            LogHelper.Error("Failed to get avatar file!", e);
+                            _logger.LogError(e, "Failed to get avatar file!");
                         }
 
                         break;
@@ -96,7 +101,7 @@ public class OSCAvatarListener : IOSCAvatarListener
         }
 
         if (string.IsNullOrEmpty(fileLocation) || !File.Exists(fileLocation))
-            LogHelper.Warn("No Config File Found for avatar with id " + id);
+            _logger.LogWarning("No Config File Found for avatar with id {Id}", id);
         return fileLocation;
     }
 

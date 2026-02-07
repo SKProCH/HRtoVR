@@ -13,6 +13,8 @@ using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using WritableJsonConfiguration;
 
 namespace HRtoVRChat;
@@ -42,12 +44,29 @@ public class App : Application {
         // Use WritableJsonConfiguration for the single config file
         IConfiguration configuration = WritableJsonConfigurationFabric.Create(configPath);
 
+        // Setup Logging
+        if (!Directory.Exists(Path.Combine(SoftwareManager.OutputPath, "Logs")))
+            Directory.CreateDirectory(Path.Combine(SoftwareManager.OutputPath, "Logs"));
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File(Path.Combine(SoftwareManager.OutputPath, "Logs", "log-.txt"), rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
         // Setup DI
         var collection = new ServiceCollection();
 
         // Register Configuration
         collection.AddSingleton(configuration);
         collection.Configure<AppOptions>(configuration);
+
+        // Register Logging
+        collection.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingBuilder.AddSerilog(dispose: true);
+        });
 
         ConfigureServices(collection);
         Services = collection.BuildServiceProvider();
@@ -83,6 +102,16 @@ public class App : Application {
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IHRService, HRService>();
         services.AddSingleton<IBrowserService, BrowserService>();
+
+        // HR Managers & Factory
+        services.AddSingleton<Factories.IHRManagerFactory, Factories.HRManagerFactory>();
+        services.AddTransient<HRManagers.FitbitManager>();
+        services.AddTransient<HRManagers.HRProxyManager>();
+        services.AddTransient<HRManagers.HypeRateManager>();
+        services.AddTransient<HRManagers.PulsoidManager>();
+        services.AddTransient<HRManagers.PulsoidSocketManager>();
+        services.AddTransient<HRManagers.TextFileManager>();
+        services.AddTransient<HRManagers.SDKManager>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();

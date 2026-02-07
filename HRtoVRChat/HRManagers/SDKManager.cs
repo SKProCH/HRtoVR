@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using HarmonyLib;
 using HRtoVRChat_OSC_SDK;
+using Microsoft.Extensions.Logging;
 using SuperSimpleTcp;
 
 namespace HRtoVRChat.HRManagers;
@@ -22,6 +23,12 @@ public class SDKManager : HRManager {
 
     private SimpleTcpServer? server;
     private CancellationTokenSource? token;
+    private readonly ILogger<SDKManager> _logger;
+
+    public SDKManager(ILogger<SDKManager> logger)
+    {
+        _logger = logger;
+    }
 
     public bool Init(string d1) {
         if (_worker != null) {
@@ -33,15 +40,15 @@ public class SDKManager : HRManager {
             server = new SimpleTcpServer(d1);
             server.Events.ClientConnected += (sender, args) => {
                 RemoteSDKs.Add(args.IpPort, new Messages.HRMessage());
-                LogHelper.Log("SDK Connected!");
+                _logger.LogInformation("SDK Connected!");
             };
             server.Events.ClientDisconnected += (sender, args) => {
                 try {
                     RemoteSDKs.Remove(args.IpPort);
                 }
-                catch (Exception e) { LogHelper.Error("Failed to remove RemoteSDK!", e); }
+                catch (Exception e) { _logger.LogError(e, "Failed to remove RemoteSDK!"); }
 
-                LogHelper.Log("SDK Disconnected!");
+                _logger.LogInformation("SDK Disconnected!");
             };
             server.Events.DataReceived += (sender, args) => {
                 var data = args.Data;
@@ -60,16 +67,16 @@ public class SDKManager : HRManager {
                         var hrLogMessage = Messages.DeserializeMessage<Messages.HRLogMessage>(data);
                         switch (hrLogMessage.LogLevel) {
                             case HRSDK.LogLevel.Debug:
-                                LogHelper.Debug(hrLogMessage.Message);
+                                _logger.LogDebug(hrLogMessage.Message);
                                 break;
                             case HRSDK.LogLevel.Log:
-                                LogHelper.Log(hrLogMessage.Message, hrLogMessage.Color);
+                                _logger.LogInformation(hrLogMessage.Message);
                                 break;
                             case HRSDK.LogLevel.Warn:
-                                LogHelper.Log(hrLogMessage.Message);
+                                _logger.LogWarning(hrLogMessage.Message);
                                 break;
                             case HRSDK.LogLevel.Error:
-                                LogHelper.Error(hrLogMessage.Message);
+                                _logger.LogError(hrLogMessage.Message);
                                 break;
                         }
 
@@ -84,12 +91,12 @@ public class SDKManager : HRManager {
                         server.Send(args.IpPort, hrm_ghrd.Serialize());
                         break;
                     default:
-                        LogHelper.Warn("Unknown Debug Message: " + messageType);
+                        _logger.LogWarning("Unknown Debug Message: " + messageType);
                         break;
                 }
             };
             server.Start();
-            LogHelper.Debug("Started SDK Server at " + d1);
+            _logger.LogDebug("Started SDK Server at " + d1);
             SDKPatches.OnHRData += message => {
                 if (message.IsActive)
                     SetHRDataBySDKName(message.SDKName, message);
@@ -101,6 +108,25 @@ public class SDKManager : HRManager {
                     IsOpen = IsOpen()
                 };
                 SendDataToSDK(sdk, hrm);
+            };
+            SDKPatches.OnLogAction = (instance, logLevel, msg, color, e) => {
+                switch (logLevel) {
+                    case HRSDK.LogLevel.Debug:
+                        _logger.LogDebug($"[SDK : {instance.Options.SDKName}] {msg}");
+                        break;
+                    case HRSDK.LogLevel.Log:
+                        _logger.LogInformation($"[SDK : {instance.Options.SDKName}] {msg}");
+                        break;
+                    case HRSDK.LogLevel.Warn:
+                        _logger.LogWarning($"[SDK : {instance.Options.SDKName}] {msg}");
+                        break;
+                    case HRSDK.LogLevel.Error:
+                        if (e != null)
+                            _logger.LogError(e, $"[SDK : {instance.Options.SDKName}] {msg}");
+                        else
+                            _logger.LogError($"[SDK : {instance.Options.SDKName}] {msg}");
+                        break;
+                }
             };
             foreach (var file in Directory.GetFiles(SDKsLocation, "*.dll")) {
                 // Attempt to load the file
@@ -115,7 +141,7 @@ public class SDKManager : HRManager {
                             var loaded = (ExternalHRSDK)Activator.CreateInstance(externalHrsdk);
                             if (loaded != null) {
                                 if (loaded.Initialize() || loaded.OverrideInitializeAdd) {
-                                    LogHelper.Log("Loaded ExternalHRSDK " + loaded.SDKName);
+                                    _logger.LogInformation("Loaded ExternalHRSDK " + loaded.SDKName);
                                     ExternalHrsdks.Add(loaded, loaded.CurrentHRData);
                                     loaded.OnHRMessageUpdated += message => {
                                         if (message.IsActive)
@@ -123,13 +149,13 @@ public class SDKManager : HRManager {
                                     };
                                 }
                                 else
-                                    LogHelper.Error(loaded.SDKName + " failed to initialize!");
+                                    _logger.LogError(loaded.SDKName + " failed to initialize!");
                             }
                             else
-                                LogHelper.Error("Failed to create an ExternalHRSDK under the file " + file);
+                                _logger.LogError("Failed to create an ExternalHRSDK under the file " + file);
                         }
                         catch (Exception e) {
-                            LogHelper.Error("Unknown Error while loading an ExternalHRSDK from file" + file, e);
+                            _logger.LogError(e, "Unknown Error while loading an ExternalHRSDK from file" + file);
                         }
                     }
 
@@ -139,8 +165,8 @@ public class SDKManager : HRManager {
                             var loaded = (HRSDK)Activator.CreateInstance(hrsdk);
                             if (loaded != null) {
                                 // Reflection
-                                loaded.GetType().BaseType
-                                    .GetField("_isReflected", BindingFlags.NonPublic | BindingFlags.Instance)
+                                loaded.GetType().BaseType?
+                                    .GetField("_isReflected", BindingFlags.NonPublic | BindingFlags.Instance)?
                                     .SetValue(loaded, true);
                                 // Harmony Patches
                                 var sdkPatch = new Harmony(loaded.Options.SDKName + "-patch");
@@ -159,39 +185,41 @@ public class SDKManager : HRManager {
                                         BindingFlags.Instance | BindingFlags.NonPublic),
                                     new HarmonyMethod(typeof(SDKPatches).GetMethod("on_log",
                                         BindingFlags.Static | BindingFlags.NonPublic)));
-                                LogHelper.Log("Loaded HRSDK " + loaded.Options.SDKName);
+                                _logger.LogInformation("Loaded HRSDK " + loaded.Options.SDKName);
                                 Hrsdks.Add(loaded, new Messages.HRMessage { SDKName = loaded.Options.SDKName });
                                 loaded.OnSDKOpened();
                             }
                             else
-                                LogHelper.Error("Failed to create an HRSDK under the file " + file);
+                                _logger.LogError("Failed to create an HRSDK under the file " + file);
                         }
                         catch (Exception e) {
-                            LogHelper.Error("Unknown Error while loading an HRSDK from file" + file, e);
+                            _logger.LogError(e, "Unknown Error while loading an HRSDK from file" + file);
                         }
                     }
                 }
                 catch (Exception ee) {
-                    LogHelper.Error("Unknown Exception while processing an HRSDK from file " + file, ee);
+                    _logger.LogError(ee, "Unknown Exception while processing an HRSDK from file " + file);
                 }
             }
 
-            LogHelper.Debug("Finished loading all HRSDKs");
+            _logger.LogDebug("Finished loading all HRSDKs");
             var networked_update = 0;
-            while (!token.IsCancellationRequested) {
+            while (token != null && !token.IsCancellationRequested) {
                 var c = 0;
-                foreach (var client in server.GetClients()) {
-                    try {
-                        if (networked_update >= 10) {
-                            server.Send(client, new Messages.UpdateMessage().Serialize());
-                            networked_update = 0;
-                        }
-                        else
-                            networked_update++;
+                if (server != null) {
+                    foreach (var client in server.GetClients()) {
+                        try {
+                            if (networked_update >= 10) {
+                                server.Send(client, new Messages.UpdateMessage().Serialize());
+                                networked_update = 0;
+                            }
+                            else
+                                networked_update++;
 
-                        c++;
+                            c++;
+                        }
+                        catch (Exception) { _logger.LogWarning("Socket Connection was closed when sending update!"); }
                     }
-                    catch (Exception) { LogHelper.Warn("Socket Connection was closed when sending update!"); }
                 }
 
                 foreach (var externalHrsdk in ExternalHrsdks) {
@@ -273,7 +301,7 @@ public class SDKManager : HRManager {
                 // Serialize
                 var serialize = data.Serialize();
                 // Send
-                server.Send(keyValuePair.Key, serialize);
+                server?.Send(keyValuePair.Key, serialize);
             }
         }
 
@@ -339,8 +367,8 @@ public class SDKManager : HRManager {
         // Remote
         foreach (var keyValuePair in RemoteSDKs) {
             if (keyValuePair.Value.SDKName == name) {
-                server.DisconnectClient(keyValuePair.Key);
-                LogHelper.Debug("Disconnected Remote HRSDK " + name);
+                server?.DisconnectClient(keyValuePair.Key);
+                _logger.LogDebug("Disconnected Remote HRSDK " + name);
             }
         }
 
@@ -350,10 +378,10 @@ public class SDKManager : HRManager {
                 externalHrsdk.Key.Destroy();
                 try {
                     ExternalHrsdks.Remove(externalHrsdk.Key);
-                    LogHelper.Debug("Destroyed ExternalHRSDK " + name);
+                    _logger.LogDebug("Destroyed ExternalHRSDK " + name);
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to Dispose ExternalHRSDK " + externalHrsdk.Key.SDKName + "!", e);
+                    _logger.LogError(e, "Failed to Dispose ExternalHRSDK " + externalHrsdk.Key.SDKName + "!");
                 }
             }
         }
@@ -364,10 +392,10 @@ public class SDKManager : HRManager {
                 hrsdk.Key.OnSDKClosed();
                 try {
                     Hrsdks.Remove(hrsdk.Key);
-                    LogHelper.Debug("Disconnected HRSDK " + name);
+                    _logger.LogDebug("Disconnected HRSDK " + name);
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to Dispose ExternalHRSDK " + hrsdk.Key.Options.SDKName + "!", e);
+                    _logger.LogError(e, "Failed to Dispose ExternalHRSDK " + hrsdk.Key.Options.SDKName + "!");
                 }
             }
         }
@@ -377,6 +405,7 @@ public class SDKManager : HRManager {
 public class SDKPatches {
     public static Action<Messages.HRMessage> OnHRData = message => { };
     public static Action<string> OnRequestData = requesting_sdk => { };
+    public static Action<HRSDK, HRSDK.LogLevel, object, ConsoleColor, Exception?> OnLogAction = (instance, logLevel, msg, color, e) => { };
 
     private static void on_push_data(Messages.HRMessage hrm) {
         OnHRData.Invoke(hrm);
@@ -388,22 +417,6 @@ public class SDKPatches {
 
     private static void on_log(HRSDK instance, HRSDK.LogLevel logLevel, object msg,
         ConsoleColor color = ConsoleColor.White, Exception? e = null) {
-        switch (logLevel) {
-            case HRSDK.LogLevel.Debug:
-                LogHelper.Debug($"[SDK : {instance.Options.SDKName}] {msg}");
-                break;
-            case HRSDK.LogLevel.Log:
-                LogHelper.Log($"[SDK : {instance.Options.SDKName}] {msg}", color);
-                break;
-            case HRSDK.LogLevel.Warn:
-                LogHelper.Warn($"[SDK : {instance.Options.SDKName}] {msg}");
-                break;
-            case HRSDK.LogLevel.Error:
-                if (e != null)
-                    LogHelper.Error($"[SDK : {instance.Options.SDKName}] {msg}", e);
-                else
-                    LogHelper.Error($"[SDK : {instance.Options.SDKName}] {msg}");
-                break;
-        }
+        OnLogAction.Invoke(instance, logLevel, msg, color, e);
     }
 }

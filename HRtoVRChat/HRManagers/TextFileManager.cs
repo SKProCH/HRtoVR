@@ -1,25 +1,32 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat.HRManagers;
 
 internal class TextFileManager : HRManager {
-    private Thread _thread;
+    private Thread? _thread;
     private int HR;
     private string pubFe = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
+    private readonly ILogger<TextFileManager> _logger;
+
+    public TextFileManager(ILogger<TextFileManager> logger)
+    {
+        _logger = logger;
+    }
 
     public bool Init(string fileLocation) {
         var fe = File.Exists(fileLocation);
         if (fe) {
-            LogHelper.Log("Found text file!");
+            _logger.LogInformation("Found text file!");
             pubFe = fileLocation;
             shouldUpdate = new CancellationTokenSource();
             StartThread();
         }
         else
-            LogHelper.Error("Failed to find text file!");
+            _logger.LogError("Failed to find text file!");
 
         return fe;
     }
@@ -62,14 +69,14 @@ internal class TextFileManager : HRManager {
                 var text = string.Empty;
                 try { text = File.ReadAllText(pubFe); }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to find Text File! Exception: ", e);
+                    _logger.LogError(e, "Failed to find Text File!");
                     failed = true;
                 }
 
                 // cast to int
                 if (!failed)
                     try { tempHR = Convert.ToInt32(text); }
-                    catch (Exception e) { LogHelper.Error("Failed to parse to int! Exception: ", e); }
+                    catch (Exception e) { _logger.LogError(e, "Failed to parse to int!"); }
 
                 HR = tempHR;
                 Thread.Sleep(500);

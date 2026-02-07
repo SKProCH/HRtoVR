@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace HRtoVRChat.HRManagers;
@@ -9,6 +10,12 @@ public class HRProxyManager : HRManager {
     private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
+    private readonly ILogger<HRProxyManager> _logger;
+
+    public HRProxyManager(ILogger<HRProxyManager> logger)
+    {
+        _logger = logger;
+    }
 
     private bool IsConnected {
         get {
@@ -21,12 +28,12 @@ public class HRProxyManager : HRManager {
     }
 
     public int HR { get; private set; }
-    public string Timestamp { get; private set; }
+    public string Timestamp { get; private set; } = string.Empty;
 
     public bool Init(string id) {
         tokenSource = new CancellationTokenSource();
         StartThread(id);
-        LogHelper.Log("Initialized WebSocket!");
+        _logger.LogInformation("Initialized WebSocket!");
         return IsConnected;
     }
 
@@ -56,11 +63,11 @@ public class HRProxyManager : HRManager {
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                if (wst != null) await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
-                HR = Convert.ToInt32(jo["hr"].Value<string>());
-                Timestamp = jo["timestamp"].Value<string>();
+                HR = Convert.ToInt32(jo["hr"]?.Value<string>());
+                Timestamp = jo["timestamp"]?.Value<string>() ?? string.Empty;
             }
         }
         catch (Exception) { }
@@ -68,23 +75,25 @@ public class HRProxyManager : HRManager {
 
     public void StartThread(string id) {
         _thread = new Thread(async () => {
-            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy");
+            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
             wst.OnMessage = HandleMessage;
             wst.OnReconnect = () =>
             {
-                Task.Run(async () => await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}"));
+                Task.Run(async () => {
+                    if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
+                });
             };
             var noerror = true;
             try {
                 await wst.Start();
             }
             catch (Exception e) {
-                LogHelper.Error("Failed to connect to HypeRate server!", e);
+                _logger.LogError(e, "Failed to connect to HypeRate server!");
                 noerror = false;
             }
 
             if (noerror) {
-                await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
+                if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
                 while (!tokenSource.IsCancellationRequested) {
                     if (IsConnected) {
                         // Managed by Websocket.Client
@@ -99,7 +108,7 @@ public class HRProxyManager : HRManager {
             }
 
             await Close();
-            LogHelper.Log("Closed HRProxy");
+            _logger.LogInformation("Closed HRProxy");
         });
         _thread.Start();
     }
@@ -112,13 +121,13 @@ public class HRProxyManager : HRManager {
                     wst = null;
                 }
                 catch (Exception e) {
-                    LogHelper.Error("Failed to close connection to HRProxy Server! Exception: ", e);
+                    _logger.LogError(e, "Failed to close connection to HRProxy Server!");
                 }
             }
             else
-                LogHelper.Warn("WebSocket is not alive! Did you mean to Dispose()?");
+                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
         }
         else
-            LogHelper.Warn("WebSocket is null! Did you mean to Initialize()?");
+            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }

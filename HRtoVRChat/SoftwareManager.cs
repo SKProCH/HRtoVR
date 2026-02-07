@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace HRtoVRChat;
 
 public static class SoftwareManager {
-    public static Action<string?, string?> OnConsoleUpdate = (line, color) => { };
     public static Action<int, int> RequestUpdateProgressBars = (x, y) => { };
 
     // UI Interaction Delegates

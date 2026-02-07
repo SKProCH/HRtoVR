@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.GameHandlers;
@@ -8,11 +9,13 @@ namespace HRtoVRChat.GameHandlers;
 public class VRChatOSCHandler : IGameHandler {
     private readonly IParamsService _paramsService;
     private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly ILogger _logger;
 
-    public VRChatOSCHandler(IParamsService paramsService, IOptionsMonitor<AppOptions> appOptions)
+    public VRChatOSCHandler(IParamsService paramsService, IOptionsMonitor<AppOptions> appOptions, ILogger<VRChatOSCHandler> logger)
     {
         _paramsService = paramsService;
         _appOptions = appOptions;
+        _logger = logger;
     }
 
     public string Name => "VRChat";
@@ -29,12 +32,12 @@ public class VRChatOSCHandler : IGameHandler {
     }
 
     public void Start() {
-        LogHelper.Log("Starting VRChat OSC Handler");
+        _logger.LogInformation("Starting VRChat OSC Handler");
         _paramsService.InitParams();
     }
 
     public void Stop() {
-        LogHelper.Log("Stopping VRChat OSC Handler");
+        _logger.LogInformation("Stopping VRChat OSC Handler");
         _paramsService.ResetParams();
     }
 

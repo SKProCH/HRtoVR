@@ -1,4 +1,6 @@
-﻿namespace HRtoVRChat;
+using Microsoft.Extensions.Logging;
+
+namespace HRtoVRChat;
 
 public interface HRManager {
     bool Init(string d1);

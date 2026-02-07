@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
@@ -14,7 +15,6 @@ public interface ISoftwareService
     bool IsSoftwareRunning { get; }
     Action<string, string?, bool> ShowMessage { get; set; }
     Func<string, string, Task<bool>> RequestConfirmation { get; set; }
-    Action<string?, string?> OnConsoleUpdate { get; set; }
     Action<int, int> RequestUpdateProgressBars { get; set; }
 
     string GetLatestVersion();
@@ -29,12 +29,13 @@ public class SoftwareService : ISoftwareService
 {
     private readonly IHRService _hrService;
     private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly ILogger<SoftwareService> _logger;
 
-    public SoftwareService(IHRService hrService, IOptionsMonitor<AppOptions> appOptions)
+    public SoftwareService(IHRService hrService, IOptionsMonitor<AppOptions> appOptions, ILogger<SoftwareService> logger)
     {
         _hrService = hrService;
         _appOptions = appOptions;
-        SoftwareManager.OnConsoleUpdate = (msg, color) => OnConsoleUpdate?.Invoke(msg, color);
+        _logger = logger;
     }
 
     public string LocalDirectory => SoftwareManager.LocalDirectory;
@@ -53,8 +54,6 @@ public class SoftwareService : ISoftwareService
         get => SoftwareManager.RequestConfirmation ?? ((_, _) => Task.FromResult(false));
         set => SoftwareManager.RequestConfirmation = value;
     }
-
-    public Action<string?, string?> OnConsoleUpdate { get; set; } = (s, s1) => { };
 
     public Action<int, int> RequestUpdateProgressBars
     {
@@ -100,17 +99,13 @@ public class SoftwareService : ISoftwareService
     {
         if (!IsSoftwareRunning) {
             try {
-                // Subscribe to Logs
-                LogHelper.OnLog -= HandleLog;
-                LogHelper.OnLog += HandleLog;
-
                 // Start Service
                 SoftwareManager.IsSoftwareRunning = true;
                 Task.Run(() => {
                     try {
                         _hrService.Start(GetArgs());
                     } catch (Exception e) {
-                        OnConsoleUpdate?.Invoke($"CRITICAL ERROR: {e.Message}\n{e.StackTrace}", "Red");
+                        _logger.LogError(e, "CRITICAL ERROR: {Message}", e.Message);
                         SoftwareManager.IsSoftwareRunning = false;
                     }
                 });
@@ -128,7 +123,6 @@ public class SoftwareService : ISoftwareService
             try {
                 _hrService.Stop();
                 SoftwareManager.IsSoftwareRunning = false;
-                LogHelper.OnLog -= HandleLog;
             }
             catch (Exception) { }
         }
@@ -138,7 +132,7 @@ public class SoftwareService : ISoftwareService
     {
         if (IsSoftwareRunning) {
             try {
-                OnConsoleUpdate?.Invoke("> " + command, "Purple");
+                _logger.LogInformation("> {Command}", command);
                 _hrService.HandleCommand(command);
             }
             catch (Exception) {
@@ -146,15 +140,4 @@ public class SoftwareService : ISoftwareService
             }
         }
     }
-
-    private void HandleLog(string msg, LogHelper.LogLevel level) {
-        string color = level switch {
-            LogHelper.LogLevel.Warn => "Yellow",
-            LogHelper.LogLevel.Error => "Red",
-            LogHelper.LogLevel.Debug => "Gray",
-            _ => "White"
-        };
-        OnConsoleUpdate?.Invoke(msg, color);
-    }
 }
-
