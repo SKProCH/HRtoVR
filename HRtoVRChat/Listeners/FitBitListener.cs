@@ -3,16 +3,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace HRtoVRChat.HRManagers;
+namespace HRtoVRChat.Listeners;
 
-public class FitbitManager : HRManager {
+public class FitBitListener : IHrListener {
     private Thread? _thread;
     private WebsocketTemplate? wst;
-    private readonly ILogger<FitbitManager> _logger;
+    private readonly ILogger<FitBitListener> _logger;
 
     private CancellationTokenSource tokenSource = new();
 
-    public FitbitManager(ILogger<FitbitManager> logger)
+    public FitBitListener(ILogger<FitBitListener> logger)
     {
         _logger = logger;
     }
@@ -37,9 +37,7 @@ public class FitbitManager : HRManager {
         return IsConnected;
     }
 
-    public string GetName() {
-        return "FitbitHRtoWS";
-    }
+    public string Name => "FitbitHRtoWS";
 
     public int GetHR() {
         return HR;

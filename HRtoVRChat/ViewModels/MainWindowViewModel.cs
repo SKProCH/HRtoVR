@@ -78,7 +78,7 @@ public class MainWindowViewModel : ViewModelBase
 
         HideAppCommand = ReactiveCommand.Create(() =>
         {
-             _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation { HideApplication = true });
+             _trayIconService.Update(new TrayIconInfo { HideApplication = true });
              RequestHide?.Invoke();
         });
 

@@ -74,7 +74,7 @@ public class ArgumentsViewModel : ViewModelBase
             _configuration["UseLegacyBool"] = UseLegacyBool.ToString();
         }
 
-        _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation {
+        _trayIconService.Update(new TrayIconInfo {
             AutoStart = AutoStart,
             SkipVRCCheck = SkipVRCCheck,
             NeosBridge = NeosBridge

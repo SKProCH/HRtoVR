@@ -4,15 +4,15 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace HRtoVRChat.HRManagers;
+namespace HRtoVRChat.Listeners;
 
-public class HRProxyManager : HRManager {
+public class HrProxyListener : IHrListener {
     private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
-    private readonly ILogger<HRProxyManager> _logger;
+    private readonly ILogger<HrProxyListener> _logger;
 
-    public HRProxyManager(ILogger<HRProxyManager> logger)
+    public HrProxyListener(ILogger<HrProxyListener> logger)
     {
         _logger = logger;
     }
@@ -37,9 +37,7 @@ public class HRProxyManager : HRManager {
         return IsConnected;
     }
 
-    public string GetName() {
-        return "HRProxy";
-    }
+    public string Name => "HRProxy";
 
     public int GetHR() {
         return HR;

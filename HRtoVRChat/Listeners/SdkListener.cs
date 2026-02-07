@@ -9,9 +9,9 @@ using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Logging;
 using SuperSimpleTcp;
 
-namespace HRtoVRChat.HRManagers;
+namespace HRtoVRChat.Listeners;
 
-public class SDKManager : HRManager {
+public class SdkListener : IHrListener {
     public static string PreferredSDK = string.Empty;
 
     public static readonly string SDKsLocation = "SDKs";
@@ -23,9 +23,9 @@ public class SDKManager : HRManager {
 
     private SimpleTcpServer? server;
     private CancellationTokenSource? token;
-    private readonly ILogger<SDKManager> _logger;
+    private readonly ILogger<SdkListener> _logger;
 
-    public SDKManager(ILogger<SDKManager> logger)
+    public SdkListener(ILogger<SdkListener> logger)
     {
         _logger = logger;
     }
@@ -253,10 +253,7 @@ public class SDKManager : HRManager {
         return true;
     }
 
-    public string GetName() {
-        var hrm = GetPreferredHRData();
-        return hrm?.SDKName ?? "sdk";
-    }
+    public string Name => GetPreferredHRData()?.SDKName ?? "sdk";
 
     public int GetHR() {
         return GetPreferredHRData()?.HR ?? 0;

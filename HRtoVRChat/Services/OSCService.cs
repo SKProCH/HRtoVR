@@ -39,7 +39,7 @@ public class OSCService : IOSCService
     public bool Detect()
     {
         var processes = Process.GetProcessesByName("VRChat").Length;
-        if (HRService.Gargs.Contains("--neos-bridge"))
+        if (_appOptions.CurrentValue.NeosBridge)
             processes += Process.GetProcessesByName("Neos").Length;
         if (_appOptions.CurrentValue.ExpandCVR)
             processes += Process.GetProcessesByName("ChilloutVR").Length;
@@ -50,7 +50,7 @@ public class OSCService : IOSCService
     {
         var realdata = data;
         // If it's a bool, it needs to be converted to a 0, 1 format
-        if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && HRService.Gargs.Contains("--use-01-bool"))
+        if (Type.GetTypeCode(realdata.GetType()) == TypeCode.Boolean && _appOptions.CurrentValue.UseLegacyBool)
         {
             var dat = (bool)Convert.ChangeType(realdata, TypeCode.Boolean);
             if (dat)

@@ -6,11 +6,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using HRtoVRChat.Configs;
+using HRtoVRChat.GameHandlers;
+using HRtoVRChat.Listeners;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels;
-using MessageBox.Avalonia;
-using MessageBox.Avalonia.DTO;
-using MessageBox.Avalonia.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -102,16 +101,21 @@ public class App : Application {
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IHRService, HRService>();
         services.AddSingleton<IBrowserService, BrowserService>();
+        services.AddSingleton<HRtoVRChat_OSC_SDK.IAppBridge, HRtoVRChat_OSC_SDK.AppBridge>();
 
         // HR Managers & Factory
         services.AddSingleton<Factories.IHRManagerFactory, Factories.HRManagerFactory>();
-        services.AddTransient<HRManagers.FitbitManager>();
-        services.AddTransient<HRManagers.HRProxyManager>();
-        services.AddTransient<HRManagers.HypeRateManager>();
-        services.AddTransient<HRManagers.PulsoidManager>();
-        services.AddTransient<HRManagers.PulsoidSocketManager>();
-        services.AddTransient<HRManagers.TextFileManager>();
-        services.AddTransient<HRManagers.SDKManager>();
+        services.AddTransient<FitBitListener>();
+        services.AddTransient<HrProxyListener>();
+        services.AddTransient<HypeRateListener>();
+        services.AddTransient<PulsoidListener>();
+        services.AddTransient<PulsoidSocketListener>();
+        services.AddTransient<TextFileListener>();
+        services.AddTransient<SdkListener>();
+
+        // Game Handlers
+        services.AddSingleton<IGameHandler, GameHandlers.VRChatOSCHandler>();
+        services.AddSingleton<IGameHandler, GameHandlers.NeosHandler>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
@@ -134,7 +138,7 @@ public class App : Application {
                     ContentTitle = title,
                     ContentMessage = message,
                     WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = isError ? MessageBox.Avalonia.Enums.Icon.Error : MessageBox.Avalonia.Enums.Icon.Info,
+                    Icon = isError ? Icon.Error : Icon.Info,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen
                 }).Show();
             });
@@ -147,7 +151,7 @@ public class App : Application {
                     ContentTitle = title,
                     ContentMessage = message,
                     WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = MessageBox.Avalonia.Enums.Icon.Error,
+                    Icon = Icon.Error,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen
                 }).Show();
                 return (result & ButtonResult.Yes) != 0;

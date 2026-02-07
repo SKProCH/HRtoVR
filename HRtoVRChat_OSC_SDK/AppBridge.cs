@@ -2,15 +2,15 @@
 
 namespace HRtoVRChat_OSC_SDK;
 
-public class AppBridge {
+public class AppBridge : IAppBridge {
     private SimpleTcpClient? _client;
     private SimpleTcpServer? _server;
 
     private Thread _serverUpdateThread;
     private CancellationTokenSource cts;
 
-    public Action<Messages.AppBridgeMessage> OnAppBridgeMessage = message => { };
-    public Action OnClientDisconnect = () => { };
+    public Action<Messages.AppBridgeMessage> OnAppBridgeMessage { get; set; } = message => { };
+    public Action OnClientDisconnect { get; set; } = () => { };
 
     public bool IsServerRunning {
         get => _server != null && _server is { IsListening: true };

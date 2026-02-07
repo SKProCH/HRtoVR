@@ -4,27 +4,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace HRtoVRChat.HRManagers;
+namespace HRtoVRChat.Listeners;
 
-public class HypeRateManager : HRManager {
+public class PulsoidListener : IHrListener {
     private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
-    private readonly ILogger<HypeRateManager> _logger;
+    private readonly ILogger<PulsoidListener> _logger;
 
-    public HypeRateManager(ILogger<HypeRateManager> logger)
+    public PulsoidListener(ILogger<PulsoidListener> logger)
     {
         _logger = logger;
     }
 
     private bool IsConnected {
-        get {
-            if (wst != null) {
-                return wst.IsAlive;
-            }
-
-            return false;
-        }
+        get => wst != null && wst.IsAlive;
     }
 
     public int HR { get; private set; }
@@ -37,9 +31,7 @@ public class HypeRateManager : HRManager {
         return IsConnected;
     }
 
-    public string GetName() {
-        return "HypeRate";
-    }
+    public string Name => "Pulsoid (DEPRECATED)";
 
     public int GetHR() {
         return HR;
@@ -80,7 +72,7 @@ public class HypeRateManager : HRManager {
             wst.OnReconnect = () =>
             {
                 Task.Run(async () => {
-                    if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
+                    if (wst != null) await wst.SendMessage("{\"reader\": \"pulsoid\", \"identifier\": \"" + id +
                                                            "\", \"service\": \"vrchat\"}");
                 });
             };
@@ -89,19 +81,19 @@ public class HypeRateManager : HRManager {
                 await wst.Start();
             }
             catch (Exception e) {
-                _logger.LogError(e, "Failed to connect to HypeRate server!");
+                _logger.LogError(e, "Failed to connect to Pulsoid server!");
                 noerror = false;
             }
 
             if (noerror) {
-                if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
+                if (wst != null) await wst.SendMessage("{\"reader\": \"pulsoid\", \"identifier\": \"" + id +
                                       "\", \"service\": \"vrchat\"}");
                 while (!tokenSource.IsCancellationRequested) {
                     if (IsConnected) {
                         // Managed by Websocket.Client
                     }
                     else {
-                        // Stop and Restart
+                        // Restart
                         // HRService.RestartHRListener();
                     }
 
@@ -110,7 +102,7 @@ public class HypeRateManager : HRManager {
             }
 
             await Close();
-            _logger.LogInformation("Closed HypeRate");
+            _logger.LogInformation("Closed Pulsoid");
         });
         _thread.Start();
     }
@@ -123,7 +115,7 @@ public class HypeRateManager : HRManager {
                     wst = null;
                 }
                 catch (Exception e) {
-                    _logger.LogError(e, "Failed to close connection to HypeRate Server!");
+                    _logger.LogError(e, "Failed to close connection to Pulsoid Server!");
                 }
             }
             else

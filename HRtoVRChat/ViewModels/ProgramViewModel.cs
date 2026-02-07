@@ -97,7 +97,7 @@ public class ProgramViewModel : ViewModelBase
                 await Dispatcher.UIThread.InvokeAsync(() => {
                     UpdateStatus();
 
-                    _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation {
+                    _trayIconService.Update(new TrayIconInfo {
                         Status = _softwareService.IsSoftwareRunning ? "RUNNING" : "STOPPED"
                     });
                 });

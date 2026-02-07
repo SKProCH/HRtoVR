@@ -6,8 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
-using HRtoVRChat.HRManagers;
 using HRtoVRChat_OSC_SDK;
+using HRtoVRChat.Listeners;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -22,10 +22,11 @@ public class HRService : IHRService
     private readonly IParamsService _paramsService;
     private readonly IOSCAvatarListener _oscAvatarListener;
     private readonly Factories.IHRManagerFactory _hrManagerFactory;
+    private readonly IEnumerable<IGameHandler> _injectedGameHandlers;
+    private readonly IAppBridge _appBridge;
 
     private HRType hrType = HRType.Unknown;
-    private HRManager? activeHRManager;
-    private readonly AppBridge _appBridge = new();
+    private IHrListener? activeHRManager;
     private bool isRestarting;
     private bool RunHeartBeat;
 
@@ -53,8 +54,6 @@ public class HRService : IHRService
 
     public CustomTimer? BoopUwUTimer;
 
-    public static string[] Gargs { get; private set; } = { };
-
     private bool _lastHeartBeatState;
 
     public HRService(
@@ -64,7 +63,9 @@ public class HRService : IHRService
         IOSCService oscService,
         IParamsService paramsService,
         IOSCAvatarListener oscAvatarListener,
-        Factories.IHRManagerFactory hrManagerFactory)
+        Factories.IHRManagerFactory hrManagerFactory,
+        IEnumerable<IGameHandler> gameHandlers,
+        IAppBridge appBridge)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
@@ -73,29 +74,33 @@ public class HRService : IHRService
         _paramsService = paramsService;
         _oscAvatarListener = oscAvatarListener;
         _hrManagerFactory = hrManagerFactory;
+        _injectedGameHandlers = gameHandlers;
+        _appBridge = appBridge;
     }
 
-    public void Start(string[] args)
+    public void Start()
     {
-        Gargs = args;
         // _configService.CreateConfig(); // Handled by DI/App.axaml.cs
         _oscService.Init();
 
         // Initialize Game Handlers
         _gameHandlers.Clear();
-        // Manually creating handlers for now, but injecting dependencies where possible or passing them
-        // Ideal would be DI, but for refactor speed we'll construct them.
-        // We need loggers for them.
 
-        var vrcHandler = new VRChatOSCHandler(_paramsService, _appOptions, _loggerFactory.CreateLogger<VRChatOSCHandler>());
-        _gameHandlers.Add(vrcHandler);
-
-        if (Enumerable.Contains(args, "--neos-bridge"))
+        foreach (var handler in _injectedGameHandlers)
         {
-            _logger.LogInformation("Enabling NeosBridge Handler");
-            var neosHandler = new NeosHandler(_appOptions, _loggerFactory.CreateLogger<NeosHandler>());
-            _gameHandlers.Add(neosHandler);
-            NeosHandler.OnCommand += command => HandleCommand(command, true);
+            if (handler is VRChatOSCHandler)
+            {
+                _gameHandlers.Add(handler);
+            }
+            else if (handler is NeosHandler neosHandler)
+            {
+                if (_appOptions.CurrentValue.NeosBridge)
+                {
+                    _logger.LogInformation("Enabling NeosBridge Handler");
+                    _gameHandlers.Add(handler);
+                    neosHandler.OnCommand += command => HandleCommand(command, true);
+                }
+            }
         }
 
         bool foundOnStart = _gameHandlers.Any(gh => gh.IsGameRunning());
@@ -109,7 +114,7 @@ public class HRService : IHRService
                 {
                     Messages.AppBridgeMessage apm = new()
                     {
-                        CurrentSourceName = activeHRManager.GetName(),
+                        CurrentSourceName = activeHRManager.Name,
                         CurrentAvatar = _oscAvatarListener.CurrentAvatar?.ToAvatarInfo()
                     };
 
@@ -146,8 +151,8 @@ public class HRService : IHRService
 
             return null;
         });
-        if (!Directory.Exists(SDKManager.SDKsLocation))
-            Directory.CreateDirectory(SDKManager.SDKsLocation);
+        if (!Directory.Exists(SdkListener.SDKsLocation))
+            Directory.CreateDirectory(SdkListener.SDKsLocation);
 
         if (foundOnStart)
         {
@@ -155,7 +160,7 @@ public class HRService : IHRService
         }
         else
         {
-            if (Enumerable.Contains(args, "--auto-start"))
+            if (_appOptions.CurrentValue.AutoStart)
             {
                 _logger.LogInformation("No supported game found! Waiting...");
                 loopCheck = new CustomTimer(5000, ct => LoopCheck());
@@ -179,10 +184,10 @@ public class HRService : IHRService
 
     private void Check()
     {
-        var fromAutoStart = Enumerable.Contains(Gargs, "--auto-start");
+        var fromAutoStart = _appOptions.CurrentValue.AutoStart;
         bool gameRunning = _gameHandlers.Any(gh => gh.IsGameRunning());
 
-        if (gameRunning || Enumerable.Contains(Gargs, "--skip-vrc-check"))
+        if (gameRunning || _appOptions.CurrentValue.SkipVRCCheck)
         {
             if (loopCheck?.IsRunning ?? false)
                 loopCheck.Close();
@@ -192,13 +197,11 @@ public class HRService : IHRService
         {
             if (fromAutoStart)
             {
-                loopCheck.Close();
+                loopCheck?.Close();
                 loopCheck = new CustomTimer(5000, ct => LoopCheck());
             }
 
             // Save all logs to file - Handled by Serilog File Sink
-            // var dt = DateTime.Now;
-            // LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
             // Exit
             _logger.LogWarning("No supported game was detected!");
         }
@@ -276,15 +279,15 @@ public class HRService : IHRService
                 break;
             case "biassdk":
                 if (inputs.Length > 1 && !string.IsNullOrEmpty(inputs[1]))
-                    SDKManager.PreferredSDK = inputs[1];
+                    SdkListener.PreferredSDK = inputs[1];
                 break;
             case "unbiassdk":
-                SDKManager.PreferredSDK = string.Empty;
+                SdkListener.PreferredSDK = string.Empty;
                 break;
             case "destroysdk":
                 if (activeHRManager != null && inputs.Length > 1 && !string.IsNullOrEmpty(inputs[1]))
                 {
-                    if (activeHRManager is SDKManager s)
+                    if (activeHRManager is SdkListener s)
                     {
                         s.DestroySDKByName(inputs[1]);
                     }
@@ -299,7 +302,7 @@ public class HRService : IHRService
 
     private void StartInternal()
     {
-        if (!Enumerable.Contains(Gargs, "--skip-vrc-check"))
+        if (!_appOptions.CurrentValue.SkipVRCCheck)
         {
             vvoToken = new CancellationTokenSource();
             VerifyVRCOpen = new Thread(() =>
@@ -314,7 +317,7 @@ public class HRService : IHRService
                 }
 
                 _logger.LogInformation("Thread Stopped");
-                var fromAutoStart = Enumerable.Contains(Gargs, "--auto-start");
+                var fromAutoStart = _appOptions.CurrentValue.AutoStart;
                 Stop(!fromAutoStart, fromAutoStart);
             });
             VerifyVRCOpen.Start();

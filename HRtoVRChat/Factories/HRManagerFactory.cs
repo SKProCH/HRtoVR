@@ -1,12 +1,12 @@
 using System;
-using HRtoVRChat.HRManagers;
+using HRtoVRChat.Listeners;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HRtoVRChat.Factories;
 
 public interface IHRManagerFactory
 {
-    HRManager? CreateManager(string managerName);
+    IHrListener? CreateManager(string managerName);
 }
 
 public class HRManagerFactory : IHRManagerFactory
@@ -18,19 +18,19 @@ public class HRManagerFactory : IHRManagerFactory
         _serviceProvider = serviceProvider;
     }
 
-    public HRManager? CreateManager(string managerName)
+    public IHrListener? CreateManager(string managerName)
     {
         return managerName.ToLower() switch
         {
-            "fitbithrtows" => _serviceProvider.GetRequiredService<FitbitManager>(),
-            "hrproxy" => _serviceProvider.GetRequiredService<HRProxyManager>(),
-            "hyperate" => _serviceProvider.GetRequiredService<HypeRateManager>(),
-            "pulsoid" => _serviceProvider.GetRequiredService<PulsoidManager>(),
-            "stromno" => _serviceProvider.GetRequiredService<PulsoidManager>(), // Stromno uses PulsoidManager logic apparently?
-            "pulsoidsocket" => _serviceProvider.GetRequiredService<PulsoidSocketManager>(),
-            "textfile" => _serviceProvider.GetRequiredService<TextFileManager>(),
+            "fitbithrtows" => _serviceProvider.GetRequiredService<FitBitListener>(),
+            "hrproxy" => _serviceProvider.GetRequiredService<HrProxyListener>(),
+            "hyperate" => _serviceProvider.GetRequiredService<HypeRateListener>(),
+            "pulsoid" => _serviceProvider.GetRequiredService<PulsoidListener>(),
+            "stromno" => _serviceProvider.GetRequiredService<PulsoidListener>(), // Stromno uses PulsoidManager logic apparently?
+            "pulsoidsocket" => _serviceProvider.GetRequiredService<PulsoidSocketListener>(),
+            "textfile" => _serviceProvider.GetRequiredService<TextFileListener>(),
             "omnicept" => null, // Omnicept commented out
-            "sdk" => _serviceProvider.GetRequiredService<SDKManager>(),
+            "sdk" => _serviceProvider.GetRequiredService<SdkListener>(),
             _ => null
         };
     }

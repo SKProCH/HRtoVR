@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
 using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
 
@@ -20,14 +22,16 @@ public class OSCAvatarListener : IOSCAvatarListener
 {
     private readonly IOSCService _oscService;
     private readonly ILogger<OSCAvatarListener> _logger;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
 
     public Action<AvatarChangeMessage> OnAvatarChanged { get; set; } = _ => { };
     public AvatarChangeMessage? CurrentAvatar { get; private set; }
 
-    public OSCAvatarListener(IOSCService oscService, ILogger<OSCAvatarListener> logger)
+    public OSCAvatarListener(IOSCService oscService, ILogger<OSCAvatarListener> logger, IOptionsMonitor<AppOptions> appOptions)
     {
         _oscService = oscService;
         _logger = logger;
+        _appOptions = appOptions;
     }
 
     public void Init()
@@ -87,7 +91,7 @@ public class OSCAvatarListener : IOSCAvatarListener
                             fileLocation = file;
                     }
                 }
-                else if (HRService.Gargs.Contains("--no-avatars-folder"))
+                else if (_appOptions.CurrentValue.NoAvatarsFolder)
                 {
                     // check this directory to see if the files are there (for whatever reason)
                     foreach (var file in Directory.GetFiles(directory))

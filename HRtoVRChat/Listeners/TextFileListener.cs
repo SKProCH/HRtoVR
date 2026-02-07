@@ -3,16 +3,16 @@ using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 
-namespace HRtoVRChat.HRManagers;
+namespace HRtoVRChat.Listeners;
 
-internal class TextFileManager : HRManager {
+internal class TextFileListener : IHrListener {
     private Thread? _thread;
     private int HR;
     private string pubFe = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
-    private readonly ILogger<TextFileManager> _logger;
+    private readonly ILogger<TextFileListener> _logger;
 
-    public TextFileManager(ILogger<TextFileManager> logger)
+    public TextFileListener(ILogger<TextFileListener> logger)
     {
         _logger = logger;
     }
@@ -36,9 +36,7 @@ internal class TextFileManager : HRManager {
         VerifyClosedThread();
     }
 
-    public string GetName() {
-        return "TextFile";
-    }
+    public string Name => "TextFile";
 
     public int GetHR() {
         return HR;

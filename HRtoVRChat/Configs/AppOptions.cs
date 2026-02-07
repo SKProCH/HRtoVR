@@ -54,6 +54,9 @@ public class AppOptions {
     [Description("Cast Parameter Bools to Floats")]
     public bool UseLegacyBool { get; set; }
 
+    [Description("Disables looking for avatars in the default VRChat OSC folder")]
+    public bool NoAvatarsFolder { get; set; }
+
     public static bool DoesConfigExist() {
         return File.Exists(Path.Combine(SoftwareManager.OutputPath, "config.json"));
     }

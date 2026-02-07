@@ -41,25 +41,13 @@ public class SoftwareService : ISoftwareService
     public string LocalDirectory => SoftwareManager.LocalDirectory;
     public string OutputPath => SoftwareManager.OutputPath;
     public bool IsInstalled => SoftwareManager.IsInstalled;
-    public bool IsSoftwareRunning => SoftwareManager.IsSoftwareRunning;
+    public bool IsSoftwareRunning { get; private set; }
 
-    public Action<string, string?, bool> ShowMessage
-    {
-        get => SoftwareManager.ShowMessage ?? ((_, _, _) => { });
-        set => SoftwareManager.ShowMessage = value;
-    }
+    public Action<string, string?, bool> ShowMessage { get; set; } = (_, _, _) => { };
 
-    public Func<string, string, Task<bool>> RequestConfirmation
-    {
-        get => SoftwareManager.RequestConfirmation ?? ((_, _) => Task.FromResult(false));
-        set => SoftwareManager.RequestConfirmation = value;
-    }
+    public Func<string, string, Task<bool>> RequestConfirmation { get; set; } = (_, _) => Task.FromResult(false);
 
-    public Action<int, int> RequestUpdateProgressBars
-    {
-        get => SoftwareManager.RequestUpdateProgressBars;
-        set => SoftwareManager.RequestUpdateProgressBars = value;
-    }
+    public Action<int, int> RequestUpdateProgressBars { get; set; } = (_, _) => { };
 
     public string GetLatestVersion() => SoftwareManager.GetLatestVersion();
     public string GetInstalledVersion() => SoftwareManager.GetInstalledVersion();
@@ -72,47 +60,24 @@ public class SoftwareService : ISoftwareService
         await Task.CompletedTask;
     }
 
-    private string[] GetArgs() {
-        List<string> Args = new();
-        var options = _appOptions.CurrentValue;
-        if (options != null) {
-            if (options.AutoStart)
-                Args.Add("--auto-start");
-            if (options.SkipVRCCheck)
-                Args.Add("--skip-vrc-check");
-            if (options.NeosBridge)
-                Args.Add("--neos-bridge");
-            if (options.UseLegacyBool)
-                Args.Add("--use-01-bool");
-            try {
-                if (!string.IsNullOrEmpty(options.OtherArgs))
-                    foreach (var s in options.OtherArgs.Split(' '))
-                        Args.Add(s);
-            }
-            catch (Exception) { }
-        }
-
-        return Args.ToArray();
-    }
-
     public void StartSoftware()
     {
         if (!IsSoftwareRunning) {
             try {
                 // Start Service
-                SoftwareManager.IsSoftwareRunning = true;
+                IsSoftwareRunning = true;
                 Task.Run(() => {
                     try {
-                        _hrService.Start(GetArgs());
+                        _hrService.Start();
                     } catch (Exception e) {
                         _logger.LogError(e, "CRITICAL ERROR: {Message}", e.Message);
-                        SoftwareManager.IsSoftwareRunning = false;
+                        IsSoftwareRunning = false;
                     }
                 });
             }
             catch (Exception e) {
                 ShowMessage?.Invoke("HRtoVRChat", "Failed to start service: " + e.Message, true);
-                SoftwareManager.IsSoftwareRunning = false;
+                IsSoftwareRunning = false;
             }
         }
     }
@@ -122,7 +87,7 @@ public class SoftwareService : ISoftwareService
         if (IsSoftwareRunning) {
             try {
                 _hrService.Stop();
-                SoftwareManager.IsSoftwareRunning = false;
+                IsSoftwareRunning = false;
             }
             catch (Exception) { }
         }

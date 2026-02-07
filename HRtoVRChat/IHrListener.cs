@@ -2,9 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat;
 
-public interface HRManager {
+public interface IHrListener {
     bool Init(string d1);
-    string GetName();
+    string Name { get; }
     int GetHR();
     void Stop();
     bool IsOpen();

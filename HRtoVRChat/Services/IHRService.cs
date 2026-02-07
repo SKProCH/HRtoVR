@@ -2,7 +2,7 @@ namespace HRtoVRChat.Services;
 
 public interface IHRService
 {
-    void Start(string[] args);
+    void Start();
     void Stop(bool quitApp = false, bool autoStart = false);
     void RestartHRListener();
     void StartHRListener(bool fromRestart = false);
