@@ -54,16 +54,5 @@ public partial class MainWindow : Window {
         // Set Instances
         TrayIconManager.MainWindow = this;
         TrayIconManager.ArgumentsWindow = new Arguments();
-
-        // Check the SetupWizard
-        if (!Config.DoesConfigExist()) {
-            Dispatcher.UIThread.InvokeAsync(async () => {
-                var b = await SetupWizard.AskToSetup();
-                if (b) {
-                    Hide();
-                    new SetupWizard(() => Show()).Show();
-                }
-            });
-        }
     }
 }

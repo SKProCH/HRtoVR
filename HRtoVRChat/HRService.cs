@@ -385,15 +385,15 @@ namespace HRtoVRChat;
         switch (hrType) {
             case HRType.FitbitHRtoWS:
                 activeHRManager = new FitbitManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.fitbitURL);
+                activeHRManager.Init(ConfigManager.LoadedConfig.FitbitConfig.fitbitURL);
                 break;
             case HRType.HRProxy:
                 activeHRManager = new HRProxyManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.hrproxyId);
+                activeHRManager.Init(ConfigManager.LoadedConfig.HRProxyConfig.hrproxyId);
                 break;
             case HRType.HypeRate:
                 activeHRManager = new HypeRateManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.hyperateSessionId);
+                activeHRManager.Init(ConfigManager.LoadedConfig.HypeRateConfig.hyperateSessionId);
                 break;
             case HRType.Pulsoid:
                 LogHelper.Warn(
@@ -407,19 +407,19 @@ namespace HRtoVRChat;
                     "Starting Pulsoid in 25 Seconds...");
                 Thread.Sleep(25000);
                 activeHRManager = new PulsoidManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.pulsoidwidget);
+                activeHRManager.Init(ConfigManager.LoadedConfig.PulsoidConfig.pulsoidwidget);
                 break;
             case HRType.Stromno:
                 activeHRManager = new PulsoidManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.stromnowidget);
+                activeHRManager.Init(ConfigManager.LoadedConfig.StromnoConfig.stromnowidget);
                 break;
             case HRType.PulsoidSocket:
                 activeHRManager = new PulsoidSocketManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.pulsoidkey);
+                activeHRManager.Init(ConfigManager.LoadedConfig.PulsoidSocketConfig.pulsoidkey);
                 break;
             case HRType.TextFile:
                 activeHRManager = new TextFileManager();
-                activeHRManager.Init(ConfigManager.LoadedConfig.textfilelocation);
+                activeHRManager.Init(ConfigManager.LoadedConfig.TextFileConfig.textfilelocation);
                 break;
             // TODO Omnicept Temporarily Disabled
             // case HRType.Omnicept:

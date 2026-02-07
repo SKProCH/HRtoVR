@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using HRtoVRChat.ViewModels;
+using HRtoVRChat.Configs;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Tommy.Serializer;
@@ -13,44 +13,43 @@ namespace HRtoVRChat.ViewModels;
 
 public class ConfigViewModel : ViewModelBase
 {
-    public ObservableCollection<ConfigItemViewModel> ConfigItemsLeft { get; } = new();
-    public ObservableCollection<ConfigItemViewModel> ConfigItemsRight { get; } = new();
+    public ObservableCollection<ManagerViewModel> Managers { get; } = new();
+    public ObservableCollection<ConfigItemViewModel> GlobalSettings { get; } = new();
 
-    [Reactive] public ConfigItemViewModel? SelectedConfigItem { get; set; }
+    [Reactive] public ManagerViewModel? SelectedManager { get; set; }
+
+    // Kept for global settings editing
     [Reactive] public string ConfigValueInput { get; set; } = "";
 
-    public ReactiveCommand<ConfigItemViewModel, Unit> SwitchConfigSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> SaveConfigCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenParameterNamesCommand { get; }
 
     public ConfigViewModel()
     {
-        SwitchConfigSelectionCommand = ReactiveCommand.Create<ConfigItemViewModel>(item => {
-            SelectedConfigItem = item;
+        SaveConfigCommand = ReactiveCommand.Create(() => {
+             ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
         });
-
-        SaveConfigCommand = ReactiveCommand.Create(SaveConfig);
 
         OpenParameterNamesCommand = ReactiveCommand.Create(() => {
             if (!ParameterNames.IsOpen)
                 new ParameterNames().Show();
         });
 
-        this.WhenAnyValue(x => x.SelectedConfigItem)
-            .Where(x => x != null)
-            .Subscribe(item => {
-                if (item != null)
+        Initialize();
+
+        // Handle selection changes
+        this.WhenAnyValue(x => x.SelectedManager)
+            .Subscribe(manager => {
+                if (manager != null)
                 {
-                    var targetField = ConfigManager.LoadedConfig.GetType().GetField(item.FieldName);
-                    if (targetField != null)
+                    var config = ConfigManager.LoadedConfig;
+                    if (config.hrType != manager.Id)
                     {
-                        var val = targetField.GetValue(ConfigManager.LoadedConfig);
-                        ConfigValueInput = val?.ToString() ?? "";
+                        config.hrType = manager.Id;
+                        ConfigManager.SaveConfig(config);
                     }
                 }
             });
-
-        Initialize();
     }
 
     private void Initialize()
@@ -60,74 +59,83 @@ public class ConfigViewModel : ViewModelBase
 
     private void LoadConfigItems()
     {
-        var configValues = new List<string>();
-        foreach (var fieldInfo in new Config().GetType().GetFields())
-            configValues.Add(fieldInfo.Name);
+        Managers.Clear();
+        GlobalSettings.Clear();
 
-        var allItems = new List<ConfigItemViewModel>();
+        var config = ConfigManager.LoadedConfig;
 
-        foreach (var configValue in configValues)
+        // 1. Load Global Settings
+        // We manually select fields that are global
+        var globalFields = new[] { "ip", "port", "receiverPort", "MaxHR", "MinHR", "ExpandCVR" };
+        foreach (var fieldName in globalFields)
         {
-             var field = new Config().GetType().GetField(configValue);
-             if (field == null) continue;
-
-             if (configValue == "ParameterNames") continue;
-
-             var descAttr = (TommyComment)Attribute.GetCustomAttribute(field, typeof(TommyComment));
-             var desc = descAttr?.Value ?? "";
-
-             var item = new ConfigItemViewModel
-             {
-                 Name = field.Name,
-                 FieldName = field.Name,
-                 TypeName = FriendlyName(field.FieldType).ToLower(),
-                 Description = desc,
-                 Value = field.GetValue(ConfigManager.LoadedConfig)
-             };
-             allItems.Add(item);
-        }
-
-        int count = allItems.Count;
-        int leftCount = count / 2;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (i < leftCount)
-                ConfigItemsLeft.Add(allItems[i]);
-            else
-                ConfigItemsRight.Add(allItems[i]);
-        }
-    }
-
-    private void SaveConfig()
-    {
-        if (SelectedConfigItem != null)
-        {
-            var targetField = ConfigManager.LoadedConfig.GetType().GetField(SelectedConfigItem.FieldName);
-            if (targetField != null)
+            var field = config.GetType().GetField(fieldName);
+            if (field != null)
             {
-                try {
-                    targetField.SetValue(ConfigManager.LoadedConfig,
-                        Convert.ChangeType(ConfigValueInput, targetField.FieldType));
-                    ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
-                    SelectedConfigItem.Value = ConfigValueInput;
-                } catch { }
+                GlobalSettings.Add(new ConfigItemViewModel(config, field));
             }
         }
+
+        // 2. Load Managers
+        // Fitbit
+        var fitbit = new ManagerViewModel("Fitbit", "fitbithrtows");
+        AddSettings(fitbit, config.FitbitConfig);
+        Managers.Add(fitbit);
+
+        // HRProxy
+        var hrproxy = new ManagerViewModel("HRProxy", "hrproxy");
+        AddSettings(hrproxy, config.HRProxyConfig);
+        Managers.Add(hrproxy);
+
+        // HypeRate
+        var hyperate = new ManagerViewModel("HypeRate", "hyperate");
+        AddSettings(hyperate, config.HypeRateConfig);
+        Managers.Add(hyperate);
+
+        // Pulsoid
+        var pulsoid = new ManagerViewModel("Pulsoid (Legacy)", "pulsoid");
+        AddSettings(pulsoid, config.PulsoidConfig);
+        Managers.Add(pulsoid);
+
+        // PulsoidSocket
+        var pulsoidSocket = new ManagerViewModel("Pulsoid (Socket)", "pulsoidsocket");
+        AddSettings(pulsoidSocket, config.PulsoidSocketConfig);
+        Managers.Add(pulsoidSocket);
+
+        // Stromno
+        var stromno = new ManagerViewModel("Stromno", "stromno");
+        AddSettings(stromno, config.StromnoConfig);
+        Managers.Add(stromno);
+
+        // TextFile
+        var textfile = new ManagerViewModel("TextFile", "textfile");
+        AddSettings(textfile, config.TextFileConfig);
+        Managers.Add(textfile);
+
+        // SDK
+        var sdk = new ManagerViewModel("SDK", "sdk");
+        // SDK has no specific config object in Config class, but maybe we can add a placeholder or nothing
+        Managers.Add(sdk);
+
+        // Select the active manager
+        SelectedManager = Managers.FirstOrDefault(m => m.Id.Equals(config.hrType, StringComparison.OrdinalIgnoreCase));
     }
 
-    // Helper from original code
-    private static string ToCsv(IEnumerable<object> collectionToConvert, string separator = ", ") {
-        return string.Join(separator, collectionToConvert.Select(o => o.ToString()));
-    }
+    private void AddSettings(ManagerViewModel manager, object configObject)
+    {
+        if (configObject == null) return;
 
-    private static string FriendlyName(Type type) {
-        if (type.IsGenericType) {
-            var namePrefix = type.Name.Split(new[] { '`' }, StringSplitOptions.RemoveEmptyEntries)[0];
-            var genericParameters = ToCsv(type.GetGenericArguments().Select(FriendlyName));
-            return namePrefix + "<" + genericParameters + ">";
+        foreach (var field in configObject.GetType().GetFields())
+        {
+             // Check for TommyInclude or TommyComment if needed, but usually we want all public fields in config objects
+             // The original code checked for TommyComment or just assumed fields.
+             // Config fields in Config.cs have [TommyInclude].
+
+             // Check if it should be included
+             if (Attribute.IsDefined(field, typeof(TommyInclude)) || Attribute.IsDefined(field, typeof(TommyComment)))
+             {
+                 manager.Settings.Add(new ConfigItemViewModel(configObject, field));
+             }
         }
-
-        return type.Name;
     }
 }

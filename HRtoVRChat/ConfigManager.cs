@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using HRtoVRChat.Configs;
 using Tommy.Serializer;
 
 namespace HRtoVRChat;
@@ -54,17 +55,17 @@ public class Config {
     [TommyComment("Allow HRtoVRChat to be used with ChilloutVR. Requires an OSC mod for ChilloutVR")] [TommyInclude]
     public bool ExpandCVR = true;
 
-    [TommyComment("(FitbitHRtoWS Only) The WebSocket to listen to data")] [TommyInclude]
-    public string fitbitURL = "ws://localhost:8080/";
+    [TommyInclude]
+    public FitbitConfig FitbitConfig = new();
 
-    [TommyComment("(HRProxy Only) The code to pull HRProxy Data from")] [TommyInclude]
-    public string hrproxyId = string.Empty;
+    [TommyInclude]
+    public HRProxyConfig HRProxyConfig = new();
 
     [TommyComment("The source from where to pull Heart Rate Data")] [TommyInclude]
     public string hrType = "unknown";
 
-    [TommyComment("(HypeRate Only) The code to pull HypeRate Data from")] [TommyInclude]
-    public string hyperateSessionId = string.Empty;
+    [TommyInclude]
+    public HypeRateConfig HypeRateConfig = new();
 
     [TommyComment("The IP to send messages to")] [TommyInclude]
     public string ip = "127.0.0.1";
@@ -93,20 +94,20 @@ public class Config {
     [TommyComment("The Port to send messages to")] [TommyInclude]
     public int port = 9000;
 
-    [TommyComment("(PulsoidSocket Only) The key for the OAuth API to pull HeartRate Data from")] [TommyInclude]
-    public string pulsoidkey = string.Empty;
+    [TommyInclude]
+    public PulsoidSocketConfig PulsoidSocketConfig = new();
 
-    [TommyComment("(Pulsoid Only) The widgetId to pull HeartRate Data from")] [TommyInclude]
-    public string pulsoidwidget = string.Empty;
+    [TommyInclude]
+    public PulsoidConfig PulsoidConfig = new();
 
     [TommyComment("The Port to receive messages from")] [TommyInclude]
     public int receiverPort = 9001;
 
-    [TommyComment("(Stromno Only) The widgetId to pull HeartRate Data from Stromno")] [TommyInclude]
-    public string stromnowidget = string.Empty;
+    [TommyInclude]
+    public StromnoConfig StromnoConfig = new();
 
-    [TommyComment("(TextFile Only) The location of the text file to pull HeartRate Data from")] [TommyInclude]
-    public string textfilelocation = string.Empty;
+    [TommyInclude]
+    public TextFileConfig TextFileConfig = new();
 
     public static bool DoesConfigExist() {
         return File.Exists(ConfigManager.ConfigLocation);
