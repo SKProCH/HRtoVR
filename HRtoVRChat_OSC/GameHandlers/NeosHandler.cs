@@ -1,15 +1,13 @@
 using System.Diagnostics;
 using System.Reflection;
-using WebSocketSharp;
-using WebSocketSharp.Server;
+using System.Text;
+using WatsonWebsocket;
 
 namespace HRtoVRChat_OSC.GameHandlers;
 
 public class NeosHandler : IGameHandler {
     public static Action<string> OnCommand = s => { };
-    private WebSocketServer _server;
-    private CancellationTokenSource _cts;
-    private Thread _worker;
+    private WatsonWsServer _server;
     private NeosMessage _neosMessage = new();
 
     public string Name => "Neos";
@@ -19,27 +17,36 @@ public class NeosHandler : IGameHandler {
     }
 
     public void Init() {
-        _server = new WebSocketServer(4206);
-        _server.AddWebSocketService<NeosSocketBehavior>("/HRtoVRChat");
+        _server = new WatsonWsServer("127.0.0.1", 4206, false);
+        _server.MessageReceived += OnMessageReceived;
+    }
+
+    private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
+    {
+        var msg = Encoding.UTF8.GetString(e.Data);
+        OnCommand.Invoke(msg);
     }
 
     public void Start() {
         if (_server == null) Init();
 
-        _cts = new CancellationTokenSource();
-        _worker = new Thread(() => {
+        try
+        {
             _server.Start();
-            while (!_cts.IsCancellationRequested) {
-                Thread.Sleep(10);
-            }
-            _server.Stop();
-        });
-        _worker.Start();
+        }
+        catch (Exception e)
+        {
+            LogHelper.Error("Failed to start Neos Server", e);
+        }
     }
 
     public void Stop() {
-        _cts?.Cancel();
-        // Wait for thread?
+        if (_server != null)
+        {
+            _server.Stop();
+            _server.Dispose();
+            _server = null;
+        }
     }
 
     public void UpdateHR(int ones, int tens, int hundreds, int hr, bool isConnected, bool isActive) {
@@ -62,7 +69,10 @@ public class NeosHandler : IGameHandler {
         if (_server == null || !_server.IsListening) return;
         try {
             var msg = _neosMessage.Serialize();
-            _server.WebSocketServices.Broadcast(msg);
+            foreach (var client in _server.ListClients())
+            {
+                _server.SendAsync(client.Guid, msg);
+            }
         }
         catch (Exception e) {
             LogHelper.Warn("Failed to broadcast message to Neos! Exception: " + e);
@@ -80,13 +90,6 @@ public class NeosHandler : IGameHandler {
         else
             targetFloat = (HR - minhr) / (maxhr - minhr);
         return targetFloat;
-    }
-
-    public class NeosSocketBehavior : WebSocketBehavior {
-        protected override void OnMessage(MessageEventArgs messageEventArgs) {
-            var msg = messageEventArgs.Data;
-            OnCommand.Invoke(msg);
-        }
     }
 
     public class NeosMessage {

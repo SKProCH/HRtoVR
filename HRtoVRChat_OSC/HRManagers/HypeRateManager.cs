@@ -66,6 +66,12 @@ public class HypeRateManager : HRManager {
     public void StartThread(string id) {
         _thread = new Thread(async () => {
             wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy");
+            wst.OnMessage = HandleMessage;
+            wst.OnReconnect = () =>
+            {
+                Task.Run(async () => await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
+                                                           "\", \"service\": \"vrchat\"}"));
+            };
             var noerror = true;
             try {
                 await wst.Start();
@@ -80,16 +86,14 @@ public class HypeRateManager : HRManager {
                                       "\", \"service\": \"vrchat\"}");
                 while (!tokenSource.IsCancellationRequested) {
                     if (IsConnected) {
-                        var message = await wst.ReceiveMessage();
-                        if (!string.IsNullOrEmpty(message))
-                            HandleMessage(message);
+                        // Managed by Websocket.Client
                     }
                     else {
                         // Stop and Restart
-                        HRService.RestartHRListener();
+                        // HRService.RestartHRListener();
                     }
 
-                    Thread.Sleep(1);
+                    Thread.Sleep(1000);
                 }
             }
 
