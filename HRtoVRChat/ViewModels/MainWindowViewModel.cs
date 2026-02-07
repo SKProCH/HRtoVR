@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reactive;
 using System.Runtime.InteropServices;
+using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -27,20 +28,37 @@ public class MainWindowViewModel : ViewModelBase
     // Events
     public event Action? RequestHide;
 
-    public MainWindowViewModel()
+    private readonly IConfigService _configService;
+    private readonly ITrayIconService _trayIconService;
+    private readonly ISoftwareService _softwareService;
+    private readonly IBrowserService _browserService;
+
+    public MainWindowViewModel(
+        HomeViewModel homeVM,
+        ProgramViewModel programVM,
+        UpdatesViewModel updatesVM,
+        ConfigViewModel configVM,
+        IncomingDataViewModel incomingDataVM,
+        IConfigService configService,
+        ITrayIconService trayIconService,
+        ISoftwareService softwareService,
+        IBrowserService browserService)
     {
+        HomeVM = homeVM;
+        ProgramVM = programVM;
+        UpdatesVM = updatesVM;
+        ConfigVM = configVM;
+        IncomingDataVM = incomingDataVM;
+        _configService = configService;
+        _trayIconService = trayIconService;
+        _softwareService = softwareService;
+        _browserService = browserService;
+
         // Global Initialization
-        if (!string.IsNullOrEmpty(SoftwareManager.LocalDirectory) && !Directory.Exists(SoftwareManager.LocalDirectory))
-            Directory.CreateDirectory(SoftwareManager.LocalDirectory);
+        if (!string.IsNullOrEmpty(_softwareService.LocalDirectory) && !Directory.Exists(_softwareService.LocalDirectory))
+            Directory.CreateDirectory(_softwareService.LocalDirectory);
 
-        ConfigManager.CreateConfig();
-
-        // Initialize Sub-ViewModels
-        HomeVM = new HomeViewModel(OpenBrowser);
-        ProgramVM = new ProgramViewModel();
-        UpdatesVM = new UpdatesViewModel();
-        ConfigVM = new ConfigViewModel();
-        IncomingDataVM = new IncomingDataViewModel();
+        _configService.CreateConfig();
 
         // Default Page
         CurrentPage = HomeVM;
@@ -59,18 +77,18 @@ public class MainWindowViewModel : ViewModelBase
             };
         });
 
-        OpenUrlCommand = ReactiveCommand.Create<string>(OpenBrowser);
+        OpenUrlCommand = ReactiveCommand.Create<string>(_browserService.OpenUrl);
 
         HideAppCommand = ReactiveCommand.Create(() =>
         {
-             TrayIconManager.Update(new TrayIconManager.UpdateTrayIconInformation { HideApplication = true });
+             _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation { HideApplication = true });
              RequestHide?.Invoke();
         });
 
         ExitAppCommand = ReactiveCommand.Create(() =>
         {
             // Stop software if running
-            SoftwareManager.StopSoftware();
+            _softwareService.StopSoftware();
             try {
                 foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
                     process.Kill();
@@ -79,29 +97,5 @@ public class MainWindowViewModel : ViewModelBase
             catch (Exception) { }
             Environment.Exit(0);
         });
-    }
-
-    private void OpenBrowser(string url)
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") {
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            });
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            Process.Start("xdg-open", url);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("open", url);
-        }
-        else {
-            try {
-                // Fallback
-                if (url.Contains("github"))
-                    Process.Start("https://github.com/200Tigersbloxed/HRtoVRChat_OSC");
-            }
-            catch (Exception) { }
-        }
     }
 }

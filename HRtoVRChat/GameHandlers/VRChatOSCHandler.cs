@@ -1,13 +1,23 @@
 using System.Diagnostics;
+using HRtoVRChat.Services;
 
 namespace HRtoVRChat.GameHandlers;
 
 public class VRChatOSCHandler : IGameHandler {
+    private readonly IParamsService _paramsService;
+    private readonly IConfigService _configService;
+
+    public VRChatOSCHandler(IParamsService paramsService, IConfigService configService)
+    {
+        _paramsService = paramsService;
+        _configService = configService;
+    }
+
     public string Name => "VRChat";
 
     public bool IsGameRunning() {
         bool vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
-        bool cvrRunning = ConfigManager.LoadedConfig.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
+        bool cvrRunning = _configService.LoadedConfig.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
         return vrcRunning || cvrRunning;
     }
 
@@ -18,16 +28,16 @@ public class VRChatOSCHandler : IGameHandler {
 
     public void Start() {
         LogHelper.Log("Starting VRChat OSC Handler");
-        ParamsManager.InitParams();
+        _paramsService.InitParams();
     }
 
     public void Stop() {
         LogHelper.Log("Stopping VRChat OSC Handler");
-        ParamsManager.ResetParams();
+        _paramsService.ResetParams();
     }
 
     public void UpdateHR(int ones, int tens, int hundreds, int hr, bool isConnected, bool isActive) {
-        var hro = new ParamsManager.HROutput {
+        var hro = new HROutput {
             ones = ones,
             tens = tens,
             hundreds = hundreds,
@@ -35,10 +45,10 @@ public class VRChatOSCHandler : IGameHandler {
             isConnected = isConnected,
             isActive = isActive
         };
-        ParamsManager.UpdateHRValues(hro);
+        _paramsService.UpdateHRValues(hro);
     }
 
     public void UpdateHeartBeat(bool isHeartBeat, bool shouldStart) {
-        ParamsManager.UpdateHeartBeat(isHeartBeat);
+        _paramsService.UpdateHeartBeat(isHeartBeat);
     }
 }

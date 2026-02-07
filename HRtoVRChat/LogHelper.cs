@@ -54,7 +54,7 @@ public static class LogHelper {
         OnLog?.Invoke(msg, LogLevel.Warn);
     }
 
-    public static void Error(object obj, Exception e = null) {
+    public static void Error(object obj, Exception? e = null) {
         var frame = new StackFrame(1);
         object log = $"[{time}] [{frame.GetMethod()?.DeclaringType}:{frame.GetMethod()}] (ERROR): {obj}";
         if (e != null)

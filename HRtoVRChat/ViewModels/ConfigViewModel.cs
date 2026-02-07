@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using HRtoVRChat.Configs;
+using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Tommy.Serializer;
@@ -24,10 +25,14 @@ public class ConfigViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SaveConfigCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenParameterNamesCommand { get; }
 
-    public ConfigViewModel()
+    private readonly IConfigService _configService;
+
+    public ConfigViewModel(IConfigService configService)
     {
+        _configService = configService;
+
         SaveConfigCommand = ReactiveCommand.Create(() => {
-             ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
+             _configService.SaveConfig(_configService.LoadedConfig);
         });
 
         OpenParameterNamesCommand = ReactiveCommand.Create(() => {
@@ -42,11 +47,11 @@ public class ConfigViewModel : ViewModelBase
             .Subscribe(manager => {
                 if (manager != null)
                 {
-                    var config = ConfigManager.LoadedConfig;
+                    var config = _configService.LoadedConfig;
                     if (config.hrType != manager.Id)
                     {
                         config.hrType = manager.Id;
-                        ConfigManager.SaveConfig(config);
+                        _configService.SaveConfig(config);
                     }
                 }
             });
@@ -62,7 +67,7 @@ public class ConfigViewModel : ViewModelBase
         Managers.Clear();
         GlobalSettings.Clear();
 
-        var config = ConfigManager.LoadedConfig;
+        var config = _configService.LoadedConfig;
 
         // 1. Load Global Settings
         // We manually select fields that are global
@@ -72,7 +77,7 @@ public class ConfigViewModel : ViewModelBase
             var field = config.GetType().GetField(fieldName);
             if (field != null)
             {
-                GlobalSettings.Add(new ConfigItemViewModel(config, field));
+                GlobalSettings.Add(new ConfigItemViewModel(config, field, _configService));
             }
         }
 
@@ -134,7 +139,7 @@ public class ConfigViewModel : ViewModelBase
              // Check if it should be included
              if (Attribute.IsDefined(field, typeof(TommyInclude)) || Attribute.IsDefined(field, typeof(TommyComment)))
              {
-                 manager.Settings.Add(new ConfigItemViewModel(configObject, field));
+                 manager.Settings.Add(new ConfigItemViewModel(configObject, field, _configService));
              }
         }
     }

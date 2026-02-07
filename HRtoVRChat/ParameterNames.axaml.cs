@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using HRtoVRChat.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HRtoVRChat;
 
@@ -13,7 +14,10 @@ public partial class ParameterNames : Window {
 #if DEBUG
         this.AttachDevTools();
 #endif
-        DataContext = new ParameterNamesViewModel();
+        if (Application.Current is App app && app.Services != null)
+        {
+            DataContext = app.Services.GetRequiredService<ParameterNamesViewModel>();
+        }
         Closed += (sender, args) => IsOpen = false;
     }
 

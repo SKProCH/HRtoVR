@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
+using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Tommy.Serializer;
@@ -21,10 +22,13 @@ public class ConfigItemViewModel : ViewModelBase
     public FieldInfo FieldInfo { get; }
     public object TargetObject { get; }
 
-    public ConfigItemViewModel(object targetObject, FieldInfo fieldInfo)
+    private readonly IConfigService _configService;
+
+    public ConfigItemViewModel(object targetObject, FieldInfo fieldInfo, IConfigService configService)
     {
         TargetObject = targetObject;
         FieldInfo = fieldInfo;
+        _configService = configService;
         Name = fieldInfo.Name;
 
         var descAttr = (TommyComment)Attribute.GetCustomAttribute(fieldInfo, typeof(TommyComment));
@@ -48,7 +52,7 @@ public class ConfigItemViewModel : ViewModelBase
         {
             var typedValue = Convert.ChangeType(newValue, FieldInfo.FieldType);
             FieldInfo.SetValue(TargetObject, typedValue);
-            ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
+            _configService.SaveConfig(_configService.LoadedConfig);
         }
         catch (Exception)
         {

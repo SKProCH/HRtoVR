@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using HRtoVRChat_OSC_SDK;
+using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -15,9 +16,11 @@ public class IncomingDataViewModel : ViewModelBase
 
     private CancellationTokenSource? _cancellationTokenSource;
     private AppBridge? _appBridge;
+    private readonly ISoftwareService _softwareService;
 
-    public IncomingDataViewModel()
+    public IncomingDataViewModel(ISoftwareService softwareService)
     {
+        _softwareService = softwareService;
         Initialize();
     }
 
@@ -37,7 +40,7 @@ public class IncomingDataViewModel : ViewModelBase
                         (_appBridge?.IsClientConnected ?? false ? "Connected" : "Not Connected");
                 });
 
-                if (SoftwareManager.IsSoftwareRunning && !attemptConnect && !(_appBridge?.IsClientConnected ?? false)) {
+                if (_softwareService.IsSoftwareRunning && !attemptConnect && !(_appBridge?.IsClientConnected ?? false)) {
                     _appBridge = new AppBridge();
                     _appBridge.OnAppBridgeMessage += async message => {
                         await Dispatcher.UIThread.InvokeAsync(() => {

@@ -18,14 +18,14 @@ public class SDKManager : HRManager {
     private readonly Dictionary<HRSDK, Messages.HRMessage> Hrsdks = new();
     private readonly Dictionary<string, Messages.HRMessage> RemoteSDKs = new();
 
-    private Thread _worker;
+    private Thread? _worker;
 
-    private SimpleTcpServer server;
-    private CancellationTokenSource token;
+    private SimpleTcpServer? server;
+    private CancellationTokenSource? token;
 
     public bool Init(string d1) {
         if (_worker != null) {
-            token.Cancel();
+            token?.Cancel();
         }
 
         token = new CancellationTokenSource();
@@ -235,7 +235,7 @@ public class SDKManager : HRManager {
     }
 
     public void Stop() {
-        token.Cancel();
+        token?.Cancel();
     }
 
     public bool IsOpen() {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reactive;
 using Avalonia.Controls;
+using HRtoVRChat.Services;
 using MessageBox.Avalonia;
 using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
@@ -24,10 +25,14 @@ public class ParameterNamesViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<string, Unit> SelectParameterCommand { get; }
 
-    public ParameterNamesViewModel()
+    private readonly IConfigService _configService;
+
+    public ParameterNamesViewModel(IConfigService configService)
     {
+        _configService = configService;
+
         // Load keys
-        foreach (var keyValuePair in ConfigManager.LoadedConfig.ParameterNames)
+        foreach (var keyValuePair in _configService.LoadedConfig.ParameterNames)
         {
             ParameterKeys.Add(keyValuePair.Key, keyValuePair.Key);
         }
@@ -46,7 +51,7 @@ public class ParameterNamesViewModel : ViewModelBase
         SelectedParameterName = key;
 
         // Load value from config
-        if (ConfigManager.LoadedConfig.ParameterNames.TryGetValue(key, out var value))
+        if (_configService.LoadedConfig.ParameterNames.TryGetValue(key, out var value))
         {
             ParameterValue = value;
         }
@@ -71,8 +76,8 @@ public class ParameterNamesViewModel : ViewModelBase
 
         try
         {
-            ConfigManager.LoadedConfig.ParameterNames[SelectedParameterKey] = ParameterValue;
-            ConfigManager.SaveConfig(ConfigManager.LoadedConfig);
+            _configService.LoadedConfig.ParameterNames[SelectedParameterKey] = ParameterValue;
+            _configService.SaveConfig(_configService.LoadedConfig);
         }
         catch (Exception)
         {

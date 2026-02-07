@@ -6,9 +6,9 @@ using Websocket.Client;
 namespace HRtoVRChat;
 
 public class WebsocketTemplate {
-    private WebsocketClient _client;
-    public Action<string> OnMessage;
-    public Action OnReconnect;
+    private WebsocketClient? _client;
+    public Action<string>? OnMessage;
+    public Action? OnReconnect;
 
     public string wsUri;
 

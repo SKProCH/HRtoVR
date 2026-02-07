@@ -3,7 +3,7 @@ using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
-using HRtoVRChat.ViewModels;
+using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.Diagnostics;
@@ -24,21 +24,26 @@ public class ProgramViewModel : ViewModelBase
     public event Action<string?, string>? OnLogReceived;
 
     private CancellationTokenSource? _cancellationTokenSource;
+    private readonly ISoftwareService _softwareService;
+    private readonly ITrayIconService _trayIconService;
 
-    public ProgramViewModel()
+    public ProgramViewModel(ISoftwareService softwareService, ITrayIconService trayIconService)
     {
+        _softwareService = softwareService;
+        _trayIconService = trayIconService;
+
         StartCommand = ReactiveCommand.Create(StartSoftware);
         StopCommand = ReactiveCommand.Create(StopSoftware);
         KillCommand = ReactiveCommand.Create(KillSoftware);
         SendCommandCommand = ReactiveCommand.Create(SendCommand);
-        OpenArgumentsCommand = ReactiveCommand.Create(() => TrayIconManager.ArgumentsWindow?.Show());
+        OpenArgumentsCommand = ReactiveCommand.Create(() => _trayIconService.ArgumentsWindow?.Show());
 
         Initialize();
     }
 
     private void Initialize()
     {
-        SoftwareManager.OnConsoleUpdate += (message, overrideColor) =>
+        _softwareService.OnConsoleUpdate += (message, overrideColor) =>
         {
              OnLogReceived?.Invoke(message, overrideColor ?? "");
         };
@@ -50,27 +55,27 @@ public class ProgramViewModel : ViewModelBase
 
     public void UpdateStatus()
     {
-        StatusText = "STATUS: " + (SoftwareManager.IsSoftwareRunning ? "RUNNING" : "STOPPED");
+        StatusText = "STATUS: " + (_softwareService.IsSoftwareRunning ? "RUNNING" : "STOPPED");
     }
 
     private void StartSoftware()
     {
         OnLogReceived?.Invoke(null, "CLEAR");
-        SoftwareManager.OnConsoleUpdate(
-            $"HRtoVRChat {SoftwareManager.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
-        SoftwareManager.StartSoftware();
+        _softwareService.OnConsoleUpdate(
+            $"HRtoVRChat {_softwareService.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
+        _softwareService.StartSoftware();
         UpdateStatus();
     }
 
     private void StopSoftware()
     {
-        SoftwareManager.StopSoftware();
+        _softwareService.StopSoftware();
         UpdateStatus();
     }
 
     private void KillSoftware()
     {
-        SoftwareManager.StopSoftware();
+        _softwareService.StopSoftware();
         try {
             foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
                 process.Kill();
@@ -84,7 +89,7 @@ public class ProgramViewModel : ViewModelBase
     {
         if (!string.IsNullOrEmpty(CommandInput))
         {
-            SoftwareManager.SendCommand(CommandInput);
+            _softwareService.SendCommand(CommandInput);
             CommandInput = "";
         }
     }
@@ -97,8 +102,8 @@ public class ProgramViewModel : ViewModelBase
                 await Dispatcher.UIThread.InvokeAsync(() => {
                     UpdateStatus();
 
-                    TrayIconManager.Update(new TrayIconManager.UpdateTrayIconInformation {
-                        Status = SoftwareManager.IsSoftwareRunning ? "RUNNING" : "STOPPED"
+                    _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation {
+                        Status = _softwareService.IsSoftwareRunning ? "RUNNING" : "STOPPED"
                     });
                 });
 

@@ -1,5 +1,6 @@
 using System;
 using System.Reactive.Linq;
+using HRtoVRChat.Services;
 using HRtoVRChat_OSC_SDK;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -14,14 +15,20 @@ public class ArgumentsViewModel : ViewModelBase
     [Reactive] public bool UseLegacyBool { get; set; }
     [Reactive] public string OtherArgs { get; set; } = "";
 
-    public ArgumentsViewModel()
+    private readonly IConfigService _configService;
+    private readonly ITrayIconService _trayIconService;
+
+    public ArgumentsViewModel(IConfigService configService, ITrayIconService trayIconService)
     {
+        _configService = configService;
+        _trayIconService = trayIconService;
+
         // Load from Config
-        AutoStart = ConfigManager.LoadedUIConfig.AutoStart;
-        SkipVRCCheck = ConfigManager.LoadedUIConfig.SkipVRCCheck;
-        NeosBridge = ConfigManager.LoadedUIConfig.NeosBridge;
-        UseLegacyBool = ConfigManager.LoadedUIConfig.UseLegacyBool;
-        OtherArgs = ConfigManager.LoadedUIConfig.OtherArgs;
+        AutoStart = _configService.LoadedUIConfig.AutoStart;
+        SkipVRCCheck = _configService.LoadedUIConfig.SkipVRCCheck;
+        NeosBridge = _configService.LoadedUIConfig.NeosBridge;
+        UseLegacyBool = _configService.LoadedUIConfig.UseLegacyBool;
+        OtherArgs = _configService.LoadedUIConfig.OtherArgs;
 
         // Mutual exclusivity logic
         this.WhenAnyValue(x => x.AutoStart)
@@ -39,28 +46,28 @@ public class ArgumentsViewModel : ViewModelBase
 
         this.WhenAnyValue(x => x.OtherArgs)
             .Skip(1)
-            .Subscribe(val => ConfigManager.LoadedUIConfig.OtherArgs = val);
+            .Subscribe(val => _configService.LoadedUIConfig.OtherArgs = val);
     }
 
     public void SaveConfig()
     {
-        ConfigManager.LoadedUIConfig.OtherArgs = OtherArgs;
-        ConfigManager.SaveConfig(ConfigManager.LoadedUIConfig);
+        _configService.LoadedUIConfig.OtherArgs = OtherArgs;
+        _configService.SaveConfig(_configService.LoadedUIConfig);
     }
 
     private void UpdateConfig()
     {
-        ConfigManager.LoadedUIConfig.AutoStart = AutoStart;
-        ConfigManager.LoadedUIConfig.SkipVRCCheck = SkipVRCCheck;
-        ConfigManager.LoadedUIConfig.NeosBridge = NeosBridge;
-        ConfigManager.LoadedUIConfig.UseLegacyBool = UseLegacyBool;
+        _configService.LoadedUIConfig.AutoStart = AutoStart;
+        _configService.LoadedUIConfig.SkipVRCCheck = SkipVRCCheck;
+        _configService.LoadedUIConfig.NeosBridge = NeosBridge;
+        _configService.LoadedUIConfig.UseLegacyBool = UseLegacyBool;
 
-        TrayIconManager.Update(new TrayIconManager.UpdateTrayIconInformation {
+        _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation {
             AutoStart = AutoStart,
             SkipVRCCheck = SkipVRCCheck,
             NeosBridge = NeosBridge
         });
 
-        ConfigManager.SaveConfig(ConfigManager.LoadedUIConfig);
+        _configService.SaveConfig(_configService.LoadedUIConfig);
     }
 }

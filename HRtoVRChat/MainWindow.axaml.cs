@@ -18,40 +18,9 @@ public partial class MainWindow : Window {
 #if DEBUG
         this.AttachDevTools();
 #endif
-        var vm = new MainWindowViewModel();
-        DataContext = vm;
+        // View delegates handled by services now
 
-        // Wire up SoftwareManager UI delegates
-        SoftwareManager.ShowMessage = (title, message, isError) => {
-            Dispatcher.UIThread.InvokeAsync(() => {
-                MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.Ok,
-                    ContentTitle = title,
-                    ContentMessage = message,
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = isError ? MessageBox.Avalonia.Enums.Icon.Error : MessageBox.Avalonia.Enums.Icon.Info,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
-            });
-        };
-
-        SoftwareManager.RequestConfirmation = async (title, message) => {
-            return await Dispatcher.UIThread.InvokeAsync(async () => {
-                var result = await MessageBoxManager.GetMessageBoxStandardWindow(new MessageBoxStandardParams {
-                    ButtonDefinitions = ButtonEnum.YesNo,
-                    ContentTitle = title,
-                    ContentMessage = message,
-                    WindowIcon = new WindowIcon(AssetTools.Icon),
-                    Icon = MessageBox.Avalonia.Enums.Icon.Error,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
-                }).Show();
-                return (result & ButtonResult.Yes) != 0;
-            });
-        };
-
-        vm.RequestHide += Hide;
-
-        // Set Instances
+        // Set Instances (Legacy/Static fallback, ideally handled by DI setup)
         TrayIconManager.MainWindow = this;
         TrayIconManager.ArgumentsWindow = new Arguments();
     }
