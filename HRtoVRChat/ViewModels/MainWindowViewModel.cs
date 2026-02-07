@@ -19,7 +19,7 @@ public class MainWindowViewModel : ViewModelBase
     public IncomingDataViewModel IncomingDataVM { get; }
 
     // Commands
-    public ReactiveCommand<string, Unit> SwitchPanelCommand { get; }
+    public ReactiveCommand<ViewModelBase, Unit> SwitchPanelCommand { get; }
     public ReactiveCommand<Unit, Unit> HideAppCommand { get; }
     public ReactiveCommand<Unit, Unit> ExitAppCommand { get; }
     public ReactiveCommand<string, Unit> OpenUrlCommand { get; }
@@ -58,16 +58,9 @@ public class MainWindowViewModel : ViewModelBase
         CurrentPage = HomeVM;
 
         // Commands
-        SwitchPanelCommand = ReactiveCommand.Create<string>(panel =>
+        SwitchPanelCommand = ReactiveCommand.Create<ViewModelBase>(vm =>
         {
-            CurrentPage = panel switch
-            {
-                "Home" => HomeVM,
-                "Program" => ProgramVM,
-                "Config" => ConfigVM,
-                "IncomingData" => IncomingDataVM,
-                _ => HomeVM
-            };
+            CurrentPage = vm;
         });
 
         OpenUrlCommand = ReactiveCommand.Create<string>(_browserService.OpenUrl);
