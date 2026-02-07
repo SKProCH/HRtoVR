@@ -12,6 +12,7 @@ public interface IParamsService
     void ResetParams();
     void UpdateHRValues(HROutput hro);
     void UpdateHeartBeat(bool isHeartBeat);
+    void ForceResendValues();
 }
 
 public class ParamsService : IParamsService
@@ -116,6 +117,14 @@ public class ParamsService : IParamsService
             {
                 boolParam.UpdateHeartBeat(isHeartBeat);
             }
+        }
+    }
+
+    public void ForceResendValues()
+    {
+        foreach (var parameter in Parameters)
+        {
+            parameter.UpdateParameter();
         }
     }
 
