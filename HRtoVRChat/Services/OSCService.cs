@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using HRtoVRChat.Configs;
+using Microsoft.Extensions.Options;
 using Vizcon.OSC;
 
 namespace HRtoVRChat.Services;
@@ -14,14 +16,14 @@ public interface IOSCService
 
 public class OSCService : IOSCService
 {
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
     private UDPListener? _listener;
 
     public Action<OscMessage?> OnOscMessage { get; set; } = _ => { };
 
-    public OSCService(IConfigService configService)
+    public OSCService(IOptionsMonitor<AppOptions> appOptions)
     {
-        _configService = configService;
+        _appOptions = appOptions;
     }
 
     public void Init()
@@ -30,7 +32,7 @@ public class OSCService : IOSCService
         {
             try { _listener.Close(); } catch { }
         }
-        _listener = new UDPListener(_configService.LoadedConfig.receiverPort,
+        _listener = new UDPListener(_appOptions.CurrentValue.ReceiverPort,
             packet => OnOscMessage.Invoke((OscMessage?)packet));
     }
 
@@ -39,7 +41,7 @@ public class OSCService : IOSCService
         var processes = Process.GetProcessesByName("VRChat").Length;
         if (HRService.Gargs.Contains("--neos-bridge"))
             processes += Process.GetProcessesByName("Neos").Length;
-        if (_configService.LoadedConfig.ExpandCVR)
+        if (_appOptions.CurrentValue.ExpandCVR)
             processes += Process.GetProcessesByName("ChilloutVR").Length;
         return processes > 0;
     }
@@ -58,7 +60,7 @@ public class OSCService : IOSCService
         }
 
         var message = new OscMessage(destination, realdata);
-        var sender = new UDPSender(_configService.LoadedConfig.ip, _configService.LoadedConfig.port);
+        var sender = new UDPSender(_appOptions.CurrentValue.Ip, _appOptions.CurrentValue.Port);
         sender.Send(message);
     }
 }

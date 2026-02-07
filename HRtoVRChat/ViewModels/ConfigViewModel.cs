@@ -5,10 +5,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using HRtoVRChat.Configs;
-using HRtoVRChat.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using Tommy.Serializer;
 
 namespace HRtoVRChat.ViewModels;
 
@@ -25,14 +25,16 @@ public class ConfigViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SaveConfigCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenParameterNamesCommand { get; }
 
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly IConfiguration _configuration;
 
-    public ConfigViewModel(IConfigService configService)
+    public ConfigViewModel(IOptionsMonitor<AppOptions> appOptions, IConfiguration configuration)
     {
-        _configService = configService;
+        _appOptions = appOptions;
+        _configuration = configuration;
 
         SaveConfigCommand = ReactiveCommand.Create(() => {
-             _configService.SaveConfig(_configService.LoadedConfig);
+             // Config is auto-saved now via IConfiguration
         });
 
         OpenParameterNamesCommand = ReactiveCommand.Create(() => {
@@ -47,11 +49,11 @@ public class ConfigViewModel : ViewModelBase
             .Subscribe(manager => {
                 if (manager != null)
                 {
-                    var config = _configService.LoadedConfig;
-                    if (config.hrType != manager.Id)
+                    var config = _appOptions.CurrentValue;
+                    if (config.HrType != manager.Id)
                     {
-                        config.hrType = manager.Id;
-                        _configService.SaveConfig(config);
+                        config.HrType = manager.Id;
+                        _configuration["HrType"] = manager.Id;
                     }
                 }
             });
@@ -67,54 +69,54 @@ public class ConfigViewModel : ViewModelBase
         Managers.Clear();
         GlobalSettings.Clear();
 
-        var config = _configService.LoadedConfig;
+        var config = _appOptions.CurrentValue;
 
         // 1. Load Global Settings
         // We manually select fields that are global
-        var globalFields = new[] { "ip", "port", "receiverPort", "MaxHR", "MinHR", "ExpandCVR" };
+        var globalFields = new[] { "Ip", "Port", "ReceiverPort", "MaxHR", "MinHR", "ExpandCVR" };
         foreach (var fieldName in globalFields)
         {
-            var field = config.GetType().GetField(fieldName);
-            if (field != null)
+            var prop = config.GetType().GetProperty(fieldName);
+            if (prop != null)
             {
-                GlobalSettings.Add(new ConfigItemViewModel(config, field, _configService));
+                GlobalSettings.Add(new ConfigItemViewModel(config, prop, fieldName, _configuration));
             }
         }
 
         // 2. Load Managers
         // Fitbit
         var fitbit = new ManagerViewModel("Fitbit", "fitbithrtows");
-        AddSettings(fitbit, config.FitbitConfig);
+        AddSettings(fitbit, config.FitbitOptions, "FitbitOptions");
         Managers.Add(fitbit);
 
         // HRProxy
         var hrproxy = new ManagerViewModel("HRProxy", "hrproxy");
-        AddSettings(hrproxy, config.HRProxyConfig);
+        AddSettings(hrproxy, config.HRProxyOptions, "HRProxyOptions");
         Managers.Add(hrproxy);
 
         // HypeRate
         var hyperate = new ManagerViewModel("HypeRate", "hyperate");
-        AddSettings(hyperate, config.HypeRateConfig);
+        AddSettings(hyperate, config.HypeRateOptions, "HypeRateOptions");
         Managers.Add(hyperate);
 
         // Pulsoid
         var pulsoid = new ManagerViewModel("Pulsoid (Legacy)", "pulsoid");
-        AddSettings(pulsoid, config.PulsoidConfig);
+        AddSettings(pulsoid, config.PulsoidOptions, "PulsoidOptions");
         Managers.Add(pulsoid);
 
         // PulsoidSocket
         var pulsoidSocket = new ManagerViewModel("Pulsoid (Socket)", "pulsoidsocket");
-        AddSettings(pulsoidSocket, config.PulsoidSocketConfig);
+        AddSettings(pulsoidSocket, config.PulsoidSocketOptions, "PulsoidSocketOptions");
         Managers.Add(pulsoidSocket);
 
         // Stromno
         var stromno = new ManagerViewModel("Stromno", "stromno");
-        AddSettings(stromno, config.StromnoConfig);
+        AddSettings(stromno, config.StromnoOptions, "StromnoOptions");
         Managers.Add(stromno);
 
         // TextFile
         var textfile = new ManagerViewModel("TextFile", "textfile");
-        AddSettings(textfile, config.TextFileConfig);
+        AddSettings(textfile, config.TextFileOptions, "TextFileOptions");
         Managers.Add(textfile);
 
         // SDK
@@ -123,23 +125,25 @@ public class ConfigViewModel : ViewModelBase
         Managers.Add(sdk);
 
         // Select the active manager
-        SelectedManager = Managers.FirstOrDefault(m => m.Id.Equals(config.hrType, StringComparison.OrdinalIgnoreCase));
+        SelectedManager = Managers.FirstOrDefault(m => m.Id.Equals(config.HrType, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void AddSettings(ManagerViewModel manager, object configObject)
+    private void AddSettings(ManagerViewModel manager, object configObject, string sectionName)
     {
         if (configObject == null) return;
 
-        foreach (var field in configObject.GetType().GetFields())
+        foreach (var prop in configObject.GetType().GetProperties())
         {
              // Check for TommyInclude or TommyComment if needed, but usually we want all public fields in config objects
              // The original code checked for TommyComment or just assumed fields.
              // Config fields in Config.cs have [TommyInclude].
 
              // Check if it should be included
-             if (Attribute.IsDefined(field, typeof(TommyInclude)) || Attribute.IsDefined(field, typeof(TommyComment)))
+             // Since we moved to properties, we assume all properties are config items unless specified otherwise
+             // Or we can check if it's read/write
+             if (prop.CanRead && prop.CanWrite)
              {
-                 manager.Settings.Add(new ConfigItemViewModel(configObject, field, _configService));
+                 manager.Settings.Add(new ConfigItemViewModel(configObject, prop, $"{sectionName}:{prop.Name}", _configuration));
              }
         }
     }

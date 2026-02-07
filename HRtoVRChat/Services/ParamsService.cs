@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using HRtoVRChat.Configs;
+using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
 
@@ -13,25 +15,25 @@ public interface IParamsService
 
 public class ParamsService : IParamsService
 {
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOSCService _oscService;
 
     public List<IHRParameter> Parameters = new();
 
-    public ParamsService(IConfigService configService, IOSCService oscService)
+    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService)
     {
-        _configService = configService;
+        _appOptions = appOptions;
         _oscService = oscService;
     }
 
     public void InitParams()
     {
-        Parameters.Add(new IntParameter(hro => hro.ones, _configService.LoadedConfig.ParameterNames["onesHR"],
+        Parameters.Add(new IntParameter(hro => hro.ones, _appOptions.CurrentValue.ParameterNames.OnesHR,
             "onesHR", _oscService));
-        Parameters.Add(new IntParameter(hro => hro.tens, _configService.LoadedConfig.ParameterNames["tensHR"],
+        Parameters.Add(new IntParameter(hro => hro.tens, _appOptions.CurrentValue.ParameterNames.TensHR,
             "tensHR", _oscService));
         Parameters.Add(new IntParameter(hro => hro.hundreds,
-            _configService.LoadedConfig.ParameterNames["hundredsHR"], "hundredsHR", _oscService));
+            _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", _oscService));
         Parameters.Add(new IntParameter(hro =>
         {
             var HRstring = $"{hro.hundreds}{hro.tens}{hro.ones}";
@@ -49,12 +51,12 @@ public class ParamsService : IParamsService
             if (HR < 0)
                 HR = 0;
             return HR;
-        }, _configService.LoadedConfig.ParameterNames["HR"], "HR", _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
-            var maxhr = (float)_configService.LoadedConfig.MaxHR;
-            var minhr = (float)_configService.LoadedConfig.MinHR;
+            var maxhr = (float)_appOptions.CurrentValue.MaxHR;
+            var minhr = (float)_appOptions.CurrentValue.MinHR;
             var HR = (float)hro.HR;
             if (HR > maxhr)
                 targetFloat = 1;
@@ -63,12 +65,12 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return targetFloat;
-        }, _configService.LoadedConfig.ParameterNames["HRPercent"], "HRPercent", _configService, _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _appOptions, _oscService));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
-            var maxhr = (float)_configService.LoadedConfig.MaxHR;
-            var minhr = (float)_configService.LoadedConfig.MinHR;
+            var maxhr = (float)_appOptions.CurrentValue.MaxHR;
+            var minhr = (float)_appOptions.CurrentValue.MinHR;
             var HR = (float)hro.HR;
             if (HR > maxhr)
                 targetFloat = 1;
@@ -77,13 +79,13 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return 2f * targetFloat - 1f;
-        }, _configService.LoadedConfig.ParameterNames["FullHRPercent"], "FullHRPercent", _configService, _oscService));
+        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _appOptions, _oscService));
         Parameters.Add(new BoolParameter(hro => hro.isActive,
-            _configService.LoadedConfig.ParameterNames["isHRActive"], "isHRActive", _oscService));
+            _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", _oscService));
         Parameters.Add(new BoolParameter(hro => hro.isConnected,
-            _configService.LoadedConfig.ParameterNames["isHRConnected"], "isHRConnected", _oscService));
+            _appOptions.CurrentValue.ParameterNames.IsHRConnected, "isHRConnected", _oscService));
         Parameters.Add(
-            new BoolParameter(BoolCheckType.HeartBeat, _configService.LoadedConfig.ParameterNames["isHRBeat"], _oscService));
+            new BoolParameter(BoolCheckType.HeartBeat, _appOptions.CurrentValue.ParameterNames.IsHRBeat, _oscService));
     }
 
     public void ResetParams()
@@ -230,15 +232,15 @@ public class ParamsService : IParamsService
     public class FloatParameter : IHRParameter
     {
         private Func<HROutput, float> _getVal;
-        private readonly IConfigService _configService;
+        private readonly IOptionsMonitor<AppOptions> _appOptions;
         private readonly IOSCService _oscService;
 
-        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IConfigService configService, IOSCService oscService)
+        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<AppOptions> appOptions, IOSCService oscService)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
-            _configService = configService;
+            _appOptions = appOptions;
             _oscService = oscService;
             ParamValue = "0";
             LogHelper.Debug($"FloatParameter with ParameterName: {parameterName} has been created!");

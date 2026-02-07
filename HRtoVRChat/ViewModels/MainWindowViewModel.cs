@@ -28,7 +28,6 @@ public class MainWindowViewModel : ViewModelBase
     // Events
     public event Action? RequestHide;
 
-    private readonly IConfigService _configService;
     private readonly ITrayIconService _trayIconService;
     private readonly ISoftwareService _softwareService;
     private readonly IBrowserService _browserService;
@@ -39,7 +38,6 @@ public class MainWindowViewModel : ViewModelBase
         UpdatesViewModel updatesVM,
         ConfigViewModel configVM,
         IncomingDataViewModel incomingDataVM,
-        IConfigService configService,
         ITrayIconService trayIconService,
         ISoftwareService softwareService,
         IBrowserService browserService)
@@ -49,7 +47,6 @@ public class MainWindowViewModel : ViewModelBase
         UpdatesVM = updatesVM;
         ConfigVM = configVM;
         IncomingDataVM = incomingDataVM;
-        _configService = configService;
         _trayIconService = trayIconService;
         _softwareService = softwareService;
         _browserService = browserService;
@@ -58,7 +55,7 @@ public class MainWindowViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(_softwareService.LocalDirectory) && !Directory.Exists(_softwareService.LocalDirectory))
             Directory.CreateDirectory(_softwareService.LocalDirectory);
 
-        _configService.CreateConfig();
+        // _configService.CreateConfig(); // Config is loaded via DI
 
         // Default Page
         CurrentPage = HomeVM;

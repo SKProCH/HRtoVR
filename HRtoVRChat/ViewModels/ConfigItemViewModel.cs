@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
-using HRtoVRChat.Services;
+using Microsoft.Extensions.Configuration;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using Tommy.Serializer;
 
 namespace HRtoVRChat.ViewModels;
 
@@ -19,24 +19,26 @@ public class ConfigItemViewModel : ViewModelBase
     // We use a string for the input field to avoid binding issues with different types
     [Reactive] public string StringValue { get; set; } = "";
 
-    public FieldInfo FieldInfo { get; }
+    public PropertyInfo PropertyInfo { get; }
     public object TargetObject { get; }
+    public string ConfigPath { get; }
 
-    private readonly IConfigService _configService;
+    private readonly IConfiguration _configuration;
 
-    public ConfigItemViewModel(object targetObject, FieldInfo fieldInfo, IConfigService configService)
+    public ConfigItemViewModel(object targetObject, PropertyInfo propertyInfo, string configPath, IConfiguration configuration)
     {
         TargetObject = targetObject;
-        FieldInfo = fieldInfo;
-        _configService = configService;
-        Name = fieldInfo.Name;
+        PropertyInfo = propertyInfo;
+        ConfigPath = configPath;
+        _configuration = configuration;
+        Name = propertyInfo.Name;
 
-        var descAttr = (TommyComment)Attribute.GetCustomAttribute(fieldInfo, typeof(TommyComment));
-        Description = descAttr?.Value ?? "";
+        var descAttr = propertyInfo.GetCustomAttribute<DescriptionAttribute>();
+        Description = descAttr?.Description ?? "";
 
-        TypeName = FriendlyName(fieldInfo.FieldType).ToLower();
+        TypeName = FriendlyName(propertyInfo.PropertyType).ToLower();
 
-        var val = fieldInfo.GetValue(targetObject);
+        var val = propertyInfo.GetValue(targetObject);
         StringValue = val?.ToString() ?? "";
 
         this.WhenAnyValue(x => x.StringValue)
@@ -50,9 +52,13 @@ public class ConfigItemViewModel : ViewModelBase
     {
         try
         {
-            var typedValue = Convert.ChangeType(newValue, FieldInfo.FieldType);
-            FieldInfo.SetValue(TargetObject, typedValue);
-            _configService.SaveConfig(_configService.LoadedConfig);
+            var typedValue = Convert.ChangeType(newValue, PropertyInfo.PropertyType);
+            PropertyInfo.SetValue(TargetObject, typedValue);
+
+            if (_configuration != null)
+            {
+                _configuration[ConfigPath] = newValue;
+            }
         }
         catch (Exception)
         {

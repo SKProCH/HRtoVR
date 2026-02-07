@@ -1,15 +1,19 @@
 using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels;
 using MessageBox.Avalonia;
 using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WritableJsonConfiguration;
 
 namespace HRtoVRChat;
 
@@ -24,8 +28,27 @@ public class App : Application {
     }
 
     public override void OnFrameworkInitializationCompleted() {
+        // Setup Configuration
+        var configPath = Path.Combine(SoftwareManager.OutputPath, "config.json");
+
+        // Create directories and files if needed
+        var dir = Path.GetDirectoryName(configPath);
+        if (dir != null && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        if (!File.Exists(configPath))
+            File.WriteAllText(configPath, "{}");
+
+        // Use WritableJsonConfiguration for the single config file
+        IConfiguration configuration = WritableJsonConfigurationFabric.Create(configPath);
+
         // Setup DI
         var collection = new ServiceCollection();
+
+        // Register Configuration
+        collection.AddSingleton(configuration);
+        collection.Configure<AppOptions>(configuration);
+
         ConfigureServices(collection);
         Services = collection.BuildServiceProvider();
 
@@ -53,7 +76,6 @@ public class App : Application {
     private void ConfigureServices(IServiceCollection services)
     {
         // Services
-        services.AddSingleton<IConfigService, ConfigService>();
         services.AddSingleton<IOSCService, OSCService>();
         services.AddSingleton<IParamsService, ParamsService>();
         services.AddSingleton<IOSCAvatarListener, OSCAvatarListener>();

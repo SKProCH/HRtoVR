@@ -1,23 +1,25 @@
 using System.Diagnostics;
+using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
+using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.GameHandlers;
 
 public class VRChatOSCHandler : IGameHandler {
     private readonly IParamsService _paramsService;
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
 
-    public VRChatOSCHandler(IParamsService paramsService, IConfigService configService)
+    public VRChatOSCHandler(IParamsService paramsService, IOptionsMonitor<AppOptions> appOptions)
     {
         _paramsService = paramsService;
-        _configService = configService;
+        _appOptions = appOptions;
     }
 
     public string Name => "VRChat";
 
     public bool IsGameRunning() {
         bool vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
-        bool cvrRunning = _configService.LoadedConfig.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
+        bool cvrRunning = _appOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
         return vrcRunning || cvrRunning;
     }
 

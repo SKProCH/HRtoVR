@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using HRtoVRChat.Configs;
+using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
 
@@ -26,12 +28,12 @@ public interface ISoftwareService
 public class SoftwareService : ISoftwareService
 {
     private readonly IHRService _hrService;
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
 
-    public SoftwareService(IHRService hrService, IConfigService configService)
+    public SoftwareService(IHRService hrService, IOptionsMonitor<AppOptions> appOptions)
     {
         _hrService = hrService;
-        _configService = configService;
+        _appOptions = appOptions;
         SoftwareManager.OnConsoleUpdate = (msg, color) => OnConsoleUpdate?.Invoke(msg, color);
     }
 
@@ -73,18 +75,19 @@ public class SoftwareService : ISoftwareService
 
     private string[] GetArgs() {
         List<string> Args = new();
-        if (_configService.LoadedUIConfig != null) {
-            if (_configService.LoadedUIConfig.AutoStart)
+        var options = _appOptions.CurrentValue;
+        if (options != null) {
+            if (options.AutoStart)
                 Args.Add("--auto-start");
-            if (_configService.LoadedUIConfig.SkipVRCCheck)
+            if (options.SkipVRCCheck)
                 Args.Add("--skip-vrc-check");
-            if (_configService.LoadedUIConfig.NeosBridge)
+            if (options.NeosBridge)
                 Args.Add("--neos-bridge");
-            if (_configService.LoadedUIConfig.UseLegacyBool)
+            if (options.UseLegacyBool)
                 Args.Add("--use-01-bool");
             try {
-                if (!string.IsNullOrEmpty(_configService.LoadedUIConfig.OtherArgs))
-                    foreach (var s in _configService.LoadedUIConfig.OtherArgs.Split(' '))
+                if (!string.IsNullOrEmpty(options.OtherArgs))
+                    foreach (var s in options.OtherArgs.Split(' '))
                         Args.Add(s);
             }
             catch (Exception) { }

@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Reactive;
 using Avalonia.Controls;
+using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
 using MessageBox.Avalonia;
 using MessageBox.Avalonia.DTO;
 using MessageBox.Avalonia.Enums;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using HRtoVRChat;
 
 namespace HRtoVRChat.ViewModels;
 
@@ -25,16 +27,18 @@ public class ParameterNamesViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SaveCommand { get; }
     public ReactiveCommand<string, Unit> SelectParameterCommand { get; }
 
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly IConfiguration _configuration;
 
-    public ParameterNamesViewModel(IConfigService configService)
+    public ParameterNamesViewModel(IOptionsMonitor<AppOptions> appOptions, IConfiguration configuration)
     {
-        _configService = configService;
+        _appOptions = appOptions;
+        _configuration = configuration;
 
         // Load keys
-        foreach (var keyValuePair in _configService.LoadedConfig.ParameterNames)
+        foreach (var prop in typeof(ParameterNamesOptions).GetProperties())
         {
-            ParameterKeys.Add(keyValuePair.Key, keyValuePair.Key);
+            ParameterKeys.Add(prop.Name, prop.Name);
         }
 
         this.WhenAnyValue(x => x.SelectedParameterKey)
@@ -51,9 +55,11 @@ public class ParameterNamesViewModel : ViewModelBase
         SelectedParameterName = key;
 
         // Load value from config
-        if (_configService.LoadedConfig.ParameterNames.TryGetValue(key, out var value))
+        var prop = typeof(ParameterNamesOptions).GetProperty(key);
+        if (prop != null)
         {
-            ParameterValue = value;
+            var value = prop.GetValue(_appOptions.CurrentValue.ParameterNames)?.ToString();
+            ParameterValue = value ?? "";
         }
 
         // Load metadata
@@ -76,8 +82,10 @@ public class ParameterNamesViewModel : ViewModelBase
 
         try
         {
-            _configService.LoadedConfig.ParameterNames[SelectedParameterKey] = ParameterValue;
-            _configService.SaveConfig(_configService.LoadedConfig);
+            if (_configuration != null)
+            {
+                _configuration[$"ParameterNames:{SelectedParameterKey}"] = ParameterValue;
+            }
         }
         catch (Exception)
         {

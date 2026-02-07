@@ -4,15 +4,17 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using HRtoVRChat_OSC_SDK;
-using HRtoVRChat.HRManagers;
+using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
+using HRtoVRChat.HRManagers;
+using HRtoVRChat_OSC_SDK;
+using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Services;
 
 public class HRService : IHRService
 {
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOSCService _oscService;
     private readonly IParamsService _paramsService;
     private readonly IOSCAvatarListener _oscAvatarListener;
@@ -51,9 +53,9 @@ public class HRService : IHRService
 
     private bool _lastHeartBeatState;
 
-    public HRService(IConfigService configService, IOSCService oscService, IParamsService paramsService, IOSCAvatarListener oscAvatarListener)
+    public HRService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, IParamsService paramsService, IOSCAvatarListener oscAvatarListener)
     {
-        _configService = configService;
+        _appOptions = appOptions;
         _oscService = oscService;
         _paramsService = paramsService;
         _oscAvatarListener = oscAvatarListener;
@@ -62,18 +64,18 @@ public class HRService : IHRService
     public void Start(string[] args)
     {
         Gargs = args;
-        _configService.CreateConfig();
+        // _configService.CreateConfig(); // Handled by DI/App.axaml.cs
         _oscService.Init();
 
         // Initialize Game Handlers
         _gameHandlers.Clear();
-        var vrcHandler = new VRChatOSCHandler(_paramsService, _configService);
+        var vrcHandler = new VRChatOSCHandler(_paramsService, _appOptions);
         _gameHandlers.Add(vrcHandler);
 
         if (Enumerable.Contains(args, "--neos-bridge"))
         {
             LogHelper.Log("Enabling NeosBridge Handler");
-            var neosHandler = new NeosHandler(_configService);
+            var neosHandler = new NeosHandler(_appOptions);
             _gameHandlers.Add(neosHandler);
             NeosHandler.OnCommand += command => HandleCommand(command, true);
         }
@@ -105,8 +107,8 @@ public class HRService : IHRService
                     apm.isHRBeat = _lastHeartBeatState;
 
                     // Calculate Percentages
-                    var maxhr = (float)_configService.LoadedConfig.MaxHR;
-                    var minhr = (float)_configService.LoadedConfig.MinHR;
+                    var maxhr = (float)_appOptions.CurrentValue.MaxHR;
+                    var minhr = (float)_appOptions.CurrentValue.MinHR;
                     float targetFloat = 0;
                     if (hr > maxhr) targetFloat = 1;
                     else if (hr < minhr) targetFloat = 0;
@@ -244,7 +246,7 @@ public class HRService : IHRService
                 break;
             case "refreshconfig":
                 _paramsService.ResetParams();
-                _configService.CreateConfig();
+                // _configService.CreateConfig(); // Config reloads automatically with IOptionsMonitor
                 // We might need to re-init params if VRChat handler is active
                 foreach (var handler in _gameHandlers)
                 {
@@ -438,7 +440,7 @@ public class HRService : IHRService
     public void StartHRListener(bool fromRestart = false)
     {
         // Start Manager based on Config
-        hrType = StringToHRType(_configService.LoadedConfig.hrType);
+        hrType = StringToHRType(_appOptions.CurrentValue.HrType);
         // Check activeHRManager
         if (activeHRManager != null)
         {
@@ -453,15 +455,15 @@ public class HRService : IHRService
         {
             case HRType.FitbitHRtoWS:
                 activeHRManager = new FitbitManager();
-                activeHRManager.Init(_configService.LoadedConfig.FitbitConfig.fitbitURL);
+                activeHRManager.Init(_appOptions.CurrentValue.FitbitOptions.Url);
                 break;
             case HRType.HRProxy:
                 activeHRManager = new HRProxyManager();
-                activeHRManager.Init(_configService.LoadedConfig.HRProxyConfig.hrproxyId);
+                activeHRManager.Init(_appOptions.CurrentValue.HRProxyOptions.Id);
                 break;
             case HRType.HypeRate:
                 activeHRManager = new HypeRateManager();
-                activeHRManager.Init(_configService.LoadedConfig.HypeRateConfig.hyperateSessionId);
+                activeHRManager.Init(_appOptions.CurrentValue.HypeRateOptions.SessionId);
                 break;
             case HRType.Pulsoid:
                 LogHelper.Warn(
@@ -475,19 +477,19 @@ public class HRService : IHRService
                     "Starting Pulsoid in 25 Seconds...");
                 Thread.Sleep(25000);
                 activeHRManager = new PulsoidManager();
-                activeHRManager.Init(_configService.LoadedConfig.PulsoidConfig.pulsoidwidget);
+                activeHRManager.Init(_appOptions.CurrentValue.PulsoidOptions.Widget);
                 break;
             case HRType.Stromno:
                 activeHRManager = new PulsoidManager();
-                activeHRManager.Init(_configService.LoadedConfig.StromnoConfig.stromnowidget);
+                activeHRManager.Init(_appOptions.CurrentValue.StromnoOptions.Widget);
                 break;
             case HRType.PulsoidSocket:
                 activeHRManager = new PulsoidSocketManager();
-                activeHRManager.Init(_configService.LoadedConfig.PulsoidSocketConfig.pulsoidkey);
+                activeHRManager.Init(_appOptions.CurrentValue.PulsoidSocketOptions.Key);
                 break;
             case HRType.TextFile:
                 activeHRManager = new TextFileManager();
-                activeHRManager.Init(_configService.LoadedConfig.TextFileConfig.textfilelocation);
+                activeHRManager.Init(_appOptions.CurrentValue.TextFileOptions.Location);
                 break;
             // TODO Omnicept Temporarily Disabled
             // case HRType.Omnicept:

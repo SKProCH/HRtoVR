@@ -2,7 +2,8 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using HRtoVRChat.Services;
+using HRtoVRChat.Configs;
+using Microsoft.Extensions.Options;
 using WatsonWebsocket;
 
 namespace HRtoVRChat.GameHandlers;
@@ -11,11 +12,11 @@ public class NeosHandler : IGameHandler {
     public static Action<string> OnCommand = s => { };
     private WatsonWsServer? _server;
     private NeosMessage _neosMessage = new();
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
 
-    public NeosHandler(IConfigService configService)
+    public NeosHandler(IOptionsMonitor<AppOptions> appOptions)
     {
-        _configService = configService;
+        _appOptions = appOptions;
     }
 
     public string Name => "Neos";
@@ -89,8 +90,8 @@ public class NeosHandler : IGameHandler {
 
     private float GetHRPercent(float HR) {
         var targetFloat = 0f;
-        var maxhr = (float)_configService.LoadedConfig.MaxHR;
-        var minhr = (float)_configService.LoadedConfig.MinHR;
+        var maxhr = (float)_appOptions.CurrentValue.MaxHR;
+        var minhr = (float)_appOptions.CurrentValue.MinHR;
         if (HR > maxhr)
             targetFloat = 1;
         else if (HR < minhr)

@@ -1,7 +1,10 @@
 using System;
 using System.Reactive.Linq;
+using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
 using HRtoVRChat_OSC_SDK;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -15,20 +18,23 @@ public class ArgumentsViewModel : ViewModelBase
     [Reactive] public bool UseLegacyBool { get; set; }
     [Reactive] public string OtherArgs { get; set; } = "";
 
-    private readonly IConfigService _configService;
+    private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly IConfiguration _configuration;
     private readonly ITrayIconService _trayIconService;
 
-    public ArgumentsViewModel(IConfigService configService, ITrayIconService trayIconService)
+    public ArgumentsViewModel(IOptionsMonitor<AppOptions> appOptions, IConfiguration configuration, ITrayIconService trayIconService)
     {
-        _configService = configService;
+        _appOptions = appOptions;
+        _configuration = configuration;
         _trayIconService = trayIconService;
 
         // Load from Config
-        AutoStart = _configService.LoadedUIConfig.AutoStart;
-        SkipVRCCheck = _configService.LoadedUIConfig.SkipVRCCheck;
-        NeosBridge = _configService.LoadedUIConfig.NeosBridge;
-        UseLegacyBool = _configService.LoadedUIConfig.UseLegacyBool;
-        OtherArgs = _configService.LoadedUIConfig.OtherArgs;
+        var config = _appOptions.CurrentValue;
+        AutoStart = config.AutoStart;
+        SkipVRCCheck = config.SkipVRCCheck;
+        NeosBridge = config.NeosBridge;
+        UseLegacyBool = config.UseLegacyBool;
+        OtherArgs = config.OtherArgs;
 
         // Mutual exclusivity logic
         this.WhenAnyValue(x => x.AutoStart)
@@ -46,28 +52,32 @@ public class ArgumentsViewModel : ViewModelBase
 
         this.WhenAnyValue(x => x.OtherArgs)
             .Skip(1)
-            .Subscribe(val => _configService.LoadedUIConfig.OtherArgs = val);
+            .Subscribe(val => {
+                if (_configuration != null)
+                    _configuration["OtherArgs"] = val;
+            });
     }
 
     public void SaveConfig()
     {
-        _configService.LoadedUIConfig.OtherArgs = OtherArgs;
-        _configService.SaveConfig(_configService.LoadedUIConfig);
+        if (_configuration != null)
+            _configuration["OtherArgs"] = OtherArgs;
     }
 
     private void UpdateConfig()
     {
-        _configService.LoadedUIConfig.AutoStart = AutoStart;
-        _configService.LoadedUIConfig.SkipVRCCheck = SkipVRCCheck;
-        _configService.LoadedUIConfig.NeosBridge = NeosBridge;
-        _configService.LoadedUIConfig.UseLegacyBool = UseLegacyBool;
+        if (_configuration != null)
+        {
+            _configuration["AutoStart"] = AutoStart.ToString();
+            _configuration["SkipVRCCheck"] = SkipVRCCheck.ToString();
+            _configuration["NeosBridge"] = NeosBridge.ToString();
+            _configuration["UseLegacyBool"] = UseLegacyBool.ToString();
+        }
 
         _trayIconService.Update(new TrayIconManager.UpdateTrayIconInformation {
             AutoStart = AutoStart,
             SkipVRCCheck = SkipVRCCheck,
             NeosBridge = NeosBridge
         });
-
-        _configService.SaveConfig(_configService.LoadedUIConfig);
     }
 }
