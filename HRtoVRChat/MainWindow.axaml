@@ -4,7 +4,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:HRtoVRChat.ViewModels"
         xmlns:views="using:HRtoVRChat.Views"
-        xmlns:converters="using:HRtoVRChat.Converters"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
@@ -30,10 +29,6 @@
       <views:IncomingDataView />
     </DataTemplate>
   </Window.DataTemplates>
-
-  <Window.Resources>
-    <converters:EnumToBooleanConverter x:Key="EnumToBool" />
-  </Window.Resources>
 
   <Window.Styles>
     <Style Selector="TextBlock.h1">
