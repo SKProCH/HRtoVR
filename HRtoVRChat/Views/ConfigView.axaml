@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HRtoVRChat.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HRtoVRChat.Views.ConfigView"
+             x:DataType="vm:ConfigViewModel">
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="10">
+        <TextBlock Grid.Row="0" Margin="0,0,0,10">Select a Config Value</TextBlock>
+
+        <Grid Grid.Row="1" Name="ConfigSelections" ColumnDefinitions="*,*">
+            <StackPanel Grid.Column="0" Spacing="5" Name="LeftStackPanelConfig">
+                <ItemsControl ItemsSource="{Binding ConfigItemsLeft}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton GroupName="ConfigValues" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                         Command="{Binding DataContext.SwitchConfigSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="5" Name="RightStackPanelConfig">
+                <ItemsControl ItemsSource="{Binding ConfigItemsRight}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton GroupName="ConfigValues" Content="{Binding Name}"
+                                         Command="{Binding DataContext.SwitchConfigSelectionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="Open ParameterNames Menu" Command="{Binding OpenParameterNamesCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <!--Separator-->
+        <Border Grid.Row="2" CornerRadius="5" Height="5" Background="#1f1f1f" Margin="20,10" />
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" Margin="0,10">
+            <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock FontSize="18" Name="ConfigNameLabel" Text="{Binding SelectedConfigItem.Name}" />
+                <TextBlock FontSize="15" Name="ConfigValueType" Text="{Binding SelectedConfigItem.TypeName}" />
+                <TextBlock FontSize="12" TextAlignment="Left" TextWrapping="Wrap"
+                           Height="120"
+                           Name="ConfigDescription" Text="{Binding SelectedConfigItem.Description}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="10">
+                <TextBox Watermark="Enter a Value Here" TextAlignment="Center"
+                         Name="ConfigValue" Text="{Binding ConfigValueInput}" />
+                <Button HorizontalAlignment="Stretch" Command="{Binding SaveConfigCommand}">
+                    <TextBlock TextAlignment="Center">SAVE</TextBlock>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

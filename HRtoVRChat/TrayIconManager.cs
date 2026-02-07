@@ -174,15 +174,15 @@ public static class TrayIconManager {
                         break;
                     case "Start":
                         if (MainWindow.DataContext is MainWindowViewModel vmStart)
-                            vmStart.StartCommand.Execute(Unit.Default).Subscribe();
+                            vmStart.ProgramVM.StartCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "Stop":
                         if (MainWindow.DataContext is MainWindowViewModel vmStop)
-                            vmStop.StopCommand.Execute(Unit.Default).Subscribe();
+                            vmStop.ProgramVM.StopCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "Kill":
                         if (MainWindow.DataContext is MainWindowViewModel vmKill)
-                            vmKill.KillCommand.Execute(Unit.Default).Subscribe();
+                            vmKill.ProgramVM.KillCommand.Execute(Unit.Default).Subscribe();
                         break;
                     case "HideApplication":
                         if (nmi.IsChecked)

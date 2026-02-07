@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
         xmlns:vm="using:HRtoVRChat.ViewModels"
+        xmlns:views="using:HRtoVRChat.Views"
         xmlns:converters="using:HRtoVRChat.Converters"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
@@ -15,6 +15,24 @@
   <Design.DataContext>
     <vm:MainWindowViewModel />
   </Design.DataContext>
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+      <views:HomeView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
+      <views:ProgramView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:UpdatesViewModel}">
+      <views:UpdatesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:ConfigViewModel}">
+      <views:ConfigView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:IncomingDataViewModel}">
+      <views:IncomingDataView />
+    </DataTemplate>
+  </Window.DataTemplates>
 
   <Window.Resources>
     <converters:EnumToBooleanConverter x:Key="EnumToBool" />
@@ -31,31 +49,31 @@
     <!--LeftBar-->
     <Grid Grid.Column="0" Background="#0c0c0c" RowDefinitions="*,Auto">
       <StackPanel Grid.Row="0" Spacing="0">
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Home}">
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Home">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Home</TextBlock>
           </StackPanel>
         </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Program}">
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Program">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource window_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Program</TextBlock>
           </StackPanel>
         </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Updates}">
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Updates">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource arrow_download_regular}" HorizontalAlignment="Left" Margin="-1,0,0,0" />
             <TextBlock Margin="6,1,0,0">Updates</TextBlock>
           </StackPanel>
         </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.Config}">
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Config">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource content_settings_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Config</TextBlock>
           </StackPanel>
         </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{x:Static vm:ProgramPanels.IncomingData}">
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="IncomingData">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource data_usage_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Incoming Data</TextBlock>
@@ -86,138 +104,6 @@
     </Grid>
 
     <!-- Content Area -->
-    <Panel Grid.Column="1">
-      <!--Home Tab-->
-      <StackPanel Name="HomePanel" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Home}"
-                  HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
-        <TextBlock FontSize="20" FontWeight="Bold" HorizontalAlignment="Center">
-          HRtoVRChat
-        </TextBlock>
-        <TextBlock Width="440" TextWrapping="Wrap" TextAlignment="Center">
-          Welcome to HRtoVRChat!
-        </TextBlock>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
-          <TextBlock VerticalAlignment="Center">You can still access the latest news page</TextBlock>
-          <Button Command="{Binding OpenUrlCommand}" CommandParameter="https://hrtovrchat.fortnite.lol/applatest">here</Button>
-        </StackPanel>
-      </StackPanel>
-
-      <!--Program Tab-->
-      <Grid Name="ProgramPanel" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Program}"
-            RowDefinitions="*,Auto,Auto,Auto" Margin="10">
-
-        <Grid Grid.Row="0" RowDefinitions="*,Auto">
-           <avaloniaEdit:TextEditor Background="#0c0c0c" Foreground="White"
-                                   FontFamily="Courier New" Focusable="False" FontSize="12"
-                                   IsReadOnly="True" WordWrap="True"
-                                   Name="OutputTextBox" />
-           <Label Grid.Row="1" Name="StatusLabel" Content="{Binding StatusText}" Margin="0,5,0,0" />
-        </Grid>
-
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,10">
-          <Button Command="{Binding StartCommand}">START</Button>
-          <Button Command="{Binding StopCommand}">STOP</Button>
-          <Button Command="{Binding KillCommand}">KILL</Button>
-        </StackPanel>
-
-        <Button Grid.Row="2" HorizontalAlignment="Left" Command="{Binding OpenArgumentsCommand}" Margin="0,0,0,10">Open Program Arguments</Button>
-
-        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,0">
-          <TextBox Name="CommandBox" Watermark="Enter a Command" Text="{Binding CommandInput}" Margin="0,0,10,0" />
-          <Button Grid.Column="1" Command="{Binding SendCommandCommand}">SEND</Button>
-        </Grid>
-      </Grid>
-
-      <!--Updates Tab-->
-      <Grid Name="UpdatesPanel" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Updates}"
-            RowDefinitions="Auto,*,Auto" Margin="10">
-        <Grid Grid.Row="0">
-          <StackPanel Spacing="5">
-            <TextBlock Name="InstalledVersionLabel" Text="{Binding InstalledVersion}" />
-            <TextBlock Name="LatestVersionLabel" Text="{Binding LatestVersion}" />
-          </StackPanel>
-          <Button HorizontalAlignment="Right" VerticalAlignment="Top" Command="{Binding RefreshUpdatesCommand}">REFRESH</Button>
-        </Grid>
-
-        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
-          <Button Name="UpdateButton" HorizontalAlignment="Center"
-                  Command="{Binding UpdateSoftwareCommand}" Content="{Binding UpdateButtonText}" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="2" Spacing="5">
-          <TextBlock>Total Progress:</TextBlock>
-          <ProgressBar Name="TotalProgressBar" Value="{Binding TotalProgress}" />
-          <TextBlock>Current Task Progress:</TextBlock>
-          <ProgressBar Name="TaskProgressBar" Value="{Binding TaskProgress}" />
-        </StackPanel>
-      </Grid>
-
-      <!--Config Tab-->
-      <Grid Name="ConfigPanel" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=Config}"
-            RowDefinitions="Auto,*,Auto,Auto" Margin="10">
-        <TextBlock Grid.Row="0" Margin="0,0,0,10">Select a Config Value</TextBlock>
-
-        <Grid Grid.Row="1" Name="ConfigSelections" ColumnDefinitions="*,*">
-          <StackPanel Grid.Column="0" Spacing="5" Name="LeftStackPanelConfig">
-              <ItemsControl ItemsSource="{Binding ConfigItemsLeft}">
-                  <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                          <RadioButton GroupName="ConfigValues" Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                       Command="{Binding DataContext.SelectedConfigItem, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       CommandParameter="{Binding}" />
-                      </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-              </ItemsControl>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="5" Name="RightStackPanelConfig">
-               <ItemsControl ItemsSource="{Binding ConfigItemsRight}">
-                  <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                          <RadioButton GroupName="ConfigValues" Content="{Binding Name}"
-                                       Command="{Binding DataContext.SwitchConfigSelectionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                       CommandParameter="{Binding}" />
-                      </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <Button Content="Open ParameterNames Menu" Command="{Binding OpenParameterNamesCommand}" />
-          </StackPanel>
-        </Grid>
-
-        <!--Separator-->
-        <Border Grid.Row="2" CornerRadius="5" Height="5" Background="#1f1f1f" Margin="20,10" />
-
-        <Grid Grid.Row="3" ColumnDefinitions="*,*" Margin="0,10">
-          <StackPanel Grid.Column="0" Spacing="5">
-             <TextBlock FontSize="18" Name="ConfigNameLabel" Text="{Binding SelectedConfigItem.Name}" />
-             <TextBlock FontSize="15" Name="ConfigValueType" Text="{Binding SelectedConfigItem.TypeName}" />
-             <TextBlock FontSize="12" TextAlignment="Left" TextWrapping="Wrap"
-                        Height="120"
-                        Name="ConfigDescription" Text="{Binding SelectedConfigItem.Description}" />
-          </StackPanel>
-
-          <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="10">
-             <TextBox Watermark="Enter a Value Here" TextAlignment="Center"
-                      Name="ConfigValue" Text="{Binding ConfigValueInput}" />
-             <Button HorizontalAlignment="Stretch" Command="{Binding SaveConfigCommand}">
-               <TextBlock TextAlignment="Center">SAVE</TextBlock>
-             </Button>
-          </StackPanel>
-        </Grid>
-      </Grid>
-
-      <!--Incoming Data Tab-->
-      <Grid Name="IncomingDataPanel" IsVisible="{Binding CurrentPanel, Converter={StaticResource EnumToBool}, ConverterParameter=IncomingData}"
-            RowDefinitions="Auto,Auto,*" Margin="10">
-        <TextBlock Grid.Row="0" FontSize="16" FontWeight="Bold">
-          HRtoVRChat_OSC Data
-        </TextBlock>
-        <TextBlock Grid.Row="1" Margin="0,5,0,5"
-                   Name="AppBridgeConnectedLabel" Text="{Binding AppBridgeStatus}" />
-        <TextBox Grid.Row="2" Background="#0c0c0c" Foreground="White"
-                 FontFamily="Courier New" Focusable="False" FontSize="12"
-                 IsReadOnly="True" TextWrapping="Wrap"
-                 Name="OutputIncomingData" Text="{Binding IncomingDataOutput}" />
-      </Grid>
-    </Panel>
+    <TransitioningContentControl Grid.Column="1" Content="{Binding CurrentPage}" />
   </Grid>
 </Window>

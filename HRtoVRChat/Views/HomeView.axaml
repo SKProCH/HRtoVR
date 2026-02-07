@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HRtoVRChat.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HRtoVRChat.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+        <TextBlock FontSize="20" FontWeight="Bold" HorizontalAlignment="Center">
+            HRtoVRChat
+        </TextBlock>
+        <TextBlock Width="440" TextWrapping="Wrap" TextAlignment="Center">
+            Welcome to HRtoVRChat!
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+            <TextBlock VerticalAlignment="Center">You can still access the latest news page</TextBlock>
+            <Button Command="{Binding OpenUrlCommand}" CommandParameter="https://hrtovrchat.fortnite.lol/applatest">here</Button>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
