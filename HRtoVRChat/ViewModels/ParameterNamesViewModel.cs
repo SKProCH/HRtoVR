@@ -80,12 +80,8 @@ public class ParameterNamesViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(SelectedParameterKey)) return;
 
-        try
-        {
-            if (_configuration != null)
-            {
-                _configuration[$"ParameterNames:{SelectedParameterKey}"] = ParameterValue;
-            }
+        try {
+            _configuration?[$"ParameterNames:{SelectedParameterKey}"] = ParameterValue;
         }
         catch (Exception e)
         {

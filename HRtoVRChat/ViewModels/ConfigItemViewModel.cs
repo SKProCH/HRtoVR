@@ -55,10 +55,7 @@ public class ConfigItemViewModel : ViewModelBase
             var typedValue = Convert.ChangeType(newValue, PropertyInfo.PropertyType);
             PropertyInfo.SetValue(TargetObject, typedValue);
 
-            if (_configuration != null)
-            {
-                _configuration[ConfigPath] = newValue;
-            }
+            _configuration?[ConfigPath] = newValue;
         }
         catch (Exception)
         {

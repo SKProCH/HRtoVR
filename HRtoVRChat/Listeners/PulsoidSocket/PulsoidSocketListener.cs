@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.WebSockets;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,8 @@ using Websocket.Client;
 namespace HRtoVRChat.Listeners.PulsoidSocket;
 
 internal class PulsoidSocketListener : IHrListener {
-    private int HR;
+    private readonly BehaviorSubject<int> _heartRate = new(0);
+    private readonly BehaviorSubject<bool> _isConnected = new(false);
     private WebsocketClient? _client;
     private readonly ILogger<PulsoidSocketListener> _logger;
     private readonly PulsoidSocketOptions _options;
@@ -40,7 +42,8 @@ internal class PulsoidSocketListener : IHrListener {
                 try
                 {
                     var jo = JObject.Parse(message);
-                    HR = jo["data"]?["heart_rate"]?.Value<int>() ?? 0;
+                    _heartRate.OnNext(jo["data"]?["heart_rate"]?.Value<int>() ?? 0);
+                    _isConnected.OnNext(true);
                 }
                 catch (Exception e)
                 {
@@ -49,6 +52,9 @@ internal class PulsoidSocketListener : IHrListener {
             }
         });
 
+        _client.ReconnectionHappened.Subscribe(_ => _isConnected.OnNext(true));
+        _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
+
         _client.Start();
         _logger.LogInformation("PulsoidSocketListener started.");
     }
@@ -56,21 +62,12 @@ internal class PulsoidSocketListener : IHrListener {
     public void Stop() {
         _client?.Dispose();
         _client = null;
-        HR = 0;
+        _heartRate.OnNext(0);
+        _isConnected.OnNext(false);
         _logger.LogInformation("PulsoidSocketListener stopped.");
     }
 
     public string Name => "PulsoidSocket";
-
-    public int GetHR() {
-        return HR;
-    }
-
-    public bool IsOpen() {
-        return (_client?.IsRunning ?? false) && HR > 0;
-    }
-
-    public bool IsActive() {
-        return _client?.IsRunning ?? false;
-    }
+    public IObservable<int> HeartRate => _heartRate;
+    public IObservable<bool> IsConnected => _isConnected;
 }

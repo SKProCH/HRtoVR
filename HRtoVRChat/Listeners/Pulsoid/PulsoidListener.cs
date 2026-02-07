@@ -1,5 +1,6 @@
 using System;
 using System.Net.WebSockets;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,8 @@ namespace HRtoVRChat.Listeners.Pulsoid;
 public class PulsoidListener : IHrListener {
     private WebsocketClient? _client;
     protected readonly ILogger _logger;
+    protected readonly BehaviorSubject<int> _heartRate = new(0);
+    protected readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly PulsoidOptions _options;
 
     public PulsoidListener(ILogger<PulsoidListener> logger, IOptions<PulsoidOptions> options)
@@ -27,9 +30,8 @@ public class PulsoidListener : IHrListener {
         _options = new PulsoidOptions();
     }
 
-    private bool IsConnected => _client?.IsRunning ?? false;
+    private bool IsClientRunning => _client?.IsRunning ?? false;
 
-    public int HR { get; private set; }
     public string Timestamp { get; private set; } = string.Empty;
 
     public virtual void Start() {
@@ -50,9 +52,12 @@ public class PulsoidListener : IHrListener {
 
         _client.ReconnectionHappened.Subscribe(info =>
         {
-            _logger.LogInformation($"Reconnection happened, type: {info.Type}");
+            _logger.LogInformation("Reconnection happened, type: {ReconnectionType}", info.Type);
             SendSubscription(id);
+            _isConnected.OnNext(true);
         });
+
+        _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
         _client.Start().ContinueWith(t =>
         {
@@ -67,24 +72,15 @@ public class PulsoidListener : IHrListener {
     }
 
     public virtual string Name => "Pulsoid";
-
-    public int GetHR() {
-        return HR;
-    }
+    public IObservable<int> HeartRate => _heartRate;
+    public IObservable<bool> IsConnected => _isConnected;
 
     public void Stop() {
         _client?.Dispose();
         _client = null;
-        HR = 0;
+        _heartRate.OnNext(0);
+        _isConnected.OnNext(false);
         _logger.LogInformation("Stopped Pulsoid/Stromno WebSocket");
-    }
-
-    public bool IsOpen() {
-        return IsConnected && HR > 0;
-    }
-
-    public bool IsActive() {
-        return IsConnected;
     }
 
     private void HandleMessage(string message) {
@@ -93,11 +89,12 @@ public class PulsoidListener : IHrListener {
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                if (_client != null) _client.Send("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                _client?.Send("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
-                HR = Convert.ToInt32(jo["hr"]?.Value<string>());
+                _heartRate.OnNext(Convert.ToInt32(jo["hr"]?.Value<string>()));
                 Timestamp = jo["timestamp"]?.Value<string>() ?? string.Empty;
+                _isConnected.OnNext(true);
             }
         }
         catch (Exception) { }

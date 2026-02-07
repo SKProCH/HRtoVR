@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,8 @@ namespace HRtoVRChat.Listeners.TextFile;
 
 internal class TextFileListener : IHrListener {
     private Task? _task;
-    private int HR;
+    private readonly BehaviorSubject<int> _heartRate = new(0);
+    private readonly BehaviorSubject<bool> _isConnected = new(false);
     private string pubFe = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
     private readonly ILogger<TextFileListener> _logger;
@@ -27,30 +29,26 @@ internal class TextFileListener : IHrListener {
             _logger.LogInformation("Found text file!");
             pubFe = _options.Location;
             shouldUpdate = new CancellationTokenSource();
+            _isConnected.OnNext(true);
             StartThread();
         }
         else
+        {
             _logger.LogError("Failed to find text file!");
+            _isConnected.OnNext(false);
+        }
     }
 
     public void Stop() {
         shouldUpdate.Cancel();
+        _isConnected.OnNext(false);
+        _heartRate.OnNext(0);
         VerifyClosedThread();
     }
 
     public string Name => "TextFile";
-
-    public int GetHR() {
-        return HR;
-    }
-
-    public bool IsOpen() {
-        return !shouldUpdate.IsCancellationRequested && HR > 0;
-    }
-
-    public bool IsActive() {
-        return !shouldUpdate.IsCancellationRequested;
-    }
+    public IObservable<int> HeartRate => _heartRate;
+    public IObservable<bool> IsConnected => _isConnected;
 
     private void VerifyClosedThread() {
         if (_task != null) {
@@ -72,14 +70,22 @@ internal class TextFileListener : IHrListener {
                 catch (Exception e) {
                     _logger.LogError(e, "Failed to find Text File!");
                     failed = true;
+                    _isConnected.OnNext(false);
                 }
 
                 // cast to int
                 if (!failed)
-                    try { tempHR = Convert.ToInt32(text); }
-                    catch (Exception e) { _logger.LogError(e, "Failed to parse to int!"); }
+                {
+                    try {
+                        tempHR = Convert.ToInt32(text);
+                        _isConnected.OnNext(true);
+                    }
+                    catch (Exception e) {
+                        _logger.LogError(e, "Failed to parse to int!");
+                    }
+                }
 
-                HR = tempHR;
+                _heartRate.OnNext(tempHR);
                 try {
                     await Task.Delay(500, token);
                 } catch (TaskCanceledException) { break; }

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat;
@@ -5,8 +6,7 @@ namespace HRtoVRChat;
 public interface IHrListener {
     void Start();
     string Name { get; }
-    int GetHR();
+    IObservable<int> HeartRate { get; }
+    IObservable<bool> IsConnected { get; }
     void Stop();
-    bool IsOpen();
-    bool IsActive();
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Net.WebSockets;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,8 @@ namespace HRtoVRChat.Listeners.Fitbit;
 
 public class FitBitListener : IHrListener {
     private WebsocketClient? _client;
+    private readonly BehaviorSubject<int> _heartRate = new(0);
+    private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<FitBitListener> _logger;
     private readonly FitbitOptions _options;
 
@@ -18,11 +21,6 @@ public class FitBitListener : IHrListener {
         _logger = logger;
         _options = options.Value;
     }
-
-    private bool IsConnected => _client?.IsRunning ?? false;
-
-    public bool FitbitIsConnected { get; private set; }
-    public int HR { get; private set; }
 
     public void Start() {
         var url = _options.Url;
@@ -39,7 +37,7 @@ public class FitBitListener : IHrListener {
         // Start sending pings/requests once connected/reconnected
         _client.ReconnectionHappened.Subscribe(info =>
         {
-            _logger.LogInformation($"Reconnection happened, type: {info.Type}");
+            _logger.LogInformation("Reconnection happened, type: {ReconnectionType}", info.Type);
             StartPolling();
         });
 
@@ -65,7 +63,7 @@ public class FitBitListener : IHrListener {
 
         Task.Run(async () =>
         {
-            while (!token.IsCancellationRequested && IsConnected)
+            while (!token.IsCancellationRequested && (_client?.IsRunning ?? false))
             {
                 try
                 {
@@ -82,36 +80,25 @@ public class FitBitListener : IHrListener {
         }, token);
     }
 
-    public string Name => "FitbitHRtoWS";
-
-    public int GetHR() {
-        return HR;
-    }
+    public string Name => "FitBit";
+    public IObservable<int> HeartRate => _heartRate;
+    public IObservable<bool> IsConnected => _isConnected;
 
     public void Stop() {
         _pollingCts?.Cancel();
         _client?.Dispose();
         _client = null;
-        HR = 0;
-        FitbitIsConnected = false;
+        _heartRate.OnNext(0);
+        _isConnected.OnNext(false);
         _logger.LogDebug("Stopped Fitbit WebSocket");
-    }
-
-    public bool IsOpen() {
-        return IsConnected && FitbitIsConnected;
-    }
-
-    public bool IsActive() {
-        return IsConnected;
     }
 
     private void HandleMessage(string msg) {
         if (msg.Contains("yes"))
-            FitbitIsConnected = true;
+            _isConnected.OnNext(true);
         else if (msg.Contains("no"))
-            FitbitIsConnected = false;
-        else
-            try { HR = Convert.ToInt32(msg); }
-            catch (Exception) { }
+            _isConnected.OnNext(false);
+        else if (int.TryParse(msg, out var hr))
+            _heartRate.OnNext(hr);
     }
 }

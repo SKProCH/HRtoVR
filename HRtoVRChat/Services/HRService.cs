@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
-using HRtoVRChat.Listeners;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -35,8 +34,9 @@ public class HRService : IHRService
     private Task? BeatThread;
     private CancellationTokenSource btToken = new();
 
-    public CustomTimer? BoopUwUTimer;
-
+    private CompositeDisposable _subscriptions = new();
+    private int _lastHR;
+    private bool _lastIsConnected;
 
     public HRService(
         ILogger<HRService> logger,
@@ -176,26 +176,11 @@ public class HRService : IHRService
 
         // Continue
         await StartHRListenerAsync();
-        // Start Coroutine
-        BoopUwUTimer = new CustomTimer(1000, ct => BoopUwU());
         _logger.LogInformation("Started");
     }
 
     public void Stop(bool quitApp = false, bool autoStart = false)
     {
-        // Stop Everything
-        if (activeHRManager != null)
-        {
-            try
-            {
-                BoopUwUTimer?.Close();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Failed to stop ActiveHRManager");
-            }
-        }
-
         // Stop HR Listener
         StopHRListener();
 
@@ -263,11 +248,8 @@ public class HRService : IHRService
         // Check activeHRManager
         if (activeHRManager != null)
         {
-            if (activeHRManager.IsActive())
-            {
-                _logger.LogWarning("HRListener is currently active! Stop it first");
-                return;
-            }
+            _logger.LogWarning("HRListener is currently active! Stop it first");
+            return;
         }
 
         activeHRManager = _hrListeners.FirstOrDefault(x => x.Name.Equals(hrType, StringComparison.OrdinalIgnoreCase));
@@ -292,6 +274,17 @@ public class HRService : IHRService
                 "Starting Pulsoid in 25 Seconds...");
             await Task.Delay(25000);
         }
+
+        _subscriptions = new CompositeDisposable();
+        activeHRManager.HeartRate.Subscribe(hr => {
+            _lastHR = hr;
+            UpdateHandlers();
+        }).DisposeWith(_subscriptions);
+
+        activeHRManager.IsConnected.Subscribe(connected => {
+            _lastIsConnected = connected;
+            UpdateHandlers();
+        }).DisposeWith(_subscriptions);
 
         activeHRManager.Start();
 
@@ -325,18 +318,12 @@ public class HRService : IHRService
 
     public void StopHRListener()
     {
-        if (activeHRManager != null)
-        {
-            if (!activeHRManager.IsActive())
-            {
-                _logger.LogWarning("HRListener is currently inactive! Attempting to stop anyways.");
-                //return;
-            }
-
-            activeHRManager.Stop();
-        }
+        activeHRManager?.Stop();
 
         activeHRManager = null;
+        _subscriptions.Dispose();
+        _subscriptions = new CompositeDisposable();
+
         // Stop Beating
         if (BeatThread != null && !BeatThread.IsCompleted)
         {
@@ -350,31 +337,13 @@ public class HRService : IHRService
         }
     }
 
-    // why did i name the ienumerator this and why haven't i changed it
-    private void BoopUwU()
+    private void UpdateHandlers()
     {
-        var chs = new currentHRSplit();
-        if (activeHRManager != null)
+        var chs = intToHRSplit(_lastHR);
+        // Notify Handlers
+        foreach (var handler in _gameHandlers)
         {
-            var HR = activeHRManager.GetHR();
-            var isOpen = activeHRManager.IsOpen();
-            var isActive = activeHRManager.IsActive();
-            // Cast to currentHRSplit
-            chs = intToHRSplit(HR);
-
-            // Notify Handlers
-            foreach (var handler in _gameHandlers)
-            {
-                handler.UpdateHR(chs.ones, chs.tens, chs.hundreds, HR, isOpen, isActive);
-            }
-        }
-        else
-        {
-            // Notify Handlers of zero
-            foreach (var handler in _gameHandlers)
-            {
-                handler.UpdateHR(0, 0, 0, 0, false, false);
-            }
+            handler.UpdateHR(chs.ones, chs.tens, chs.hundreds, _lastHR, _lastIsConnected, _lastIsConnected);
         }
     }
 
@@ -390,12 +359,11 @@ public class HRService : IHRService
             {
                 if (activeHRManager != null)
                 {
-                    var io = activeHRManager.IsOpen();
                     // This should be started by the Melon Update void
-                    if (io)
+                    if (_lastIsConnected)
                     {
                         // Get HR
-                        float HR = activeHRManager.GetHR();
+                        float HR = _lastHR;
                         if (HR > 0)
                         {
                             if (waited)

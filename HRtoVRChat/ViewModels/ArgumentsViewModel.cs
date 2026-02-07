@@ -52,15 +52,12 @@ public class ArgumentsViewModel : ViewModelBase
         this.WhenAnyValue(x => x.OtherArgs)
             .Skip(1)
             .Subscribe(val => {
-                if (_configuration != null)
-                    _configuration["OtherArgs"] = val;
+                _configuration?["OtherArgs"] = val;
             });
     }
 
-    public void SaveConfig()
-    {
-        if (_configuration != null)
-            _configuration["OtherArgs"] = OtherArgs;
+    public void SaveConfig() {
+        _configuration?["OtherArgs"] = OtherArgs;
     }
 
     private void UpdateConfig()
