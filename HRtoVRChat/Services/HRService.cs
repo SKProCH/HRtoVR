@@ -21,11 +21,10 @@ public class HRService : IHRService
     private readonly IOSCService _oscService;
     private readonly IParamsService _paramsService;
     private readonly IOSCAvatarListener _oscAvatarListener;
-    private readonly Factories.IHRManagerFactory _hrManagerFactory;
+    private readonly IEnumerable<IHrListener> _hrListeners;
     private readonly IEnumerable<IGameHandler> _injectedGameHandlers;
     private readonly IAppBridge _appBridge;
 
-    private HRType hrType = HRType.Unknown;
     private IHrListener? activeHRManager;
     private bool isRestarting;
     private bool RunHeartBeat;
@@ -63,7 +62,7 @@ public class HRService : IHRService
         IOSCService oscService,
         IParamsService paramsService,
         IOSCAvatarListener oscAvatarListener,
-        Factories.IHRManagerFactory hrManagerFactory,
+        IEnumerable<IHrListener> hrListeners,
         IEnumerable<IGameHandler> gameHandlers,
         IAppBridge appBridge)
     {
@@ -73,7 +72,7 @@ public class HRService : IHRService
         _oscService = oscService;
         _paramsService = paramsService;
         _oscAvatarListener = oscAvatarListener;
-        _hrManagerFactory = hrManagerFactory;
+        _hrListeners = hrListeners;
         _injectedGameHandlers = gameHandlers;
         _appBridge = appBridge;
     }
@@ -422,49 +421,10 @@ public class HRService : IHRService
         }
     }
 
-    private HRType StringToHRType(string input)
-    {
-        var hrt = HRType.Unknown;
-        switch (input.ToLower())
-        {
-            case "fitbithrtows":
-                hrt = HRType.FitbitHRtoWS;
-                break;
-            case "hrproxy":
-                hrt = HRType.HRProxy;
-                break;
-            case "hyperate":
-                hrt = HRType.HypeRate;
-                break;
-            case "pulsoid":
-                hrt = HRType.Pulsoid;
-                break;
-            case "stromno":
-                hrt = HRType.Stromno;
-                break;
-            case "pulsoidsocket":
-                hrt = HRType.PulsoidSocket;
-                break;
-            case "textfile":
-                hrt = HRType.TextFile;
-                break;
-            case "omnicept":
-                hrt = HRType.Omnicept;
-                break;
-            case "sdk":
-                hrt = HRType.SDK;
-                break;
-            default:
-                break;
-        }
-
-        return hrt;
-    }
-
     public async Task StartHRListenerAsync(bool fromRestart = false)
     {
         // Start Manager based on Config
-        hrType = StringToHRType(_appOptions.CurrentValue.HrType);
+        var hrType = _appOptions.CurrentValue.HrType;
         // Check activeHRManager
         if (activeHRManager != null)
         {
@@ -475,60 +435,30 @@ public class HRService : IHRService
             }
         }
 
-        switch (hrType)
+        activeHRManager = _hrListeners.FirstOrDefault(x => x.Name.Equals(hrType, StringComparison.OrdinalIgnoreCase));
+
+        if (activeHRManager == null)
         {
-            case HRType.FitbitHRtoWS:
-                activeHRManager = _hrManagerFactory.CreateManager("fitbithrtows");
-                activeHRManager?.Init(_appOptions.CurrentValue.FitbitOptions.Url);
-                break;
-            case HRType.HRProxy:
-                activeHRManager = _hrManagerFactory.CreateManager("hrproxy");
-                activeHRManager?.Init(_appOptions.CurrentValue.HRProxyOptions.Id);
-                break;
-            case HRType.HypeRate:
-                activeHRManager = _hrManagerFactory.CreateManager("hyperate");
-                activeHRManager?.Init(_appOptions.CurrentValue.HypeRateOptions.SessionId);
-                break;
-            case HRType.Pulsoid:
-                _logger.LogWarning(
-                    "\n=========================================================================================\n" +
-                    "WARNING ABOUT PULSOID\n" +
-                    "It is detected that you're using the Pulsoid Method for grabbing HR Data,\n" +
-                    "Please note that this method will soon be DEPRECATED and replaced with PulsoidSocket!\n" +
-                    "Please see the URL below on how to upgrade!\n" +
-                    "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket \n" +
-                    "=========================================================================================\n\n" +
-                    "Starting Pulsoid in 25 Seconds...");
-                await Task.Delay(25000);
-                activeHRManager = _hrManagerFactory.CreateManager("pulsoid");
-                activeHRManager?.Init(_appOptions.CurrentValue.PulsoidOptions.Widget);
-                break;
-            case HRType.Stromno:
-                activeHRManager = _hrManagerFactory.CreateManager("stromno");
-                activeHRManager?.Init(_appOptions.CurrentValue.StromnoOptions.Widget);
-                break;
-            case HRType.PulsoidSocket:
-                activeHRManager = _hrManagerFactory.CreateManager("pulsoidsocket");
-                activeHRManager?.Init(_appOptions.CurrentValue.PulsoidSocketOptions.Key);
-                break;
-            case HRType.TextFile:
-                activeHRManager = _hrManagerFactory.CreateManager("textfile");
-                activeHRManager?.Init(_appOptions.CurrentValue.TextFileOptions.Location);
-                break;
-            // TODO Omnicept Temporarily Disabled
-            // case HRType.Omnicept:
-            //     activeHRManager = new OmniceptManager();
-            //     activeHRManager.Init(String.Empty);
-            //     break;
-            case HRType.SDK:
-                activeHRManager = _hrManagerFactory.CreateManager("sdk");
-                activeHRManager?.Init("127.0.0.1:9000");
-                break;
-            default:
-                _logger.LogWarning("No hrType was selected! Please see README if you think this is an error!");
-                Stop(true);
-                break;
+            _logger.LogWarning("No hrType was selected! Please see README if you think this is an error!");
+            Stop(true);
+            return;
         }
+
+        if (activeHRManager.Name.Equals("Pulsoid", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "\n=========================================================================================\n" +
+                "WARNING ABOUT PULSOID\n" +
+                "It is detected that you're using the Pulsoid Method for grabbing HR Data,\n" +
+                "Please note that this method will soon be DEPRECATED and replaced with PulsoidSocket!\n" +
+                "Please see the URL below on how to upgrade!\n" +
+                "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket \n" +
+                "=========================================================================================\n\n" +
+                "Starting Pulsoid in 25 Seconds...");
+            await Task.Delay(25000);
+        }
+
+        activeHRManager.Start();
 
         // Set Logger for the created manager - No longer needed as it is injected
 
@@ -759,17 +689,4 @@ public class HRService : IHRService
         public int tens;
     }
 
-    private enum HRType
-    {
-        FitbitHRtoWS,
-        HRProxy,
-        HypeRate,
-        Pulsoid,
-        Stromno,
-        PulsoidSocket,
-        TextFile,
-        Omnicept,
-        SDK,
-        Unknown
-    }
 }

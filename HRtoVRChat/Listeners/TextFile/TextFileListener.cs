@@ -4,6 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
 internal class TextFileListener : IHrListener {
@@ -12,24 +15,24 @@ internal class TextFileListener : IHrListener {
     private string pubFe = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
     private readonly ILogger<TextFileListener> _logger;
+    private readonly TextFileOptions _options;
 
-    public TextFileListener(ILogger<TextFileListener> logger)
+    public TextFileListener(ILogger<TextFileListener> logger, IOptions<TextFileOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
-    public bool Init(string fileLocation) {
-        var fe = File.Exists(fileLocation);
+    public void Start() {
+        var fe = File.Exists(_options.Location);
         if (fe) {
             _logger.LogInformation("Found text file!");
-            pubFe = fileLocation;
+            pubFe = _options.Location;
             shouldUpdate = new CancellationTokenSource();
             StartThread();
         }
         else
             _logger.LogError("Failed to find text file!");
-
-        return fe;
     }
 
     public void Stop() {

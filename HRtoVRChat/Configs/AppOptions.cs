@@ -36,6 +36,7 @@ public class AppOptions {
     public HypeRateOptions HypeRateOptions { get; set; } = new();
     public PulsoidOptions PulsoidOptions { get; set; } = new();
     public PulsoidSocketOptions PulsoidSocketOptions { get; set; } = new();
+    public SdkOptions SdkOptions { get; set; } = new();
     public StromnoOptions StromnoOptions { get; set; } = new();
     public TextFileOptions TextFileOptions { get; set; } = new();
 

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 namespace HRtoVRChat;
 
 public interface IHrListener {
-    bool Init(string d1);
+    void Start();
     string Name { get; }
     int GetHR();
     void Stop();

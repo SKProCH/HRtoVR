@@ -10,6 +10,9 @@ using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Logging;
 using SuperSimpleTcp;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
 public class SdkListener : IHrListener {
@@ -25,13 +28,15 @@ public class SdkListener : IHrListener {
     private SimpleTcpServer? server;
     private CancellationTokenSource? token;
     private readonly ILogger<SdkListener> _logger;
+    private readonly SdkOptions _options;
 
-    public SdkListener(ILogger<SdkListener> logger)
+    public SdkListener(ILogger<SdkListener> logger, IOptions<SdkOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
-    public bool Init(string d1) {
+    public void Start() {
         if (_worker != null) {
             token?.Cancel();
         }
@@ -39,7 +44,7 @@ public class SdkListener : IHrListener {
         token = new CancellationTokenSource();
         var ct = token.Token;
         _worker = Task.Run(async () => {
-            server = new SimpleTcpServer(d1);
+            server = new SimpleTcpServer(_options.BindingAddress);
             server.Events.ClientConnected += (sender, args) => {
                 RemoteSDKs.Add(args.IpPort, new Messages.HRMessage());
                 _logger.LogInformation("SDK Connected!");
@@ -98,7 +103,7 @@ public class SdkListener : IHrListener {
                 }
             };
             server.Start();
-            _logger.LogDebug("Started SDK Server at " + d1);
+            _logger.LogDebug("Started SDK Server at " + _options.BindingAddress);
             SDKPatches.OnHRData += message => {
                 if (message.IsActive)
                     SetHRDataBySDKName(message.SDKName, message);
@@ -253,10 +258,9 @@ public class SdkListener : IHrListener {
                 externalHrsdk.Key.Destroy();
             ExternalHrsdks.Clear();
         }, ct);
-        return true;
     }
 
-    public string Name => GetPreferredHRData()?.SDKName ?? "sdk";
+    public string Name => "Sdk";
 
     public int GetHR() {
         return GetPreferredHRData()?.HR ?? 0;

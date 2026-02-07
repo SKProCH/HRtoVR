@@ -4,16 +4,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
-public class HypeRateListener : IHrListener {
+public class HrProxyListener : IHrListener {
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
-    private readonly ILogger<HypeRateListener> _logger;
+    private readonly ILogger<HrProxyListener> _logger;
+    private readonly HRProxyOptions _options;
 
-    public HypeRateListener(ILogger<HypeRateListener> logger)
+    public HrProxyListener(ILogger<HrProxyListener> logger, IOptions<HRProxyOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
     private bool IsConnected {
@@ -29,14 +34,13 @@ public class HypeRateListener : IHrListener {
     public int HR { get; private set; }
     public string Timestamp { get; private set; } = string.Empty;
 
-    public bool Init(string id) {
+    public void Start() {
         tokenSource = new CancellationTokenSource();
-        StartThread(id);
+        StartThread(_options.Id);
         _logger.LogInformation("Initialized WebSocket!");
-        return IsConnected;
     }
 
-    public string Name => "HypeRate";
+    public string Name => "HRProxy";
 
     public int GetHR() {
         return HR;
@@ -78,8 +82,7 @@ public class HypeRateListener : IHrListener {
             wst.OnReconnect = () =>
             {
                 Task.Run(async () => {
-                    if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
-                                                           "\", \"service\": \"vrchat\"}");
+                    if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
                 });
             };
             var noerror = true;
@@ -92,8 +95,7 @@ public class HypeRateListener : IHrListener {
             }
 
             if (noerror) {
-                if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
-                                      "\", \"service\": \"vrchat\"}");
+                if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
                 while (!token.IsCancellationRequested) {
                     if (IsConnected) {
                         // Managed by Websocket.Client
@@ -110,7 +112,7 @@ public class HypeRateListener : IHrListener {
             }
 
             await Close();
-            _logger.LogInformation("Closed HypeRate");
+            _logger.LogInformation("Closed HRProxy");
         }, token);
     }
 
@@ -122,7 +124,7 @@ public class HypeRateListener : IHrListener {
                     wst = null;
                 }
                 catch (Exception e) {
-                    _logger.LogError(e, "Failed to close connection to HypeRate Server!");
+                    _logger.LogError(e, "Failed to close connection to HRProxy Server!");
                 }
             }
             else

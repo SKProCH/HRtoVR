@@ -83,7 +83,7 @@ public class App : Application {
             loggingBuilder.AddSerilog(dispose: true);
         });
 
-        ConfigureServices(collection);
+        ConfigureServices(collection, configuration);
         Services = collection.BuildServiceProvider();
 
         // Initialize Services
@@ -106,7 +106,7 @@ public class App : Application {
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ConfigureServices(IServiceCollection services)
+    private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // Services
         services.AddSingleton<IOSCService, OSCService>();
@@ -118,15 +118,25 @@ public class App : Application {
         services.AddSingleton<IBrowserService, BrowserService>();
         services.AddSingleton<HRtoVRChat_OSC_SDK.IAppBridge, HRtoVRChat_OSC_SDK.AppBridge>();
 
-        // HR Managers & Factory
-        services.AddSingleton<Factories.IHRManagerFactory, Factories.HRManagerFactory>();
-        services.AddTransient<FitBitListener>();
-        services.AddTransient<HrProxyListener>();
-        services.AddTransient<HypeRateListener>();
-        services.AddTransient<PulsoidListener>();
-        services.AddTransient<PulsoidSocketListener>();
-        services.AddTransient<TextFileListener>();
-        services.AddTransient<SdkListener>();
+        // Register Options
+        services.Configure<FitbitOptions>(configuration.GetSection("FitbitOptions"));
+        services.Configure<HRProxyOptions>(configuration.GetSection("HRProxyOptions"));
+        services.Configure<HypeRateOptions>(configuration.GetSection("HypeRateOptions"));
+        services.Configure<PulsoidOptions>(configuration.GetSection("PulsoidOptions"));
+        services.Configure<PulsoidSocketOptions>(configuration.GetSection("PulsoidSocketOptions"));
+        services.Configure<StromnoOptions>(configuration.GetSection("StromnoOptions"));
+        services.Configure<TextFileOptions>(configuration.GetSection("TextFileOptions"));
+        services.Configure<SdkOptions>(configuration.GetSection("SdkOptions"));
+
+        // HR Listeners
+        services.AddSingleton<IHrListener, FitBitListener>();
+        services.AddSingleton<IHrListener, HrProxyListener>();
+        services.AddSingleton<IHrListener, HypeRateListener>();
+        services.AddSingleton<IHrListener, PulsoidListener>();
+        services.AddSingleton<IHrListener, PulsoidSocketListener>();
+        services.AddSingleton<IHrListener, StromnoListener>();
+        services.AddSingleton<IHrListener, TextFileListener>();
+        services.AddSingleton<IHrListener, SdkListener>();
 
         // Game Handlers
         services.AddSingleton<IGameHandler, GameHandlers.VRChatOSCHandler>();

@@ -3,17 +3,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
 public class FitBitListener : IHrListener {
     private WebsocketTemplate? wst;
     private readonly ILogger<FitBitListener> _logger;
+    private readonly FitbitOptions _options;
 
     private CancellationTokenSource tokenSource = new();
 
-    public FitBitListener(ILogger<FitBitListener> logger)
+    public FitBitListener(ILogger<FitBitListener> logger, IOptions<FitbitOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
     private bool IsConnected {
@@ -29,11 +34,10 @@ public class FitBitListener : IHrListener {
     public bool FitbitIsConnected { get; private set; }
     public int HR { get; private set; }
 
-    public bool Init(string url) {
+    public void Start() {
         tokenSource = new CancellationTokenSource();
-        StartThread(url);
+        StartThread(_options.Url);
         _logger.LogInformation("Initialized WebSocket!");
-        return IsConnected;
     }
 
     public string Name => "FitbitHRtoWS";

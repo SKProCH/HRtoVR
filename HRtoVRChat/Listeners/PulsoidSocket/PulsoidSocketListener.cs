@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
 internal class PulsoidSocketListener : IHrListener {
@@ -12,20 +15,21 @@ internal class PulsoidSocketListener : IHrListener {
     private string pubUrl = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
     private readonly ILogger<PulsoidSocketListener> _logger;
+    private readonly PulsoidSocketOptions _options;
 
     private WebsocketTemplate? wst;
 
-    public PulsoidSocketListener(ILogger<PulsoidSocketListener> logger)
+    public PulsoidSocketListener(ILogger<PulsoidSocketListener> logger, IOptions<PulsoidSocketOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
-    public bool Init(string url) {
+    public void Start() {
         shouldUpdate = new CancellationTokenSource();
-        pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + url;
+        pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.Key;
         StartThread();
         _logger.LogInformation("PulsoidSocketManager Initialized!");
-        return true;
     }
 
     public void Stop() {
@@ -33,7 +37,7 @@ internal class PulsoidSocketListener : IHrListener {
         VerifyClosedThread();
     }
 
-    public string Name => "Pulsoid";
+    public string Name => "PulsoidSocket";
 
     public int GetHR() {
         return HR;

@@ -4,33 +4,44 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
+using Microsoft.Extensions.Options;
+using HRtoVRChat.Configs;
+
 namespace HRtoVRChat.Listeners;
 
 public class PulsoidListener : IHrListener {
-    private CancellationTokenSource tokenSource = new();
+    protected CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
-    private readonly ILogger<PulsoidListener> _logger;
+    private readonly ILogger _logger;
+    private readonly PulsoidOptions _options;
 
-    public PulsoidListener(ILogger<PulsoidListener> logger)
+    public PulsoidListener(ILogger<PulsoidListener> logger, IOptions<PulsoidOptions> options)
     {
         _logger = logger;
+        _options = options.Value;
     }
 
     private bool IsConnected {
         get => wst != null && wst.IsAlive;
     }
 
+    // Protected constructor for Stromno
+    protected PulsoidListener(ILogger logger)
+    {
+        _logger = logger;
+        _options = new PulsoidOptions();
+    }
+
     public int HR { get; private set; }
     public string Timestamp { get; private set; } = string.Empty;
 
-    public bool Init(string id) {
+    public virtual void Start() {
         tokenSource = new CancellationTokenSource();
-        StartThread(id);
+        StartThread(_options.Widget);
         _logger.LogInformation("Initialized WebSocket!");
-        return IsConnected;
     }
 
-    public string Name => "Pulsoid (DEPRECATED)";
+    public virtual string Name => "Pulsoid";
 
     public int GetHR() {
         return HR;
