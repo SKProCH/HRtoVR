@@ -1,6 +1,13 @@
 using System.ComponentModel;
 using System.IO;
 using HRtoVRChat;
+using HRtoVRChat.Listeners.Fitbit;
+using HRtoVRChat.Listeners.HrProxy;
+using HRtoVRChat.Listeners.HypeRate;
+using HRtoVRChat.Listeners.Pulsoid;
+using HRtoVRChat.Listeners.PulsoidSocket;
+using HRtoVRChat.Listeners.Stromno;
+using HRtoVRChat.Listeners.TextFile;
 
 namespace HRtoVRChat.Configs;
 

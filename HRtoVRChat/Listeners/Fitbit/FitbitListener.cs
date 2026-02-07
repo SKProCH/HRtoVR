@@ -1,19 +1,17 @@
 using System;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
+using Websocket.Client;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.Fitbit;
 
 public class FitBitListener : IHrListener {
-    private WebsocketTemplate? wst;
+    private WebsocketClient? _client;
     private readonly ILogger<FitBitListener> _logger;
     private readonly FitbitOptions _options;
-
-    private CancellationTokenSource tokenSource = new();
 
     public FitBitListener(ILogger<FitBitListener> logger, IOptions<FitbitOptions> options)
     {
@@ -21,23 +19,67 @@ public class FitBitListener : IHrListener {
         _options = options.Value;
     }
 
-    private bool IsConnected {
-        get {
-            if (wst != null) {
-                return wst.IsAlive;
-            }
-
-            return false;
-        }
-    }
+    private bool IsConnected => _client?.IsRunning ?? false;
 
     public bool FitbitIsConnected { get; private set; }
     public int HR { get; private set; }
 
     public void Start() {
-        tokenSource = new CancellationTokenSource();
-        StartThread(_options.Url);
-        _logger.LogInformation("Initialized WebSocket!");
+        var url = _options.Url;
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
+        {
+            Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
+        });
+
+        _client = new WebsocketClient(new Uri(url), factory);
+        _client.ReconnectTimeout = TimeSpan.FromSeconds(30);
+
+        _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
+
+        // Start sending pings/requests once connected/reconnected
+        _client.ReconnectionHappened.Subscribe(info =>
+        {
+            _logger.LogInformation($"Reconnection happened, type: {info.Type}");
+            StartPolling();
+        });
+
+        _client.Start().ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+                _logger.LogError(t.Exception, "Failed to connect to Fitbit Server!");
+            else
+                StartPolling();
+        });
+
+        _logger.LogInformation("Initialized Fitbit WebSocket!");
+    }
+
+    // Polling mechanism to replace the old loop
+    private CancellationTokenSource? _pollingCts;
+
+    private void StartPolling()
+    {
+        _pollingCts?.Cancel();
+        _pollingCts = new CancellationTokenSource();
+        var token = _pollingCts.Token;
+
+        Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested && IsConnected)
+            {
+                try
+                {
+                    _client?.Send("getHR");
+                    _client?.Send("checkFitbitConnection");
+                    await Task.Delay(500, token);
+                }
+                catch (TaskCanceledException) { break; }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "Error during polling");
+                }
+            }
+        }, token);
     }
 
     public string Name => "FitbitHRtoWS";
@@ -47,11 +89,12 @@ public class FitBitListener : IHrListener {
     }
 
     public void Stop() {
-        tokenSource.Cancel();
-        if (wst != null) {
-             _logger.LogDebug("Sent message to Stop WebSocket");
-             // wst.Stop() is called in thread or we can call it here if we want to be sure
-        }
+        _pollingCts?.Cancel();
+        _client?.Dispose();
+        _client = null;
+        HR = 0;
+        FitbitIsConnected = false;
+        _logger.LogDebug("Stopped Fitbit WebSocket");
     }
 
     public bool IsOpen() {
@@ -70,60 +113,5 @@ public class FitBitListener : IHrListener {
         else
             try { HR = Convert.ToInt32(msg); }
             catch (Exception) { }
-    }
-
-    public void StartThread(string url) {
-        var token = tokenSource.Token;
-        Task.Run(async () => {
-            wst = new WebsocketTemplate(url, _logger);
-            wst.OnMessage = HandleMessage;
-
-            var noerror = true;
-            try {
-                await wst.Start();
-            }
-            catch (Exception e) {
-                _logger.LogError(e, "Failed to connect to Fitbit Server!");
-                noerror = false;
-            }
-
-            if (noerror) {
-                while (!token.IsCancellationRequested) {
-                    if (IsConnected)
-                    {
-                        await wst.SendMessage("getHR");
-                        await wst.SendMessage("checkFitbitConnection");
-                    }
-                    else
-                    {
-                        // Maybe try to reconnect or just wait?
-                        // Websocket.Client handles reconnection usually, but we check IsConnected property from wst
-                    }
-                    try {
-                        await Task.Delay(500, token);
-                    } catch (TaskCanceledException) { break; }
-                }
-            }
-
-            await Close();
-        }, token);
-    }
-
-    private async Task Close() {
-        if (wst != null) {
-            if (wst.IsAlive) {
-                try {
-                    await wst.Stop();
-                    wst = null;
-                }
-                catch (Exception e) {
-                    _logger.LogError(e, "Failed to Close connection with the Fitbit Server!");
-                }
-            }
-            else
-                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
-        }
-        else
-            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }

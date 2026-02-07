@@ -3,11 +3,9 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.TextFile;
 
 internal class TextFileListener : IHrListener {
     private Task? _task;

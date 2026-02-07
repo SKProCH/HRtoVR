@@ -1,28 +1,23 @@
 using System;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
+using Newtonsoft.Json.Linq;
+using Websocket.Client;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.Pulsoid;
 
 public class PulsoidListener : IHrListener {
-    protected CancellationTokenSource tokenSource = new();
-    private WebsocketTemplate? wst;
-    private readonly ILogger _logger;
+    private WebsocketClient? _client;
+    protected readonly ILogger _logger;
     private readonly PulsoidOptions _options;
 
     public PulsoidListener(ILogger<PulsoidListener> logger, IOptions<PulsoidOptions> options)
     {
         _logger = logger;
         _options = options.Value;
-    }
-
-    private bool IsConnected {
-        get => wst != null && wst.IsAlive;
     }
 
     // Protected constructor for Stromno
@@ -32,13 +27,43 @@ public class PulsoidListener : IHrListener {
         _options = new PulsoidOptions();
     }
 
+    private bool IsConnected => _client?.IsRunning ?? false;
+
     public int HR { get; private set; }
     public string Timestamp { get; private set; } = string.Empty;
 
     public virtual void Start() {
-        tokenSource = new CancellationTokenSource();
-        StartThread(_options.Widget);
-        _logger.LogInformation("Initialized WebSocket!");
+        StartConnection(_options.Widget);
+        _logger.LogInformation("Initialized Pulsoid WebSocket!");
+    }
+
+    protected void StartConnection(string id) {
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
+        {
+            Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
+        });
+
+        _client = new WebsocketClient(new Uri("wss://hrproxy.fortnite.lol:2096/hrproxy"), factory);
+        _client.ReconnectTimeout = TimeSpan.FromSeconds(30);
+
+        _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
+
+        _client.ReconnectionHappened.Subscribe(info =>
+        {
+            _logger.LogInformation($"Reconnection happened, type: {info.Type}");
+            SendSubscription(id);
+        });
+
+        _client.Start().ContinueWith(t =>
+        {
+            if (t.IsFaulted) _logger.LogError(t.Exception, "Failed to start Pulsoid/Stromno WebSocket");
+            else SendSubscription(id);
+        });
+    }
+
+    private void SendSubscription(string id)
+    {
+        _client?.Send("{\"reader\": \"pulsoid\", \"identifier\": \"" + id + "\", \"service\": \"vrchat\"}");
     }
 
     public virtual string Name => "Pulsoid";
@@ -48,7 +73,10 @@ public class PulsoidListener : IHrListener {
     }
 
     public void Stop() {
-        tokenSource.Cancel();
+        _client?.Dispose();
+        _client = null;
+        HR = 0;
+        _logger.LogInformation("Stopped Pulsoid/Stromno WebSocket");
     }
 
     public bool IsOpen() {
@@ -59,13 +87,13 @@ public class PulsoidListener : IHrListener {
         return IsConnected;
     }
 
-    private async void HandleMessage(string message) {
+    private void HandleMessage(string message) {
         try {
             // Parse the message and get the HR or Pong
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                if (wst != null) await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                if (_client != null) _client.Send("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
                 HR = Convert.ToInt32(jo["hr"]?.Value<string>());
@@ -73,67 +101,5 @@ public class PulsoidListener : IHrListener {
             }
         }
         catch (Exception) { }
-    }
-
-    public void StartThread(string id) {
-        var token = tokenSource.Token;
-        Task.Run(async () => {
-            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
-            wst.OnMessage = HandleMessage;
-            wst.OnReconnect = () =>
-            {
-                Task.Run(async () => {
-                    if (wst != null) await wst.SendMessage("{\"reader\": \"pulsoid\", \"identifier\": \"" + id +
-                                                           "\", \"service\": \"vrchat\"}");
-                });
-            };
-            var noerror = true;
-            try {
-                await wst.Start();
-            }
-            catch (Exception e) {
-                _logger.LogError(e, "Failed to connect to Pulsoid server!");
-                noerror = false;
-            }
-
-            if (noerror) {
-                if (wst != null) await wst.SendMessage("{\"reader\": \"pulsoid\", \"identifier\": \"" + id +
-                                      "\", \"service\": \"vrchat\"}");
-                while (!token.IsCancellationRequested) {
-                    if (IsConnected) {
-                        // Managed by Websocket.Client
-                    }
-                    else {
-                        // Restart
-                        // HRService.RestartHRListener();
-                    }
-
-                    try {
-                        await Task.Delay(1000, token);
-                    } catch (TaskCanceledException) { break; }
-                }
-            }
-
-            await Close();
-            _logger.LogInformation("Closed Pulsoid");
-        }, token);
-    }
-
-    private async Task Close() {
-        if (wst != null) {
-            if (wst.IsAlive) {
-                try {
-                    await wst.Stop();
-                    wst = null;
-                }
-                catch (Exception e) {
-                    _logger.LogError(e, "Failed to close connection to Pulsoid Server!");
-                }
-            }
-            else
-                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
-        }
-        else
-            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }

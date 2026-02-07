@@ -1,8 +1,8 @@
+using HRtoVRChat.Listeners.Pulsoid;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.Stromno;
 
 public class StromnoListener : PulsoidListener
 {
@@ -18,6 +18,6 @@ public class StromnoListener : PulsoidListener
     public override void Start()
     {
         // Stromno uses the same protocol as Pulsoid, just with a different widget ID source
-        StartThread(_options.Widget);
+        StartConnection(_options.Widget);
     }
 }

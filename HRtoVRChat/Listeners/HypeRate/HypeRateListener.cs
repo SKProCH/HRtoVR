@@ -1,17 +1,16 @@
 using System;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
+using Newtonsoft.Json.Linq;
+using Websocket.Client;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.HypeRate;
 
 public class HypeRateListener : IHrListener {
-    private CancellationTokenSource tokenSource = new();
-    private WebsocketTemplate? wst;
+    private WebsocketClient? _client;
     private readonly ILogger<HypeRateListener> _logger;
     private readonly HypeRateOptions _options;
 
@@ -21,23 +20,41 @@ public class HypeRateListener : IHrListener {
         _options = options.Value;
     }
 
-    private bool IsConnected {
-        get {
-            if (wst != null) {
-                return wst.IsAlive;
-            }
-
-            return false;
-        }
-    }
+    private bool IsConnected => _client?.IsRunning ?? false;
 
     public int HR { get; private set; }
     public string Timestamp { get; private set; } = string.Empty;
 
     public void Start() {
-        tokenSource = new CancellationTokenSource();
-        StartThread(_options.SessionId);
-        _logger.LogInformation("Initialized WebSocket!");
+        var id = _options.SessionId;
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
+        {
+            Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
+        });
+
+        _client = new WebsocketClient(new Uri("wss://hrproxy.fortnite.lol:2096/hrproxy"), factory);
+        _client.ReconnectTimeout = TimeSpan.FromSeconds(30);
+
+        _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
+
+        _client.ReconnectionHappened.Subscribe(info =>
+        {
+            _logger.LogInformation($"Reconnection happened, type: {info.Type}");
+            SendSubscription(id);
+        });
+
+        _client.Start().ContinueWith(t =>
+        {
+            if (t.IsFaulted) _logger.LogError(t.Exception, "Failed to start HypeRate WebSocket");
+            else SendSubscription(id);
+        });
+
+        _logger.LogInformation("Initialized HypeRate WebSocket!");
+    }
+
+    private void SendSubscription(string id)
+    {
+        _client?.Send("{\"reader\": \"hyperate\", \"identifier\": \"" + id + "\", \"service\": \"vrchat\"}");
     }
 
     public string Name => "HypeRate";
@@ -47,7 +64,10 @@ public class HypeRateListener : IHrListener {
     }
 
     public void Stop() {
-        tokenSource.Cancel();
+        _client?.Dispose();
+        _client = null;
+        HR = 0;
+        _logger.LogInformation("Stopped HypeRate WebSocket");
     }
 
     public bool IsOpen() {
@@ -58,13 +78,13 @@ public class HypeRateListener : IHrListener {
         return IsConnected;
     }
 
-    private async void HandleMessage(string message) {
+    private void HandleMessage(string message) {
         try {
             // Parse the message and get the HR or Pong
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                if (wst != null) await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                if (_client != null) _client.Send("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
                 HR = Convert.ToInt32(jo["hr"]?.Value<string>());
@@ -72,67 +92,5 @@ public class HypeRateListener : IHrListener {
             }
         }
         catch (Exception) { }
-    }
-
-    public void StartThread(string id) {
-        var token = tokenSource.Token;
-        Task.Run(async () => {
-            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
-            wst.OnMessage = HandleMessage;
-            wst.OnReconnect = () =>
-            {
-                Task.Run(async () => {
-                    if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
-                                                           "\", \"service\": \"vrchat\"}");
-                });
-            };
-            var noerror = true;
-            try {
-                await wst.Start();
-            }
-            catch (Exception e) {
-                _logger.LogError(e, "Failed to connect to HypeRate server!");
-                noerror = false;
-            }
-
-            if (noerror) {
-                if (wst != null) await wst.SendMessage("{\"reader\": \"hyperate\", \"identifier\": \"" + id +
-                                      "\", \"service\": \"vrchat\"}");
-                while (!token.IsCancellationRequested) {
-                    if (IsConnected) {
-                        // Managed by Websocket.Client
-                    }
-                    else {
-                        // Stop and Restart
-                        // HRService.RestartHRListener();
-                    }
-
-                    try {
-                        await Task.Delay(1000, token);
-                    } catch (TaskCanceledException) { break; }
-                }
-            }
-
-            await Close();
-            _logger.LogInformation("Closed HypeRate");
-        }, token);
-    }
-
-    private async Task Close() {
-        if (wst != null) {
-            if (wst.IsAlive) {
-                try {
-                    await wst.Stop();
-                    wst = null;
-                }
-                catch (Exception e) {
-                    _logger.LogError(e, "Failed to close connection to HypeRate Server!");
-                }
-            }
-            else
-                _logger.LogWarning("WebSocket is not alive! Did you mean to Dispose()?");
-        }
-        else
-            _logger.LogWarning("WebSocket is null! Did you mean to Initialize()?");
     }
 }

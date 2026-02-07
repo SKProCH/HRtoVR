@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace HRtoVRChat.Configs;
+namespace HRtoVRChat.Listeners.HrProxy;
 
 public class HRProxyOptions
 {

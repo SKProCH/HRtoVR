@@ -2,16 +2,15 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
+using Newtonsoft.Json.Linq;
+using Websocket.Client;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.HrProxy;
 
 public class HrProxyListener : IHrListener {
     private CancellationTokenSource tokenSource = new();
-    private WebsocketTemplate? wst;
+    private WebsocketClient? _client;
     private readonly ILogger<HrProxyListener> _logger;
     private readonly HRProxyOptions _options;
 
@@ -23,8 +22,8 @@ public class HrProxyListener : IHrListener {
 
     private bool IsConnected {
         get {
-            if (wst != null) {
-                return wst.IsAlive;
+            if (_client != null) {
+                return _client.IsRunning;
             }
 
             return false;
@@ -58,13 +57,13 @@ public class HrProxyListener : IHrListener {
         return IsConnected;
     }
 
-    private async void HandleMessage(string message) {
+    private void HandleMessage(string message) {
         try {
             // Parse the message and get the HR or Pong
             var jo = JObject.Parse(message);
             if (jo["method"] != null) {
                 var pingId = jo["pingId"]?.Value<string>();
-                if (wst != null) await wst.SendMessage("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
+                if (_client != null) _client.Send("{\"method\": \"pong\", \"pingId\": \"" + pingId + "\"}");
             }
             else {
                 HR = Convert.ToInt32(jo["hr"]?.Value<string>());
@@ -77,38 +76,34 @@ public class HrProxyListener : IHrListener {
     public void StartThread(string id) {
         var token = tokenSource.Token;
         Task.Run(async () => {
-            wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
-            wst.OnMessage = HandleMessage;
-            wst.OnReconnect = () =>
+            _client = new WebsocketClient(new Uri("wss://hrproxy.fortnite.lol:2096/hrproxy"));
+            _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
+            _client.ReconnectionHappened.Subscribe(info =>
             {
-                Task.Run(async () => {
-                    if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
-                });
-            };
-            var noerror = true;
+                _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
+            });
+
             try {
-                await wst.Start();
+                await _client.Start();
+                // Send initial subscription
+                _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
             }
             catch (Exception e) {
                 _logger.LogError(e, "Failed to connect to HypeRate server!");
-                noerror = false;
             }
 
-            if (noerror) {
-                if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
-                while (!token.IsCancellationRequested) {
-                    if (IsConnected) {
-                        // Managed by Websocket.Client
-                    }
-                    else {
-                        // Stop and Restart
-                        // HRService.RestartHRListener();
-                    }
-
-                    try {
-                        await Task.Delay(1000, token);
-                    } catch (TaskCanceledException) { break; }
+            while (!token.IsCancellationRequested) {
+                if (IsConnected) {
+                    // Managed by Websocket.Client
                 }
+                else {
+                    // Stop and Restart
+                    // HRService.RestartHRListener();
+                }
+
+                try {
+                    await Task.Delay(1000, token);
+                } catch (TaskCanceledException) { break; }
             }
 
             await Close();
@@ -117,11 +112,12 @@ public class HrProxyListener : IHrListener {
     }
 
     private async Task Close() {
-        if (wst != null) {
-            if (wst.IsAlive) {
+        if (_client != null) {
+            if (_client.IsRunning) {
                 try {
-                    await wst.Stop();
-                    wst = null;
+                    await _client.Stop(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, string.Empty);
+                    _client.Dispose();
+                    _client = null;
                 }
                 catch (Exception e) {
                     _logger.LogError(e, "Failed to close connection to HRProxy Server!");

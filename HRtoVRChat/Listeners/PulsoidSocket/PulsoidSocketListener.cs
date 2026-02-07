@@ -1,23 +1,19 @@
 ﻿using System;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-
 using Microsoft.Extensions.Options;
-using HRtoVRChat.Configs;
+using Newtonsoft.Json.Linq;
+using Websocket.Client;
 
-namespace HRtoVRChat.Listeners;
+namespace HRtoVRChat.Listeners.PulsoidSocket;
 
 internal class PulsoidSocketListener : IHrListener {
-    private Task? _task;
     private int HR;
-    private string pubUrl = string.Empty;
-    private CancellationTokenSource shouldUpdate = new();
+    private WebsocketClient? _client;
     private readonly ILogger<PulsoidSocketListener> _logger;
     private readonly PulsoidSocketOptions _options;
-
-    private WebsocketTemplate? wst;
 
     public PulsoidSocketListener(ILogger<PulsoidSocketListener> logger, IOptions<PulsoidSocketOptions> options)
     {
@@ -26,15 +22,42 @@ internal class PulsoidSocketListener : IHrListener {
     }
 
     public void Start() {
-        shouldUpdate = new CancellationTokenSource();
-        pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.Key;
-        StartThread();
-        _logger.LogInformation("PulsoidSocketManager Initialized!");
+        var pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.Key;
+
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
+        {
+            Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
+        });
+
+        _client = new WebsocketClient(new Uri(pubUrl), factory);
+        _client.ReconnectTimeout = TimeSpan.FromSeconds(30);
+
+        _client.MessageReceived.Subscribe(msg =>
+        {
+            var message = msg.Text;
+            if (!string.IsNullOrEmpty(message))
+            {
+                try
+                {
+                    var jo = JObject.Parse(message);
+                    HR = jo["data"]?["heart_rate"]?.Value<int>() ?? 0;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Failed to parse Pulsoid message");
+                }
+            }
+        });
+
+        _client.Start();
+        _logger.LogInformation("PulsoidSocketListener started.");
     }
 
     public void Stop() {
-        shouldUpdate.Cancel();
-        VerifyClosedThread();
+        _client?.Dispose();
+        _client = null;
+        HR = 0;
+        _logger.LogInformation("PulsoidSocketListener stopped.");
     }
 
     public string Name => "PulsoidSocket";
@@ -44,60 +67,10 @@ internal class PulsoidSocketListener : IHrListener {
     }
 
     public bool IsOpen() {
-        return (wst?.IsAlive ?? false) && HR > 0;
+        return (_client?.IsRunning ?? false) && HR > 0;
     }
 
     public bool IsActive() {
-        return wst?.IsAlive ?? false;
-    }
-
-    private void VerifyClosedThread() {
-        if (_task != null) {
-            if (!_task.IsCompleted)
-                Stop();
-        }
-    }
-
-    private void StartThread() {
-        VerifyClosedThread();
-        var token = shouldUpdate.Token;
-        _task = Task.Run(async () => {
-            wst = new WebsocketTemplate(pubUrl, _logger);
-            wst.OnMessage = (message) =>
-            {
-                if (!string.IsNullOrEmpty(message))
-                {
-                    // Parse HR
-                    JObject? jo = null;
-                    try
-                    {
-                        jo = JObject.Parse(message);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError(e, "Failed to parse JObject!");
-                    }
-
-                    if (jo != null)
-                    {
-                        try
-                        {
-                            HR = jo["data"]?["heart_rate"]?.Value<int>() ?? 0;
-                        }
-                        catch (Exception)
-                        {
-                            _logger.LogError("Failed to parse Heart Rate!");
-                        }
-                    }
-                }
-            };
-
-            await wst.Start();
-            while (!token.IsCancellationRequested) {
-                 try {
-                     await Task.Delay(1000, token);
-                 } catch (TaskCanceledException) { break; }
-            }
-        }, token);
+        return _client?.IsRunning ?? false;
     }
 }
