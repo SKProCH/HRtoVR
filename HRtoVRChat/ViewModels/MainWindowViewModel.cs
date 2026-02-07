@@ -72,7 +72,7 @@ public class MainWindowViewModel : ViewModelBase
             // Stop software if running
             SoftwareManager.StopSoftware();
             try {
-                foreach (var process in Process.GetProcessesByName("HRtoVRChat_OSC")) {
+                foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
                     process.Kill();
                 }
             }

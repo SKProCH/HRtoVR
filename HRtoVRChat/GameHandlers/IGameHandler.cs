@@ -1,4 +1,4 @@
-namespace HRtoVRChat_OSC.GameHandlers;
+namespace HRtoVRChat.GameHandlers;
 
 public interface IGameHandler {
     string Name { get; }

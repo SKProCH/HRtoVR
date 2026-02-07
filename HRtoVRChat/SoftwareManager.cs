@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using HRtoVRChat_OSC;
+using HRtoVRChat;
 
 namespace HRtoVRChat;
 
@@ -26,8 +26,8 @@ public static class SoftwareManager {
     public static string OutputPath {
         get {
             if (LocalDirectory != string.Empty)
-                return Path.Combine(LocalDirectory, "HRtoVRChat_OSC");
-            return "HRtoVRChat_OSC";
+                return Path.Combine(LocalDirectory, "HRtoVRChat");
+            return "HRtoVRChat";
         }
     }
 
@@ -65,7 +65,7 @@ public static class SoftwareManager {
                     Directory.CreateDirectory(OutputPath);
 
                 // Point the Library Config to the GUI OutputPath
-                HRtoVRChat_OSC.ConfigManager.ConfigLocation = Path.Combine(OutputPath, "config.cfg");
+                // ConfigManager.ConfigLocation = Path.Combine(OutputPath, "config.cfg");
 
                 // Subscribe to Logs
                 LogHelper.OnLog -= HandleLog; // Ensure no double subscription

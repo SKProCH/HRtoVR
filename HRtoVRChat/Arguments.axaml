@@ -24,7 +24,7 @@
       <StackPanel Spacing="15">
         <StackPanel>
           <Label FontSize="24">Auto Start</Label>
-          <Label>Will Start and Stop HRtoVRChat_OSC as a compatible game opens and closes</Label>
+          <Label>Will Start and Stop HRtoVRChat as a compatible game opens and closes</Label>
           <CheckBox Margin="20,0,0,0" Name="AutoStartCheckBox" IsChecked="{Binding AutoStart}">
             Auto Start
           </CheckBox>

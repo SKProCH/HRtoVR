@@ -1,8 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using HRtoVRChat_OSC_SDK;
-using HRtoVRChat_OSC.HRManagers;
-using HRtoVRChat_OSC.GameHandlers;
+using HRtoVRChat.HRManagers;
+using HRtoVRChat.GameHandlers;
 
-namespace HRtoVRChat_OSC;
+namespace HRtoVRChat;
 
     public class HRService {
         private static HRType hrType = HRType.Unknown;
@@ -47,7 +53,7 @@ namespace HRtoVRChat_OSC;
             // Initialize Game Handlers
             _gameHandlers.Clear();
             _gameHandlers.Add(new VRChatOSCHandler());
-            if (args.Contains("--neos-bridge")) {
+            if (Enumerable.Contains(args, "--neos-bridge")) {
                 LogHelper.Log("Enabling NeosBridge Handler");
                 _gameHandlers.Add(new NeosHandler());
                 NeosHandler.OnCommand += command => HandleCommand(command, true);
@@ -103,7 +109,7 @@ namespace HRtoVRChat_OSC;
                 Check();
             }
             else {
-                if (args.Contains("--auto-start")) {
+                if (Enumerable.Contains(args, "--auto-start")) {
                     LogHelper.Log("No supported game found! Waiting...");
                     loopCheck = new CustomTimer(5000, ct => LoopCheck());
                 }
@@ -122,10 +128,10 @@ namespace HRtoVRChat_OSC;
     }
 
     private static void Check() {
-        var fromAutoStart = Gargs.Contains("--auto-start");
+        var fromAutoStart = Enumerable.Contains(Gargs, "--auto-start");
         bool gameRunning = _gameHandlers.Any(gh => gh.IsGameRunning());
 
-        if (gameRunning || Gargs.Contains("--skip-vrc-check")) {
+        if (gameRunning || Enumerable.Contains(Gargs, "--skip-vrc-check")) {
             if (loopCheck?.IsRunning ?? false)
                 loopCheck.Close();
             Start();
@@ -232,7 +238,7 @@ namespace HRtoVRChat_OSC;
     }
 
     private static void Start() {
-        if (!Gargs.Contains("--skip-vrc-check")) {
+        if (!Enumerable.Contains(Gargs, "--skip-vrc-check")) {
             vvoToken = new CancellationTokenSource();
             VerifyVRCOpen = new Thread(() => {
                 var isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
@@ -244,7 +250,7 @@ namespace HRtoVRChat_OSC;
                 }
 
                 LogHelper.Log("Thread Stopped");
-                var fromAutoStart = Gargs.Contains("--auto-start");
+                var fromAutoStart = Enumerable.Contains(Gargs, "--auto-start");
                 Stop(!fromAutoStart, fromAutoStart);
             });
             VerifyVRCOpen.Start();

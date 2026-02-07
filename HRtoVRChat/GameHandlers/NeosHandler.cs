@@ -1,9 +1,10 @@
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using WatsonWebsocket;
 
-namespace HRtoVRChat_OSC.GameHandlers;
+namespace HRtoVRChat.GameHandlers;
 
 public class NeosHandler : IGameHandler {
     public static Action<string> OnCommand = s => { };

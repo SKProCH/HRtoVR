@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace HRtoVRChat_OSC.GameHandlers;
+namespace HRtoVRChat.GameHandlers;
 
 public class VRChatOSCHandler : IGameHandler {
     public string Name => "VRChat";

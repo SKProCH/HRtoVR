@@ -57,7 +57,7 @@ public class ProgramViewModel : ViewModelBase
     {
         OnLogReceived?.Invoke(null, "CLEAR");
         SoftwareManager.OnConsoleUpdate(
-            $"HRtoVRChat_OSC {SoftwareManager.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
+            $"HRtoVRChat {SoftwareManager.GetInstalledVersion()} Created by 200Tigersbloxed\n", string.Empty);
         SoftwareManager.StartSoftware();
         UpdateStatus();
     }
@@ -72,7 +72,7 @@ public class ProgramViewModel : ViewModelBase
     {
         SoftwareManager.StopSoftware();
         try {
-            foreach (var process in Process.GetProcessesByName("HRtoVRChat_OSC")) {
+            foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
                 process.Kill();
             }
         }

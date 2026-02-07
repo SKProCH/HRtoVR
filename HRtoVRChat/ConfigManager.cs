@@ -49,9 +49,9 @@ public class ConfigManager {
     }
 }
 
-[TommyTableName("HRtoVRChat_OSC")]
+[TommyTableName("HRtoVRChat")]
 public class Config {
-    [TommyComment("Allow HRtoVRChat_OSC to be used with ChilloutVR. Requires an OSC mod for ChilloutVR")] [TommyInclude]
+    [TommyComment("Allow HRtoVRChat to be used with ChilloutVR. Requires an OSC mod for ChilloutVR")] [TommyInclude]
     public bool ExpandCVR = true;
 
     [TommyComment("(FitbitHRtoWS Only) The WebSocket to listen to data")] [TommyInclude]
@@ -115,7 +115,7 @@ public class Config {
 
 [TommyTableName("HRtoVRChat")]
 public class UIConfig {
-    [TommyComment("Automatically Start HRtoVRChat_OSC when VRChat is detected")] [TommyInclude]
+    [TommyComment("Automatically Start HRtoVRChat when VRChat is detected")] [TommyInclude]
     public bool AutoStart;
 
     [TommyComment("Broadcast data over a WebSocket designed for Neos")] [TommyInclude]
@@ -123,7 +123,7 @@ public class UIConfig {
 
     [TommyInclude] public string OtherArgs = "";
 
-    [TommyComment("Force HRtoVRChat_OSC to run whether or not VRChat is detected")] [TommyInclude]
+    [TommyComment("Force HRtoVRChat to run whether or not VRChat is detected")] [TommyInclude]
     public bool SkipVRCCheck;
 
     [TommyComment("Cast Parameter Bools to Floats")] [TommyInclude]
