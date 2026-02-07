@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text.Json;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
-using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -115,18 +114,6 @@ public class OSCAvatarListener : IOSCAvatarListener
         public string name { get; set; }
         public List<AvatarParameters> parameters { get; set; }
 
-        public Messages.AvatarInfo ToAvatarInfo()
-        {
-            var ai = new Messages.AvatarInfo
-            {
-                id = id,
-                name = name,
-                parameters = new List<string>()
-            };
-            foreach (var avatarParameters in parameters)
-                ai.parameters.Add(avatarParameters.name);
-            return ai;
-        }
     }
 
     public record AvatarParameters

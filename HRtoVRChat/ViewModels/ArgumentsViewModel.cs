@@ -2,7 +2,6 @@ using System;
 using System.Reactive.Linq;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Services;
-using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using ReactiveUI;

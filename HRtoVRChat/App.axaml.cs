@@ -116,7 +116,6 @@ public class App : Application {
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IHRService, HRService>();
         services.AddSingleton<IBrowserService, BrowserService>();
-        services.AddSingleton<HRtoVRChat_OSC_SDK.IAppBridge, HRtoVRChat_OSC_SDK.AppBridge>();
 
         // Register Options
         services.Configure<FitbitOptions>(configuration.GetSection("FitbitOptions"));
@@ -126,7 +125,6 @@ public class App : Application {
         services.Configure<PulsoidSocketOptions>(configuration.GetSection("PulsoidSocketOptions"));
         services.Configure<StromnoOptions>(configuration.GetSection("StromnoOptions"));
         services.Configure<TextFileOptions>(configuration.GetSection("TextFileOptions"));
-        services.Configure<SdkOptions>(configuration.GetSection("SdkOptions"));
 
         // HR Listeners
         services.AddSingleton<IHrListener, FitBitListener>();
@@ -136,11 +134,10 @@ public class App : Application {
         services.AddSingleton<IHrListener, PulsoidSocketListener>();
         services.AddSingleton<IHrListener, StromnoListener>();
         services.AddSingleton<IHrListener, TextFileListener>();
-        services.AddSingleton<IHrListener, SdkListener>();
 
         // Game Handlers
-        services.AddSingleton<IGameHandler, GameHandlers.VRChatOSCHandler>();
-        services.AddSingleton<IGameHandler, GameHandlers.NeosHandler>();
+        services.AddSingleton<IGameHandler, VRChatOSCHandler>();
+        services.AddSingleton<IGameHandler, NeosHandler>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
@@ -148,7 +145,6 @@ public class App : Application {
 
         services.AddSingleton<ProgramViewModel>();
         services.AddSingleton<ConfigViewModel>();
-        services.AddSingleton<IncomingDataViewModel>();
         services.AddSingleton<ArgumentsViewModel>();
         services.AddSingleton<ParameterNamesViewModel>();
     }

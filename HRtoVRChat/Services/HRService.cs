@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
-using HRtoVRChat_OSC_SDK;
 using HRtoVRChat.Listeners;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,7 +22,6 @@ public class HRService : IHRService
     private readonly IOSCAvatarListener _oscAvatarListener;
     private readonly IEnumerable<IHrListener> _hrListeners;
     private readonly IEnumerable<IGameHandler> _injectedGameHandlers;
-    private readonly IAppBridge _appBridge;
 
     private IHrListener? activeHRManager;
     private bool isRestarting;
@@ -46,14 +44,10 @@ public class HRService : IHRService
                                                        "startbeat - Starts HeartBeat if it isn't enabled already.\n" +
                                                        "stopbeat - Stops the HeartBeat if it is already started.\n" +
                                                        "refreshconfig - Refreshes the Config from File.\n" +
-                                                       "biassdk [sdkname] - Forces a specific SDK to be used (SDK hrType only)\n" +
-                                                       "unbiassdk - Does not prefer any SDK (SDK hrType only)\n" +
-                                                       "destroysdk [sdkname] - Unloads an SDK by name\n" +
                                                        "help - Shows available commands.\n";
 
     public CustomTimer? BoopUwUTimer;
 
-    private bool _lastHeartBeatState;
 
     public HRService(
         ILogger<HRService> logger,
@@ -63,8 +57,7 @@ public class HRService : IHRService
         IParamsService paramsService,
         IOSCAvatarListener oscAvatarListener,
         IEnumerable<IHrListener> hrListeners,
-        IEnumerable<IGameHandler> gameHandlers,
-        IAppBridge appBridge)
+        IEnumerable<IGameHandler> gameHandlers)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
@@ -74,7 +67,6 @@ public class HRService : IHRService
         _oscAvatarListener = oscAvatarListener;
         _hrListeners = hrListeners;
         _injectedGameHandlers = gameHandlers;
-        _appBridge = appBridge;
     }
 
     public async Task StartAsync()
@@ -105,53 +97,6 @@ public class HRService : IHRService
         bool foundOnStart = _gameHandlers.Any(gh => gh.IsGameRunning());
 
         _oscAvatarListener.Init();
-        _appBridge.InitServer(() =>
-        {
-            if (activeHRManager != null)
-            {
-                try
-                {
-                    Messages.AppBridgeMessage apm = new()
-                    {
-                        CurrentSourceName = activeHRManager.Name,
-                        CurrentAvatar = _oscAvatarListener.CurrentAvatar?.ToAvatarInfo()
-                    };
-
-                    var hr = activeHRManager.GetHR();
-                    var split = intToHRSplit(hr);
-
-                    apm.HR = hr;
-                    apm.onesHR = split.ones;
-                    apm.tensHR = split.tens;
-                    apm.hundredsHR = split.hundreds;
-                    apm.isHRConnected = activeHRManager.IsOpen();
-                    apm.isHRActive = activeHRManager.IsActive();
-                    apm.isHRBeat = _lastHeartBeatState;
-
-                    // Calculate Percentages
-                    var maxhr = (float)_appOptions.CurrentValue.MaxHR;
-                    var minhr = (float)_appOptions.CurrentValue.MinHR;
-                    float targetFloat = 0;
-                    if (hr > maxhr) targetFloat = 1;
-                    else if (hr < minhr) targetFloat = 0;
-                    else targetFloat = (hr - minhr) / (maxhr - minhr);
-
-                    apm.HRPercent = targetFloat;
-                    apm.FullHRPercent = 2f * targetFloat - 1f;
-
-                    return apm;
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, "Failed to forward data from activeHRManager to AppBridge!");
-                    return null;
-                }
-            }
-
-            return null;
-        });
-        if (!Directory.Exists(SdkListener.SDKsLocation))
-            Directory.CreateDirectory(SdkListener.SDKsLocation);
 
         if (foundOnStart)
         {
@@ -275,23 +220,6 @@ public class HRService : IHRService
                     }
                 }
                 break;
-            case "biassdk":
-                if (inputs.Length > 1 && !string.IsNullOrEmpty(inputs[1]))
-                    SdkListener.PreferredSDK = inputs[1];
-                break;
-            case "unbiassdk":
-                SdkListener.PreferredSDK = string.Empty;
-                break;
-            case "destroysdk":
-                if (activeHRManager != null && inputs.Length > 1 && !string.IsNullOrEmpty(inputs[1]))
-                {
-                    if (activeHRManager is SdkListener s)
-                    {
-                        s.DestroySDKByName(inputs[1]);
-                    }
-                }
-
-                break;
             default:
                 _logger.LogWarning("Unknown Command \"{Input}\"!", inputs[0]);
                 break;
@@ -386,8 +314,6 @@ public class HRService : IHRService
             // Save all logs to file - handled by Serilog
             // var dt = DateTime.Now;
             // LogHelper.SaveToFile($"{dt.Hour}-{dt.Minute}-{dt.Second}-{dt.Millisecond} {dt.Day}-{dt.Month}-{dt.Year}");
-            // Stop AppBridge
-            _appBridge.StopServer();
             // Exit
             // Environment.Exit(0);
         }
@@ -395,7 +321,7 @@ public class HRService : IHRService
         if (autoStart)
         {
             _logger.LogInformation("Restarting when Game Detected");
-            loopCheck = new CustomTimer(5000, ct => LoopCheck());
+            loopCheck = new CustomTimer(5000, async ct => await LoopCheck());
         }
     }
 
@@ -570,7 +496,6 @@ public class HRService : IHRService
                             }
 
                             // HeartBeat OFF
-                            _lastHeartBeatState = false;
                             foreach (var handler in _gameHandlers)
                             {
                                 handler.UpdateHeartBeat(false, false);
@@ -592,7 +517,6 @@ public class HRService : IHRService
                             } catch (TaskCanceledException) { break; }
 
                             // HeartBeat ON
-                            _lastHeartBeatState = true;
                             foreach (var handler in _gameHandlers)
                             {
                                 handler.UpdateHeartBeat(true, false);

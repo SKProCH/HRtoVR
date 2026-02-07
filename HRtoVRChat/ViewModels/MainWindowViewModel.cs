@@ -16,7 +16,6 @@ public class MainWindowViewModel : ViewModelBase
     public HomeViewModel HomeVM { get; }
     public ProgramViewModel ProgramVM { get; }
     public ConfigViewModel ConfigVM { get; }
-    public IncomingDataViewModel IncomingDataVM { get; }
 
     // Commands
     public ReactiveCommand<ViewModelBase, Unit> SwitchPanelCommand { get; }
@@ -35,7 +34,6 @@ public class MainWindowViewModel : ViewModelBase
         HomeViewModel homeVM,
         ProgramViewModel programVM,
         ConfigViewModel configVM,
-        IncomingDataViewModel incomingDataVM,
         ITrayIconService trayIconService,
         ISoftwareService softwareService,
         IBrowserService browserService)
@@ -43,7 +41,6 @@ public class MainWindowViewModel : ViewModelBase
         HomeVM = homeVM;
         ProgramVM = programVM;
         ConfigVM = configVM;
-        IncomingDataVM = incomingDataVM;
         _trayIconService = trayIconService;
         _softwareService = softwareService;
         _browserService = browserService;

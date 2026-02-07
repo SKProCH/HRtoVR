@@ -25,9 +25,6 @@
     <DataTemplate DataType="{x:Type vm:ConfigViewModel}">
       <views:ConfigView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:IncomingDataViewModel}">
-      <views:IncomingDataView />
-    </DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -57,12 +54,6 @@
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource content_settings_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Config</TextBlock>
-          </StackPanel>
-        </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding IncomingDataVM}">
-          <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource data_usage_regular}" HorizontalAlignment="Left" />
-            <TextBlock Margin="5,1,0,0">Incoming Data</TextBlock>
           </StackPanel>
         </Button>
       </StackPanel>
