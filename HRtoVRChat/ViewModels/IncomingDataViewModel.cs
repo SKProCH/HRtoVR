@@ -78,7 +78,9 @@ public class IncomingDataViewModel : ViewModelBase
                 else
                     attemptConnect = false;
 
-                Thread.Sleep(10);
+                try {
+                    await Task.Delay(1000, _cancellationTokenSource.Token);
+                } catch (TaskCanceledException) { break; }
             }
         }, _cancellationTokenSource.Token);
     }

@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 namespace HRtoVRChat.Listeners;
 
 public class FitBitListener : IHrListener {
-    private Thread? _thread;
     private WebsocketTemplate? wst;
     private readonly ILogger<FitBitListener> _logger;
 
@@ -70,7 +69,8 @@ public class FitBitListener : IHrListener {
     }
 
     public void StartThread(string url) {
-        _thread = new Thread(async () => {
+        var token = tokenSource.Token;
+        Task.Run(async () => {
             wst = new WebsocketTemplate(url, _logger);
             wst.OnMessage = HandleMessage;
 
@@ -84,7 +84,7 @@ public class FitBitListener : IHrListener {
             }
 
             if (noerror) {
-                while (!tokenSource.IsCancellationRequested) {
+                while (!token.IsCancellationRequested) {
                     if (IsConnected)
                     {
                         await wst.SendMessage("getHR");
@@ -95,13 +95,14 @@ public class FitBitListener : IHrListener {
                         // Maybe try to reconnect or just wait?
                         // Websocket.Client handles reconnection usually, but we check IsConnected property from wst
                     }
-                    Thread.Sleep(500);
+                    try {
+                        await Task.Delay(500, token);
+                    } catch (TaskCanceledException) { break; }
                 }
             }
 
             await Close();
-        });
-        _thread.Start();
+        }, token);
     }
 
     private async Task Close() {

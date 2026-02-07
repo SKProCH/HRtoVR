@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 namespace HRtoVRChat.Listeners;
 
 public class HrProxyListener : IHrListener {
-    private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
     private readonly ILogger<HrProxyListener> _logger;
@@ -72,7 +71,8 @@ public class HrProxyListener : IHrListener {
     }
 
     public void StartThread(string id) {
-        _thread = new Thread(async () => {
+        var token = tokenSource.Token;
+        Task.Run(async () => {
             wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
             wst.OnMessage = HandleMessage;
             wst.OnReconnect = () =>
@@ -92,7 +92,7 @@ public class HrProxyListener : IHrListener {
 
             if (noerror) {
                 if (wst != null) await wst.SendMessage("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
-                while (!tokenSource.IsCancellationRequested) {
+                while (!token.IsCancellationRequested) {
                     if (IsConnected) {
                         // Managed by Websocket.Client
                     }
@@ -101,14 +101,15 @@ public class HrProxyListener : IHrListener {
                         // HRService.RestartHRListener();
                     }
 
-                    Thread.Sleep(1000);
+                    try {
+                        await Task.Delay(1000, token);
+                    } catch (TaskCanceledException) { break; }
                 }
             }
 
             await Close();
             _logger.LogInformation("Closed HRProxy");
-        });
-        _thread.Start();
+        }, token);
     }
 
     private async Task Close() {

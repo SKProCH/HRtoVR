@@ -1,11 +1,13 @@
+using System.Threading.Tasks;
+
 namespace HRtoVRChat.Services;
 
 public interface IHRService
 {
-    void Start();
+    Task StartAsync();
     void Stop(bool quitApp = false, bool autoStart = false);
     void RestartHRListener();
-    void StartHRListener(bool fromRestart = false);
+    Task StartHRListenerAsync(bool fromRestart = false);
     void StopHRListener();
-    void HandleCommand(string? input);
+    Task HandleCommandAsync(string? input);
 }

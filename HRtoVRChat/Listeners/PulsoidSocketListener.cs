@@ -1,12 +1,13 @@
-using System;
+﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace HRtoVRChat.Listeners;
 
 internal class PulsoidSocketListener : IHrListener {
-    private Thread? _thread;
+    private Task? _task;
     private int HR;
     private string pubUrl = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
@@ -47,15 +48,16 @@ internal class PulsoidSocketListener : IHrListener {
     }
 
     private void VerifyClosedThread() {
-        if (_thread != null) {
-            if (_thread.IsAlive)
+        if (_task != null) {
+            if (!_task.IsCompleted)
                 Stop();
         }
     }
 
     private void StartThread() {
         VerifyClosedThread();
-        _thread = new Thread(async () => {
+        var token = shouldUpdate.Token;
+        _task = Task.Run(async () => {
             wst = new WebsocketTemplate(pubUrl, _logger);
             wst.OnMessage = (message) =>
             {
@@ -87,10 +89,11 @@ internal class PulsoidSocketListener : IHrListener {
             };
 
             await wst.Start();
-            while (!shouldUpdate.IsCancellationRequested) {
-                 Thread.Sleep(1000);
+            while (!token.IsCancellationRequested) {
+                 try {
+                     await Task.Delay(1000, token);
+                 } catch (TaskCanceledException) { break; }
             }
-        });
-        _thread.Start();
+        }, token);
     }
 }

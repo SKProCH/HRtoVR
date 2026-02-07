@@ -34,9 +34,9 @@ public class HRService : IHRService
 
     private CustomTimer? loopCheck;
 
-    private Thread? VerifyVRCOpen;
+    private Task? VerifyVRCOpen;
     private CancellationTokenSource vvoToken = new();
-    private Thread? BeatThread;
+    private Task? BeatThread;
     private CancellationTokenSource btToken = new();
 
     private readonly string HelpCommandString = "\n\n[Help]\n" +
@@ -78,7 +78,7 @@ public class HRService : IHRService
         _appBridge = appBridge;
     }
 
-    public void Start()
+    public async Task StartAsync()
     {
         // _configService.CreateConfig(); // Handled by DI/App.axaml.cs
         _oscService.Init();
@@ -98,7 +98,7 @@ public class HRService : IHRService
                 {
                     _logger.LogInformation("Enabling NeosBridge Handler");
                     _gameHandlers.Add(handler);
-                    neosHandler.OnCommand += command => HandleCommand(command, true);
+                    neosHandler.OnCommand += async command => await HandleCommandAsync(command);
                 }
             }
         }
@@ -156,33 +156,33 @@ public class HRService : IHRService
 
         if (foundOnStart)
         {
-            Check();
+            await Check();
         }
         else
         {
             if (_appOptions.CurrentValue.AutoStart)
             {
                 _logger.LogInformation("No supported game found! Waiting...");
-                loopCheck = new CustomTimer(5000, ct => LoopCheck());
+                loopCheck = new CustomTimer(5000, async ct => await LoopCheck());
             }
             else
             {
-                Check();
+                await Check();
             }
         }
     }
 
-    private void LoopCheck()
+    private async Task LoopCheck()
     {
         var foundGame = _gameHandlers.Any(gh => gh.IsGameRunning());
         if (foundGame)
         {
             _logger.LogInformation("Found Game! Starting...");
-            Check();
+            await Check();
         }
     }
 
-    private void Check()
+    private async Task Check()
     {
         var fromAutoStart = _appOptions.CurrentValue.AutoStart;
         bool gameRunning = _gameHandlers.Any(gh => gh.IsGameRunning());
@@ -191,14 +191,14 @@ public class HRService : IHRService
         {
             if (loopCheck?.IsRunning ?? false)
                 loopCheck.Close();
-            StartInternal();
+            await StartInternal();
         }
         else
         {
             if (fromAutoStart)
             {
                 loopCheck?.Close();
-                loopCheck = new CustomTimer(5000, ct => LoopCheck());
+                loopCheck = new CustomTimer(5000, async ct => await LoopCheck());
             }
 
             // Save all logs to file - Handled by Serilog File Sink
@@ -207,12 +207,12 @@ public class HRService : IHRService
         }
     }
 
-    public void HandleCommand(string? input)
+    public async Task HandleCommandAsync(string? input)
     {
-        HandleCommand(input, false);
+        await HandleCommandAsync(input, false);
     }
 
-    private void HandleCommand(string? input, bool fromBridge = false)
+    private async Task HandleCommandAsync(string? input, bool fromBridge = false)
     {
         var inputs = input?.Split(' ') ?? new string[0];
         if (inputs.Length == 0) return;
@@ -226,7 +226,7 @@ public class HRService : IHRService
                 Stop(true);
                 break;
             case "starthr":
-                StartHRListener();
+                await StartHRListenerAsync();
                 break;
             case "stophr":
                 StopHRListener();
@@ -235,24 +235,23 @@ public class HRService : IHRService
                 RestartHRListener();
                 break;
             case "startbeat":
-                if (BeatThread?.IsAlive ?? false)
+                if (BeatThread != null && !BeatThread.IsCompleted)
                     _logger.LogWarning("Cannot start beat as it's already started!");
                 else
                 {
                     RunHeartBeat = true;
                     btToken = new CancellationTokenSource();
-                    BeatThread = new Thread(() =>
+                    BeatThread = Task.Run(async () =>
                     {
                         RunHeartBeat = true;
-                        HeartBeat();
-                    });
-                    BeatThread.Start();
+                        await HeartBeat();
+                    }, btToken.Token);
                     _logger.LogInformation("Started HeartBeat");
                 }
 
                 break;
             case "stopbeat":
-                if (BeatThread?.IsAlive ?? false)
+                if (BeatThread != null && !BeatThread.IsCompleted)
                 {
                     try
                     {
@@ -300,27 +299,29 @@ public class HRService : IHRService
         }
     }
 
-    private void StartInternal()
+    private async Task StartInternal()
     {
         if (!_appOptions.CurrentValue.SkipVRCCheck)
         {
             vvoToken = new CancellationTokenSource();
-            VerifyVRCOpen = new Thread(() =>
+            var token = vvoToken.Token;
+            VerifyVRCOpen = Task.Run(async () =>
             {
                 var isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
-                while (!vvoToken.IsCancellationRequested)
+                while (!token.IsCancellationRequested)
                 {
                     isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
                     if (!isOpen)
                         vvoToken.Cancel();
-                    Thread.Sleep(1500);
+                    try {
+                        await Task.Delay(1500, token);
+                    } catch (TaskCanceledException) { break; }
                 }
 
                 _logger.LogInformation("Thread Stopped");
                 var fromAutoStart = _appOptions.CurrentValue.AutoStart;
                 Stop(!fromAutoStart, fromAutoStart);
-            });
-            VerifyVRCOpen.Start();
+            }, token);
         }
 
         // Initialize and Start Handlers
@@ -338,7 +339,7 @@ public class HRService : IHRService
         }
 
         // Continue
-        StartHRListener();
+        await StartHRListenerAsync();
         // Start Coroutine
         BoopUwUTimer = new CustomTimer(1000, ct => BoopUwU());
         _logger.LogInformation("Started");
@@ -407,16 +408,16 @@ public class HRService : IHRService
             isRestarting = true;
             // Called for when you need to Reset the HRListener
             StopHRListener();
-            Task.Factory.StartNew(() =>
+            Task.Run(async () =>
             {
                 while (loops <= 2)
                 {
-                    Task.Delay(1000);
+                    await Task.Delay(1000);
                     loops++;
                 }
 
                 isRestarting = false;
-                StartHRListener(true);
+                await StartHRListenerAsync(true);
             });
         }
     }
@@ -460,7 +461,7 @@ public class HRService : IHRService
         return hrt;
     }
 
-    public void StartHRListener(bool fromRestart = false)
+    public async Task StartHRListenerAsync(bool fromRestart = false)
     {
         // Start Manager based on Config
         hrType = StringToHRType(_appOptions.CurrentValue.HrType);
@@ -498,7 +499,7 @@ public class HRService : IHRService
                     "https://github.com/200Tigersbloxed/HRtoVRChat_OSC/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket \n" +
                     "=========================================================================================\n\n" +
                     "Starting Pulsoid in 25 Seconds...");
-                Thread.Sleep(25000);
+                await Task.Delay(25000);
                 activeHRManager = _hrManagerFactory.CreateManager("pulsoid");
                 activeHRManager?.Init(_appOptions.CurrentValue.PulsoidOptions.Widget);
                 break;
@@ -534,7 +535,7 @@ public class HRService : IHRService
         // Start HeartBeats if there was a valid choice
         if (!RunHeartBeat)
         {
-            if (BeatThread?.IsAlive ?? false)
+            if (BeatThread != null && !BeatThread.IsCompleted)
             {
                 try
                 {
@@ -546,13 +547,12 @@ public class HRService : IHRService
             }
 
             btToken = new CancellationTokenSource();
-            BeatThread = new Thread(() =>
+            BeatThread = Task.Run(async () =>
             {
                 _logger.LogInformation("Starting Beating!");
                 RunHeartBeat = true;
-                HeartBeat();
-            });
-            BeatThread.Start();
+                await HeartBeat();
+            }, btToken.Token);
         }
         else if (activeHRManager == null)
             _logger.LogWarning("Can't start beat as ActiveHRManager is null!");
@@ -573,7 +573,7 @@ public class HRService : IHRService
 
         activeHRManager = null;
         // Stop Beating
-        if (BeatThread?.IsAlive ?? false)
+        if (BeatThread != null && !BeatThread.IsCompleted)
         {
             try
             {
@@ -613,10 +613,11 @@ public class HRService : IHRService
         }
     }
 
-    private void HeartBeat()
+    private async Task HeartBeat()
     {
         var waited = false;
-        while (!btToken.IsCancellationRequested)
+        var token = btToken.Token;
+        while (!token.IsCancellationRequested)
         {
             if (!RunHeartBeat)
                 btToken.Cancel();
@@ -656,7 +657,9 @@ public class HRService : IHRService
                                 /*Just a Divide by Zero Exception*/
                             }
 
-                            Thread.Sleep((int)(waitTime * 1000));
+                            try {
+                                await Task.Delay((int)(waitTime * 1000), token);
+                            } catch (TaskCanceledException) { break; }
 
                             // HeartBeat ON
                             _lastHeartBeatState = true;
@@ -665,12 +668,16 @@ public class HRService : IHRService
                                 handler.UpdateHeartBeat(true, false);
                             }
 
-                            Thread.Sleep(100);
+                            try {
+                                await Task.Delay(100, token);
+                            } catch (TaskCanceledException) { break; }
                         }
                         else
                         {
                             _logger.LogWarning("Cannot beat as HR is Less than or equal to zero");
-                            Thread.Sleep(1000);
+                            try {
+                                await Task.Delay(1000, token);
+                            } catch (TaskCanceledException) { break; }
                         }
                     }
                     else
@@ -682,13 +689,17 @@ public class HRService : IHRService
 
                         _logger.LogDebug("Waiting for ActiveHRManager for beating");
                         waited = true;
-                        Thread.Sleep(1000);
+                        try {
+                            await Task.Delay(1000, token);
+                        } catch (TaskCanceledException) { break; }
                     }
                 }
                 else
                 {
                     _logger.LogWarning("Cannot beat as ActiveHRManager is null!");
-                    Thread.Sleep(1000);
+                    try {
+                        await Task.Delay(1000, token);
+                    } catch (TaskCanceledException) { break; }
                 }
             }
         }

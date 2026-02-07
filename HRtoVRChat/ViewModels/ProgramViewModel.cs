@@ -102,7 +102,9 @@ public class ProgramViewModel : ViewModelBase
                     });
                 });
 
-                Thread.Sleep(100); // Poll every 100ms
+                try {
+                    await Task.Delay(500, _cancellationTokenSource.Token); // Poll every 500ms
+                } catch (TaskCanceledException) { break; }
             }
         }, _cancellationTokenSource.Token);
     }

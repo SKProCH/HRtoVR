@@ -1,12 +1,13 @@
 using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace HRtoVRChat.Listeners;
 
 internal class TextFileListener : IHrListener {
-    private Thread? _thread;
+    private Task? _task;
     private int HR;
     private string pubFe = string.Empty;
     private CancellationTokenSource shouldUpdate = new();
@@ -51,21 +52,22 @@ internal class TextFileListener : IHrListener {
     }
 
     private void VerifyClosedThread() {
-        if (_thread != null) {
-            if (_thread.IsAlive)
+        if (_task != null) {
+            if (!_task.IsCompleted)
                 shouldUpdate.Cancel();
         }
     }
 
     private void StartThread() {
         VerifyClosedThread();
-        _thread = new Thread(() => {
-            while (!shouldUpdate.IsCancellationRequested) {
+        var token = shouldUpdate.Token;
+        _task = Task.Run(async () => {
+            while (!token.IsCancellationRequested) {
                 var failed = false;
                 var tempHR = 0;
                 // get text
                 var text = string.Empty;
-                try { text = File.ReadAllText(pubFe); }
+                try { text = await File.ReadAllTextAsync(pubFe, token); }
                 catch (Exception e) {
                     _logger.LogError(e, "Failed to find Text File!");
                     failed = true;
@@ -77,9 +79,10 @@ internal class TextFileListener : IHrListener {
                     catch (Exception e) { _logger.LogError(e, "Failed to parse to int!"); }
 
                 HR = tempHR;
-                Thread.Sleep(500);
+                try {
+                    await Task.Delay(500, token);
+                } catch (TaskCanceledException) { break; }
             }
-        });
-        _thread.Start();
+        }, token);
     }
 }

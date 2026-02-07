@@ -60,9 +60,9 @@ public class SoftwareService : ISoftwareService
             try {
                 // Start Service
                 IsSoftwareRunning = true;
-                Task.Run(() => {
+                Task.Run(async () => {
                     try {
-                        _hrService.Start();
+                        await _hrService.StartAsync();
                     } catch (Exception e) {
                         _logger.LogError(e, "CRITICAL ERROR: {Message}", e.Message);
                         IsSoftwareRunning = false;
@@ -92,7 +92,7 @@ public class SoftwareService : ISoftwareService
         if (IsSoftwareRunning) {
             try {
                 _logger.LogInformation("> {Command}", command);
-                _hrService.HandleCommand(command);
+                Task.Run(async () => await _hrService.HandleCommandAsync(command));
             }
             catch (Exception e) {
                 _logger.LogError(e, "Failed to send command due to an error!");

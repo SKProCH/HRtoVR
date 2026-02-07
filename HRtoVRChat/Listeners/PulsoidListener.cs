@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 namespace HRtoVRChat.Listeners;
 
 public class PulsoidListener : IHrListener {
-    private Thread? _thread;
     private CancellationTokenSource tokenSource = new();
     private WebsocketTemplate? wst;
     private readonly ILogger<PulsoidListener> _logger;
@@ -66,7 +65,8 @@ public class PulsoidListener : IHrListener {
     }
 
     public void StartThread(string id) {
-        _thread = new Thread(async () => {
+        var token = tokenSource.Token;
+        Task.Run(async () => {
             wst = new WebsocketTemplate("wss://hrproxy.fortnite.lol:2096/hrproxy", _logger);
             wst.OnMessage = HandleMessage;
             wst.OnReconnect = () =>
@@ -88,7 +88,7 @@ public class PulsoidListener : IHrListener {
             if (noerror) {
                 if (wst != null) await wst.SendMessage("{\"reader\": \"pulsoid\", \"identifier\": \"" + id +
                                       "\", \"service\": \"vrchat\"}");
-                while (!tokenSource.IsCancellationRequested) {
+                while (!token.IsCancellationRequested) {
                     if (IsConnected) {
                         // Managed by Websocket.Client
                     }
@@ -97,14 +97,15 @@ public class PulsoidListener : IHrListener {
                         // HRService.RestartHRListener();
                     }
 
-                    Thread.Sleep(1000);
+                    try {
+                        await Task.Delay(1000, token);
+                    } catch (TaskCanceledException) { break; }
                 }
             }
 
             await Close();
             _logger.LogInformation("Closed Pulsoid");
-        });
-        _thread.Start();
+        }, token);
     }
 
     private async Task Close() {

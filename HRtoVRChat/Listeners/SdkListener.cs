@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using HarmonyLib;
 using HRtoVRChat_OSC_SDK;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ public class SdkListener : IHrListener {
     private readonly Dictionary<HRSDK, Messages.HRMessage> Hrsdks = new();
     private readonly Dictionary<string, Messages.HRMessage> RemoteSDKs = new();
 
-    private Thread? _worker;
+    private Task? _worker;
 
     private SimpleTcpServer? server;
     private CancellationTokenSource? token;
@@ -36,7 +37,8 @@ public class SdkListener : IHrListener {
         }
 
         token = new CancellationTokenSource();
-        _worker = new Thread(() => {
+        var ct = token.Token;
+        _worker = Task.Run(async () => {
             server = new SimpleTcpServer(d1);
             server.Events.ClientConnected += (sender, args) => {
                 RemoteSDKs.Add(args.IpPort, new Messages.HRMessage());
@@ -238,7 +240,9 @@ public class SdkListener : IHrListener {
                         c++;
                 }
 
-                Thread.Sleep(10);
+                try {
+                    await Task.Delay(10, ct);
+                } catch (TaskCanceledException) { break; }
             }
 
             server?.Stop();
@@ -248,8 +252,7 @@ public class SdkListener : IHrListener {
             foreach (var externalHrsdk in ExternalHrsdks)
                 externalHrsdk.Key.Destroy();
             ExternalHrsdks.Clear();
-        });
-        _worker.Start();
+        }, ct);
         return true;
     }
 

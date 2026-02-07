@@ -6,7 +6,7 @@ public class AppBridge : IAppBridge {
     private SimpleTcpClient? _client;
     private SimpleTcpServer? _server;
 
-    private Thread _serverUpdateThread;
+    private Task? _serverUpdateTask;
     private CancellationTokenSource cts;
 
     public Action<Messages.AppBridgeMessage> OnAppBridgeMessage { get; set; } = message => { };
@@ -28,8 +28,9 @@ public class AppBridge : IAppBridge {
         _server = new SimpleTcpServer("127.0.0.1:9001");
         _server.Start();
         cts = new CancellationTokenSource();
-        _serverUpdateThread = new Thread(() => {
-            while (!cts.IsCancellationRequested) {
+        var token = cts.Token;
+        _serverUpdateTask = Task.Run(async () => {
+            while (!token.IsCancellationRequested) {
                 try {
                     var hrm = GetData.Invoke();
                     if (hrm != null) {
@@ -39,10 +40,11 @@ public class AppBridge : IAppBridge {
                 }
                 catch (Exception) { }
 
-                Thread.Sleep(1000);
+                try {
+                    await Task.Delay(1000, token);
+                } catch (TaskCanceledException) { break; }
             }
-        });
-        _serverUpdateThread.Start();
+        }, token);
     }
 
     public void StopServer() {
