@@ -58,6 +58,6 @@ public class AppOptions {
     public bool NoAvatarsFolder { get; set; }
 
     public static bool DoesConfigExist() {
-        return File.Exists(Path.Combine(SoftwareManager.OutputPath, "config.json"));
+        return File.Exists(Path.Combine(App.OutputPath, "config.json"));
     }
 }

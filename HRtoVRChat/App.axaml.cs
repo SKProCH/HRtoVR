@@ -21,6 +21,22 @@ namespace HRtoVRChat;
 public class App : Application {
     public IServiceProvider? Services { get; private set; }
 
+    public static string LocalDirectory {
+        get {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "HRtoVRChat");
+            return string.Empty;
+        }
+    }
+
+    public static string OutputPath {
+        get {
+            if (LocalDirectory != string.Empty)
+                return Path.Combine(LocalDirectory, "HRtoVRChat");
+            return "HRtoVRChat";
+        }
+    }
+
     public override void Initialize() {
         // Cache any assets
         AssetTools.Init();
@@ -30,7 +46,7 @@ public class App : Application {
 
     public override void OnFrameworkInitializationCompleted() {
         // Setup Configuration
-        var configPath = Path.Combine(SoftwareManager.OutputPath, "config.json");
+        var configPath = Path.Combine(OutputPath, "config.json");
 
         // Create directories and files if needed
         var dir = Path.GetDirectoryName(configPath);
@@ -44,13 +60,13 @@ public class App : Application {
         IConfiguration configuration = WritableJsonConfigurationFabric.Create(configPath);
 
         // Setup Logging
-        if (!Directory.Exists(Path.Combine(SoftwareManager.OutputPath, "Logs")))
-            Directory.CreateDirectory(Path.Combine(SoftwareManager.OutputPath, "Logs"));
+        if (!Directory.Exists(Path.Combine(OutputPath, "Logs")))
+            Directory.CreateDirectory(Path.Combine(OutputPath, "Logs"));
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File(Path.Combine(SoftwareManager.OutputPath, "Logs", "log-.txt"), rollingInterval: RollingInterval.Day)
+            .WriteTo.File(Path.Combine(OutputPath, "Logs", "log-.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
         // Setup DI
@@ -121,7 +137,6 @@ public class App : Application {
         services.AddSingleton<HomeViewModel>();
 
         services.AddSingleton<ProgramViewModel>();
-        services.AddSingleton<UpdatesViewModel>();
         services.AddSingleton<ConfigViewModel>();
         services.AddSingleton<IncomingDataViewModel>();
         services.AddSingleton<ArgumentsViewModel>();

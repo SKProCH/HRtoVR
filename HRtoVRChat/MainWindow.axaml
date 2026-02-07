@@ -23,9 +23,6 @@
     <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
       <views:ProgramView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:UpdatesViewModel}">
-      <views:UpdatesView />
-    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:ConfigViewModel}">
       <views:ConfigView />
     </DataTemplate>
@@ -59,12 +56,6 @@
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource window_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Program</TextBlock>
-          </StackPanel>
-        </Button>
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Updates">
-          <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource arrow_download_regular}" HorizontalAlignment="Left" Margin="-1,0,0,0" />
-            <TextBlock Margin="6,1,0,0">Updates</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="Config">

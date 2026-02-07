@@ -56,7 +56,7 @@ public class ProgramViewModel : ViewModelBase
     private void StartSoftware()
     {
         OnLogReceived?.Invoke(null, "CLEAR");
-        OnLogReceived?.Invoke($"HRtoVRChat {_softwareService.GetInstalledVersion()} Created by 200Tigersbloxed\n", "");
+        OnLogReceived?.Invoke($"HRtoVRChat {_softwareService.Version} Created by 200Tigersbloxed\n", "");
 
         _softwareService.StartSoftware();
         UpdateStatus();

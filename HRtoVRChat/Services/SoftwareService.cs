@@ -11,13 +11,9 @@ public interface ISoftwareService
 {
     string LocalDirectory { get; }
     string OutputPath { get; }
-    bool IsInstalled { get; }
+    string Version { get; }
     bool IsSoftwareRunning { get; }
-    Action<int, int> RequestUpdateProgressBars { get; set; }
 
-    string GetLatestVersion();
-    string GetInstalledVersion();
-    Task InstallSoftware(Action onFinish);
     void StartSoftware();
     void StopSoftware();
     void SendCommand(string command);
@@ -36,23 +32,10 @@ public class SoftwareService : ISoftwareService
         _logger = logger;
     }
 
-    public string LocalDirectory => SoftwareManager.LocalDirectory;
-    public string OutputPath => SoftwareManager.OutputPath;
-    public bool IsInstalled => SoftwareManager.IsInstalled;
+    public string LocalDirectory => App.LocalDirectory;
+    public string OutputPath => App.OutputPath;
+    public string Version => "Integrated";
     public bool IsSoftwareRunning { get; private set; }
-
-    public Action<int, int> RequestUpdateProgressBars { get; set; } = (_, _) => { };
-
-    public string GetLatestVersion() => SoftwareManager.GetLatestVersion();
-    public string GetInstalledVersion() => SoftwareManager.GetInstalledVersion();
-
-    public async Task InstallSoftware(Action onFinish)
-    {
-        // Stubs for compatibility with ViewModel calls
-        _logger.LogInformation("The backend is now integrated and does not need installation.");
-        onFinish?.Invoke();
-        await Task.CompletedTask;
-    }
 
     public void StartSoftware()
     {

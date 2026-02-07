@@ -15,7 +15,6 @@ public class MainWindowViewModel : ViewModelBase
 
     public HomeViewModel HomeVM { get; }
     public ProgramViewModel ProgramVM { get; }
-    public UpdatesViewModel UpdatesVM { get; }
     public ConfigViewModel ConfigVM { get; }
     public IncomingDataViewModel IncomingDataVM { get; }
 
@@ -35,7 +34,6 @@ public class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         HomeViewModel homeVM,
         ProgramViewModel programVM,
-        UpdatesViewModel updatesVM,
         ConfigViewModel configVM,
         IncomingDataViewModel incomingDataVM,
         ITrayIconService trayIconService,
@@ -44,7 +42,6 @@ public class MainWindowViewModel : ViewModelBase
     {
         HomeVM = homeVM;
         ProgramVM = programVM;
-        UpdatesVM = updatesVM;
         ConfigVM = configVM;
         IncomingDataVM = incomingDataVM;
         _trayIconService = trayIconService;
@@ -67,7 +64,6 @@ public class MainWindowViewModel : ViewModelBase
             {
                 "Home" => HomeVM,
                 "Program" => ProgramVM,
-                "Updates" => UpdatesVM,
                 "Config" => ConfigVM,
                 "IncomingData" => IncomingDataVM,
                 _ => HomeVM
