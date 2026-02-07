@@ -7,7 +7,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="HRtoVRChat.Views.ProgramView"
              x:DataType="vm:ProgramViewModel">
-  <Grid RowDefinitions="*,Auto,Auto,Auto" Margin="10">
+  <Grid RowDefinitions="*,Auto,Auto" Margin="10">
     <Grid Grid.Row="0" RowDefinitions="*,Auto">
         <avaloniaEdit:TextEditor Background="#0c0c0c" Foreground="White"
                                 FontFamily="Courier New" Focusable="False" FontSize="12"
@@ -23,10 +23,5 @@
     </StackPanel>
 
     <Button Grid.Row="2" HorizontalAlignment="Left" Command="{Binding OpenArgumentsCommand}" Margin="0,0,0,10">Open Program Arguments</Button>
-
-    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,0">
-        <TextBox Name="CommandBox" Watermark="Enter a Command" Text="{Binding CommandInput}" Margin="0,0,10,0" />
-        <Button Grid.Column="1" Command="{Binding SendCommandCommand}">SEND</Button>
-    </Grid>
   </Grid>
 </UserControl>

@@ -13,12 +13,10 @@ namespace HRtoVRChat.ViewModels;
 public class ProgramViewModel : ViewModelBase
 {
     [Reactive] public string StatusText { get; set; } = "STOPPED";
-    [Reactive] public string CommandInput { get; set; } = "";
 
     public ReactiveCommand<Unit, Unit> StartCommand { get; }
     public ReactiveCommand<Unit, Unit> StopCommand { get; }
     public ReactiveCommand<Unit, Unit> KillCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendCommandCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenArgumentsCommand { get; }
 
     public event Action<string?, string>? OnLogReceived;
@@ -35,7 +33,6 @@ public class ProgramViewModel : ViewModelBase
         StartCommand = ReactiveCommand.Create(StartSoftware);
         StopCommand = ReactiveCommand.Create(StopSoftware);
         KillCommand = ReactiveCommand.Create(KillSoftware);
-        SendCommandCommand = ReactiveCommand.Create(SendCommand);
         OpenArgumentsCommand = ReactiveCommand.Create(() => _trayIconService.ArgumentsWindow?.Show());
 
         Initialize();
@@ -78,15 +75,6 @@ public class ProgramViewModel : ViewModelBase
         }
         catch (Exception) { }
         UpdateStatus();
-    }
-
-    private void SendCommand()
-    {
-        if (!string.IsNullOrEmpty(CommandInput))
-        {
-            _softwareService.SendCommand(CommandInput);
-            CommandInput = "";
-        }
     }
 
     private void StartBackgroundThread()

@@ -19,7 +19,6 @@ public class HRService : IHRService
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOSCService _oscService;
     private readonly IParamsService _paramsService;
-    private readonly IOSCAvatarListener _oscAvatarListener;
     private readonly IEnumerable<IHrListener> _hrListeners;
     private readonly IEnumerable<IGameHandler> _injectedGameHandlers;
 
@@ -36,16 +35,6 @@ public class HRService : IHRService
     private Task? BeatThread;
     private CancellationTokenSource btToken = new();
 
-    private readonly string HelpCommandString = "\n\n[Help]\n" +
-                                                       "exit - Exits the app.\n" +
-                                                       "starthr - Manually starts the HeartRateManager if it isn't already started.\n" +
-                                                       "stophr - Manually stops the HeartRateManager if it is already started.\n" +
-                                                       "restarthr - Stops then Starts the HeartRateManager.\n" +
-                                                       "startbeat - Starts HeartBeat if it isn't enabled already.\n" +
-                                                       "stopbeat - Stops the HeartBeat if it is already started.\n" +
-                                                       "refreshconfig - Refreshes the Config from File.\n" +
-                                                       "help - Shows available commands.\n";
-
     public CustomTimer? BoopUwUTimer;
 
 
@@ -55,7 +44,6 @@ public class HRService : IHRService
         IOptionsMonitor<AppOptions> appOptions,
         IOSCService oscService,
         IParamsService paramsService,
-        IOSCAvatarListener oscAvatarListener,
         IEnumerable<IHrListener> hrListeners,
         IEnumerable<IGameHandler> gameHandlers)
     {
@@ -64,7 +52,6 @@ public class HRService : IHRService
         _appOptions = appOptions;
         _oscService = oscService;
         _paramsService = paramsService;
-        _oscAvatarListener = oscAvatarListener;
         _hrListeners = hrListeners;
         _injectedGameHandlers = gameHandlers;
     }
@@ -89,14 +76,11 @@ public class HRService : IHRService
                 {
                     _logger.LogInformation("Enabling NeosBridge Handler");
                     _gameHandlers.Add(handler);
-                    neosHandler.OnCommand += async command => await HandleCommandAsync(command);
                 }
             }
         }
 
         bool foundOnStart = _gameHandlers.Any(gh => gh.IsGameRunning());
-
-        _oscAvatarListener.Init();
 
         if (foundOnStart)
         {
@@ -148,81 +132,6 @@ public class HRService : IHRService
             // Save all logs to file - Handled by Serilog File Sink
             // Exit
             _logger.LogWarning("No supported game was detected!");
-        }
-    }
-
-    public async Task HandleCommandAsync(string? input)
-    {
-        await HandleCommandAsync(input, false);
-    }
-
-    private async Task HandleCommandAsync(string? input, bool fromBridge = false)
-    {
-        var inputs = input?.Split(' ') ?? new string[0];
-        if (inputs.Length == 0) return;
-
-        switch (inputs[0].ToLower())
-        {
-            case "help":
-                _logger.LogInformation(HelpCommandString);
-                break;
-            case "exit":
-                Stop(true);
-                break;
-            case "starthr":
-                await StartHRListenerAsync();
-                break;
-            case "stophr":
-                StopHRListener();
-                break;
-            case "restarthr":
-                RestartHRListener();
-                break;
-            case "startbeat":
-                if (BeatThread != null && !BeatThread.IsCompleted)
-                    _logger.LogWarning("Cannot start beat as it's already started!");
-                else
-                {
-                    RunHeartBeat = true;
-                    btToken = new CancellationTokenSource();
-                    BeatThread = Task.Run(async () =>
-                    {
-                        RunHeartBeat = true;
-                        await HeartBeat();
-                    }, btToken.Token);
-                    _logger.LogInformation("Started HeartBeat");
-                }
-
-                break;
-            case "stopbeat":
-                if (BeatThread != null && !BeatThread.IsCompleted)
-                {
-                    try
-                    {
-                        btToken.Cancel();
-                    }
-                    catch (Exception e) { _logger.LogDebug(e, "Exception cancelling beat thread"); }
-
-                    RunHeartBeat = false;
-                }
-
-                _logger.LogInformation("Stopped HRBeat");
-                break;
-            case "refreshconfig":
-                _paramsService.ResetParams();
-                // _configService.CreateConfig(); // Config reloads automatically with IOptionsMonitor
-                // We might need to re-init params if VRChat handler is active
-                foreach (var handler in _gameHandlers)
-                {
-                    if (handler is VRChatOSCHandler vrcHandler)
-                    {
-                        _paramsService.InitParams();
-                    }
-                }
-                break;
-            default:
-                _logger.LogWarning("Unknown Command \"{Input}\"!", inputs[0]);
-                break;
         }
     }
 

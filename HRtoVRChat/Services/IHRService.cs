@@ -9,5 +9,4 @@ public interface IHRService
     void RestartHRListener();
     Task StartHRListenerAsync(bool fromRestart = false);
     void StopHRListener();
-    Task HandleCommandAsync(string? input);
 }

@@ -10,7 +10,6 @@ using WatsonWebsocket;
 namespace HRtoVRChat.GameHandlers;
 
 public class NeosHandler : IGameHandler {
-    public Action<string> OnCommand = s => { };
     private WatsonWsServer? _server;
     private NeosMessage _neosMessage = new();
     private readonly IOptionsMonitor<AppOptions> _appOptions;
@@ -30,13 +29,6 @@ public class NeosHandler : IGameHandler {
 
     public void Init() {
         _server = new WatsonWsServer("127.0.0.1", 4206, false);
-        _server.MessageReceived += OnMessageReceived;
-    }
-
-    private void OnMessageReceived(object? sender, MessageReceivedEventArgs e)
-    {
-        var msg = Encoding.UTF8.GetString(e.Data);
-        OnCommand.Invoke(msg);
     }
 
     public void Start() {

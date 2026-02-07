@@ -16,7 +16,6 @@ public interface ISoftwareService
 
     void StartSoftware();
     void StopSoftware();
-    void SendCommand(string command);
 }
 
 public class SoftwareService : ISoftwareService
@@ -67,19 +66,6 @@ public class SoftwareService : ISoftwareService
                 IsSoftwareRunning = false;
             }
             catch (Exception) { }
-        }
-    }
-
-    public void SendCommand(string command)
-    {
-        if (IsSoftwareRunning) {
-            try {
-                _logger.LogInformation("> {Command}", command);
-                Task.Run(async () => await _hrService.HandleCommandAsync(command));
-            }
-            catch (Exception e) {
-                _logger.LogError(e, "Failed to send command due to an error!");
-            }
         }
     }
 }
