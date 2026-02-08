@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive;
-using Avalonia.Controls;
 using HRtoVRChat.Configs;
-using HRtoVRChat.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;

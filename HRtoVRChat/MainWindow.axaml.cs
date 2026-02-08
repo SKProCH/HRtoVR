@@ -1,9 +1,5 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
-using HRtoVRChat.ViewModels;
 
 namespace HRtoVRChat;
 

@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Linq;
 using HRtoVRChat.Configs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;

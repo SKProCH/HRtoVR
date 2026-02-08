@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.IO;
-using HRtoVRChat;
 using HRtoVRChat.Listeners.Fitbit;
 using HRtoVRChat.Listeners.HrProxy;
 using HRtoVRChat.Listeners.HypeRate;

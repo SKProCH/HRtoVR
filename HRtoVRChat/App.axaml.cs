@@ -1,13 +1,10 @@
 using System;
 using System.IO;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
-using HRtoVRChat.Listeners;
 using HRtoVRChat.Listeners.Fitbit;
 using HRtoVRChat.Listeners.HrProxy;
 using HRtoVRChat.Listeners.HypeRate;
@@ -120,7 +117,8 @@ public class App : Application {
         services.AddSingleton<IOSCService, OSCService>();
         services.AddSingleton<IParamsService, ParamsService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
-        services.AddSingleton<IHRService, HRService>();
+        services.AddSingleton<HRService>();
+        services.AddSingleton<IHRService>(provider => provider.GetRequiredService<HRService>());
 
         // Register Options
         services.Configure<FitbitOptions>(configuration.GetSection("FitbitOptions"));

@@ -5,7 +5,6 @@ using System.Reactive.Linq;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media.Imaging;
 using HRtoVRChat.ViewModels;
 
 namespace HRtoVRChat.Services;

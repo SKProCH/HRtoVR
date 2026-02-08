@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text;
 using HRtoVRChat.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

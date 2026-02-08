@@ -1,12 +1,8 @@
 using System;
 using System.Reactive;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia.Threading;
 using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using System.Diagnostics;
 using System.Reactive.Linq;
 
 namespace HRtoVRChat.ViewModels;
