@@ -81,6 +81,8 @@ public class FitBitListener : IHrListener {
     }
 
     public string Name => "FitBit";
+    public object? Settings => _options;
+    public string? SettingsSectionName => "FitbitOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

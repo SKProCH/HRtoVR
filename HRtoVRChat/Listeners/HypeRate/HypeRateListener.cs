@@ -57,6 +57,8 @@ public class HypeRateListener : IHrListener {
     }
 
     public string Name => "HypeRate";
+    public object? Settings => _options;
+    public string? SettingsSectionName => "HypeRateOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

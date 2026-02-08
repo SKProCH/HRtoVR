@@ -22,6 +22,8 @@ public class HrProxyListener : IHrListener {
     }
 
     public string Name => "HRProxy";
+    public object? Settings => _options;
+    public string? SettingsSectionName => "HRProxyOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

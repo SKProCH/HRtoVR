@@ -36,15 +36,6 @@ public class AppOptions {
     [Description("The Port to receive messages from")]
     public int ReceiverPort { get; set; } = 9001;
 
-    // Sub-options
-    public FitbitOptions FitbitOptions { get; set; } = new();
-    public HRProxyOptions HRProxyOptions { get; set; } = new();
-    public HypeRateOptions HypeRateOptions { get; set; } = new();
-    public PulsoidOptions PulsoidOptions { get; set; } = new();
-    public PulsoidSocketOptions PulsoidSocketOptions { get; set; } = new();
-    public StromnoOptions StromnoOptions { get; set; } = new();
-    public TextFileOptions TextFileOptions { get; set; } = new();
-
     // UI Config properties merged
     [Description("Automatically Start HRtoVRChat when VRChat is detected")]
     public bool AutoStart { get; set; }

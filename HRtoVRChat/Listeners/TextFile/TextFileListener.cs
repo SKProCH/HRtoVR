@@ -79,6 +79,8 @@ internal class TextFileListener : IHrListener {
     }
 
     public string Name => "TextFile";
+    public object? Settings => _options;
+    public string? SettingsSectionName => "TextFileOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

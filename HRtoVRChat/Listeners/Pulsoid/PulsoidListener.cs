@@ -70,6 +70,8 @@ public class PulsoidListener : IHrListener {
     }
 
     public virtual string Name => "Pulsoid";
+    public virtual object? Settings => _options;
+    public virtual string? SettingsSectionName => "PulsoidOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

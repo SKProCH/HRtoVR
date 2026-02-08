@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
+using HRtoVRChat.Infrastructure.Options;
 using HRtoVRChat.Listeners.Fitbit;
 using HRtoVRChat.Listeners.HrProxy;
 using HRtoVRChat.Listeners.HypeRate;
@@ -16,6 +17,7 @@ using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using WritableJsonConfiguration;
@@ -78,7 +80,6 @@ public class App : Application {
 
         // Register Configuration
         collection.AddSingleton(configuration);
-        collection.Configure<AppOptions>(configuration);
 
         // Register Logging
         collection.AddLogging(loggingBuilder =>
@@ -121,13 +122,10 @@ public class App : Application {
         services.AddSingleton<IHRService>(provider => provider.GetRequiredService<HRService>());
 
         // Register Options
-        services.Configure<FitbitOptions>(configuration.GetSection("FitbitOptions"));
-        services.Configure<HRProxyOptions>(configuration.GetSection("HRProxyOptions"));
-        services.Configure<HypeRateOptions>(configuration.GetSection("HypeRateOptions"));
-        services.Configure<PulsoidOptions>(configuration.GetSection("PulsoidOptions"));
-        services.Configure<PulsoidSocketOptions>(configuration.GetSection("PulsoidSocketOptions"));
-        services.Configure<StromnoOptions>(configuration.GetSection("StromnoOptions"));
-        services.Configure<TextFileOptions>(configuration.GetSection("TextFileOptions"));
+        services.AddOptions();
+        services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(OptionsManager<>)));
+        services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>)));
+        services.ConfigureOptionsPath<AppOptions>("App");
 
         // HR Listeners
         services.AddSingleton<IHrListener, FitBitListener>();

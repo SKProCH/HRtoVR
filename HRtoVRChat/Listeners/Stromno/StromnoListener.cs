@@ -14,6 +14,8 @@ public class StromnoListener : PulsoidListener
     }
 
     public override string Name => "Stromno";
+    public override object? Settings => _options;
+    public override string? SettingsSectionName => "StromnoOptions";
 
     public override void Start()
     {

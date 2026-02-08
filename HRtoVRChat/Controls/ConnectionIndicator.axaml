@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:HRtoVRChat.Controls"
+             x:Class="HRtoVRChat.Controls.ConnectionIndicator">
+    <Ellipse Width="12" Height="12" VerticalAlignment="Center" Margin="5">
+        <Ellipse.Styles>
+            <!-- Default state: Disconnected (Red) -->
+            <Style Selector="Ellipse">
+                <Setter Property="Fill" Value="Red"/>
+            </Style>
+
+            <!-- Connected state (Yellow) -->
+            <Style Selector="controls|ConnectionIndicator[IsConnected=True] Ellipse">
+                <Setter Property="Fill" Value="Yellow"/>
+            </Style>
+
+            <!-- Active state: Connected AND HeartRate > 0 (Green) -->
+            <Style Selector="controls|ConnectionIndicator[IsActive=True] Ellipse">
+                <Setter Property="Fill" Value="LimeGreen"/>
+            </Style>
+        </Ellipse.Styles>
+    </Ellipse>
+</UserControl>

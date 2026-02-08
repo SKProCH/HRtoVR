@@ -66,6 +66,8 @@ internal class PulsoidSocketListener : IHrListener {
     }
 
     public string Name => "PulsoidSocket";
+    public object? Settings => _options;
+    public string? SettingsSectionName => "PulsoidSocketOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 }
