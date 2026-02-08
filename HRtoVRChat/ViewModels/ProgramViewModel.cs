@@ -14,8 +14,6 @@ public class ProgramViewModel : ViewModelBase
     [Reactive] public bool IsConnected { get; set; }
     [Reactive] public string ActiveListenerName { get; set; } = "None";
 
-    public ReactiveCommand<Unit, Unit> OpenArgumentsCommand { get; }
-
     private readonly IHRService _hrService;
     private readonly ITrayIconService _trayIconService;
 
@@ -23,8 +21,6 @@ public class ProgramViewModel : ViewModelBase
     {
         _hrService = hrService;
         _trayIconService = trayIconService;
-
-        OpenArgumentsCommand = ReactiveCommand.Create(() => _trayIconService.ArgumentsWindow?.Show());
 
         _hrService.HeartRate
             .ObserveOn(RxApp.MainThreadScheduler)

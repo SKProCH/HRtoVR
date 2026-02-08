@@ -13,7 +13,6 @@ namespace HRtoVRChat.Services;
 public interface ITrayIconService
 {
     Window? MainWindow { get; set; }
-    Window? ArgumentsWindow { get; set; }
     void Init(Application app);
     void Update(TrayIconInfo info);
 }
@@ -21,7 +20,6 @@ public interface ITrayIconService
 public class TrayIconService : ITrayIconService
 {
     public Window? MainWindow { get; set; }
-    public Window? ArgumentsWindow { get; set; }
 
     private readonly Dictionary<string, NativeMenuItemBase> _nativeMenuItems = new()
     {
@@ -171,16 +169,13 @@ public class TrayIconService : ITrayIconService
                     switch (_id)
                     {
                         case "AutoStart":
-                            if (_service.ArgumentsWindow?.DataContext is ArgumentsViewModel vmAS)
-                                vmAS.AutoStart = nmi.IsChecked;
+                            // Logic removed as Arguments window is gone
                             break;
                         case "SkipVRCCheck":
-                            if (_service.ArgumentsWindow?.DataContext is ArgumentsViewModel vmSV)
-                                vmSV.SkipVRCCheck = nmi.IsChecked;
+                            // Logic removed as Arguments window is gone
                             break;
                         case "NeosBridge":
-                            if (_service.ArgumentsWindow?.DataContext is ArgumentsViewModel vmNB)
-                                vmNB.NeosBridge = nmi.IsChecked;
+                            // Logic removed as Arguments window is gone
                             break;
                         case "HideApplication":
                             if (nmi.IsChecked)

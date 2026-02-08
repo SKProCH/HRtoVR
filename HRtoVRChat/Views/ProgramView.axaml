@@ -8,14 +8,10 @@
              x:DataType="vm:ProgramViewModel">
   <Grid RowDefinitions="Auto,Auto" Margin="10">
     <StackPanel Grid.Row="0" Margin="0,5,0,0">
-        <Label Name="StatusLabel" Content="{Binding StatusText}" FontWeight="Bold" />
-        <StackPanel Orientation="Vertical" Spacing="20">
-            <TextBlock Text="{Binding ActiveListenerName, StringFormat='Active listener: {0}'}" />
-            <TextBlock Text="{Binding HeartRate, StringFormat='HR: {0}'}" />
-            <TextBlock Text="{Binding IsConnected, StringFormat='Connected: {0}'}" />
-        </StackPanel>
+      <Label Name="StatusLabel" Content="{Binding StatusText}" FontWeight="Bold" />
+      <TextBlock Text="{Binding ActiveListenerName, StringFormat='Active listener: {0}'}" />
+      <TextBlock Text="{Binding HeartRate, StringFormat='HR: {0}'}" />
+      <TextBlock Text="{Binding IsConnected, StringFormat='Connected: {0}'}" />
     </StackPanel>
-
-    <Button Grid.Row="1" HorizontalAlignment="Left" Command="{Binding OpenArgumentsCommand}" Margin="0,10,0,10">Open Program Arguments</Button>
   </Grid>
 </UserControl>
