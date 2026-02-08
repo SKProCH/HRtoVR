@@ -7,93 +7,44 @@ using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.Diagnostics;
+using System.Reactive.Linq;
 
 namespace HRtoVRChat.ViewModels;
 
 public class ProgramViewModel : ViewModelBase
 {
-    [Reactive] public string StatusText { get; set; } = "STOPPED";
+    [Reactive] public string StatusText { get; set; } = "STATUS: INITIALIZING";
+    [Reactive] public int HeartRate { get; set; }
+    [Reactive] public bool IsConnected { get; set; }
+    [Reactive] public string ActiveListenerName { get; set; } = "None";
 
-    public ReactiveCommand<Unit, Unit> StartCommand { get; }
-    public ReactiveCommand<Unit, Unit> StopCommand { get; }
-    public ReactiveCommand<Unit, Unit> KillCommand { get; }
     public ReactiveCommand<Unit, Unit> OpenArgumentsCommand { get; }
 
-    public event Action<string?, string>? OnLogReceived;
-
-    private CancellationTokenSource? _cancellationTokenSource;
-    private readonly ISoftwareService _softwareService;
+    private readonly IHRService _hrService;
     private readonly ITrayIconService _trayIconService;
 
-    public ProgramViewModel(ISoftwareService softwareService, ITrayIconService trayIconService)
+    public ProgramViewModel(IHRService hrService, ITrayIconService trayIconService)
     {
-        _softwareService = softwareService;
+        _hrService = hrService;
         _trayIconService = trayIconService;
 
-        StartCommand = ReactiveCommand.Create(StartSoftware);
-        StopCommand = ReactiveCommand.Create(StopSoftware);
-        KillCommand = ReactiveCommand.Create(KillSoftware);
         OpenArgumentsCommand = ReactiveCommand.Create(() => _trayIconService.ArgumentsWindow?.Show());
 
-        Initialize();
-    }
+        _hrService.HeartRate
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(hr => HeartRate = hr);
 
-    private void Initialize()
-    {
-        // Initial status update
-        UpdateStatus();
-        StartBackgroundThread();
-    }
+        _hrService.IsConnected
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(connected => IsConnected = connected);
 
-    public void UpdateStatus()
-    {
-        StatusText = "STATUS: " + (_softwareService.IsSoftwareRunning ? "RUNNING" : "STOPPED");
-    }
+        _hrService.ActiveListener
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(listener => ActiveListenerName = listener?.Name ?? "None");
 
-    private void StartSoftware()
-    {
-        OnLogReceived?.Invoke(null, "CLEAR");
-        OnLogReceived?.Invoke($"HRtoVRChat {_softwareService.Version} Created by 200Tigersbloxed\n", "");
-
-        _softwareService.StartSoftware();
-        UpdateStatus();
-    }
-
-    private void StopSoftware()
-    {
-        _softwareService.StopSoftware();
-        UpdateStatus();
-    }
-
-    private void KillSoftware()
-    {
-        _softwareService.StopSoftware();
-        try {
-            foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
-                process.Kill();
-            }
-        }
-        catch (Exception) { }
-        UpdateStatus();
-    }
-
-    private void StartBackgroundThread()
-    {
-        _cancellationTokenSource = new CancellationTokenSource();
-        Task.Run(async () => {
-            while (!_cancellationTokenSource.IsCancellationRequested) {
-                await Dispatcher.UIThread.InvokeAsync(() => {
-                    UpdateStatus();
-
-                    _trayIconService.Update(new TrayIconInfo {
-                        Status = _softwareService.IsSoftwareRunning ? "RUNNING" : "STOPPED"
-                    });
-                });
-
-                try {
-                    await Task.Delay(500, _cancellationTokenSource.Token); // Poll every 500ms
-                } catch (TaskCanceledException) { break; }
-            }
-        }, _cancellationTokenSource.Token);
+        _hrService.IsConnected.CombineLatest(_hrService.ActiveListener, (connected, listener) =>
+            $"STATUS: {(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(status => StatusText = status);
     }
 }

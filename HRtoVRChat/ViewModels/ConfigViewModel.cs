@@ -50,9 +50,9 @@ public class ConfigViewModel : ViewModelBase
                 if (manager != null)
                 {
                     var config = _appOptions.CurrentValue;
-                    if (config.HrType != manager.Id)
+                    if (config.ActiveListener != manager.Id)
                     {
-                        config.HrType = manager.Id;
+                        config.ActiveListener = manager.Id;
                         _configuration["HrType"] = manager.Id;
                     }
                 }
@@ -125,7 +125,7 @@ public class ConfigViewModel : ViewModelBase
         Managers.Add(sdk);
 
         // Select the active manager
-        SelectedManager = Managers.FirstOrDefault(m => m.Id.Equals(config.HrType, StringComparison.OrdinalIgnoreCase));
+        SelectedManager = Managers.FirstOrDefault(m => m.Id.Equals(config.ActiveListener, StringComparison.OrdinalIgnoreCase));
     }
 
     private void AddSettings(ManagerViewModel manager, object configObject, string sectionName)

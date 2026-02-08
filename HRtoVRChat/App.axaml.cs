@@ -119,7 +119,6 @@ public class App : Application {
         // Services
         services.AddSingleton<IOSCService, OSCService>();
         services.AddSingleton<IParamsService, ParamsService>();
-        services.AddSingleton<ISoftwareService, SoftwareService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IHRService, HRService>();
 

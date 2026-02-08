@@ -17,7 +17,7 @@ public class AppOptions {
     public bool ExpandCVR { get; set; } = true;
 
     [Description("The source from where to pull Heart Rate Data")]
-    public string HrType { get; set; } = "unknown";
+    public string ActiveListener { get; set; } = "unknown";
 
     [Description("The IP to send messages to")]
     public string Ip { get; set; } = "127.0.0.1";

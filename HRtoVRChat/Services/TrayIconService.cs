@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -46,22 +47,6 @@ public class TrayIconService : ITrayIconService
             ToggleType = NativeMenuItemToggleType.CheckBox
         },
         ["-2"] = new NativeMenuItemSeparator(),
-        ["Start"] = new NativeMenuItem
-        {
-            Header = "Start",
-            ToggleType = NativeMenuItemToggleType.None
-        },
-        ["Stop"] = new NativeMenuItem
-        {
-            Header = "Stop",
-            ToggleType = NativeMenuItemToggleType.None
-        },
-        ["Kill"] = new NativeMenuItem
-        {
-            Header = "Kill all Processes",
-            ToggleType = NativeMenuItemToggleType.None
-        },
-        ["-3"] = new NativeMenuItemSeparator(),
         ["HideApplication"] = new NativeMenuItem
         {
             Header = "Hide Application",
@@ -74,17 +59,21 @@ public class TrayIconService : ITrayIconService
         }
     };
 
-    public TrayIconService()
+    private readonly IHRService _hrService;
+
+    public TrayIconService(IHRService hrService)
     {
+        _hrService = hrService;
         // Wire up commands
         ((NativeMenuItem)_nativeMenuItems["AutoStart"]).Command = new TrayIconClicked(this, "AutoStart", "Auto Start");
         ((NativeMenuItem)_nativeMenuItems["SkipVRCCheck"]).Command = new TrayIconClicked(this, "SkipVRCCheck", "Skip VRChat Check");
         ((NativeMenuItem)_nativeMenuItems["NeosBridge"]).Command = new TrayIconClicked(this, "NeosBridge", "Neos Bridge");
-        ((NativeMenuItem)_nativeMenuItems["Start"]).Command = new TrayIconClicked(this, "Start", "Start");
-        ((NativeMenuItem)_nativeMenuItems["Stop"]).Command = new TrayIconClicked(this, "Stop", "Stop");
-        ((NativeMenuItem)_nativeMenuItems["Kill"]).Command = new TrayIconClicked(this, "Kill", "Kill all Processes");
         ((NativeMenuItem)_nativeMenuItems["HideApplication"]).Command = new TrayIconClicked(this, "HideApplication", "Hide Application");
         ((NativeMenuItem)_nativeMenuItems["Exit"]).Command = new TrayIconClicked(this, "Exit", "Exit");
+
+        _hrService.IsConnected.CombineLatest(_hrService.ActiveListener, (connected, listener) =>
+                $"{(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
+            .Subscribe(status => Update(new TrayIconInfo { Status = status }));
     }
 
     public void Init(Application app)
@@ -191,18 +180,6 @@ public class TrayIconService : ITrayIconService
                         case "NeosBridge":
                             if (_service.ArgumentsWindow?.DataContext is ArgumentsViewModel vmNB)
                                 vmNB.NeosBridge = nmi.IsChecked;
-                            break;
-                        case "Start":
-                            if (_service.MainWindow.DataContext is MainWindowViewModel vmStart)
-                                vmStart.ProgramVM.StartCommand.Execute(Unit.Default).Subscribe();
-                            break;
-                        case "Stop":
-                            if (_service.MainWindow.DataContext is MainWindowViewModel vmStop)
-                                vmStop.ProgramVM.StopCommand.Execute(Unit.Default).Subscribe();
-                            break;
-                        case "Kill":
-                            if (_service.MainWindow.DataContext is MainWindowViewModel vmKill)
-                                vmKill.ProgramVM.KillCommand.Execute(Unit.Default).Subscribe();
                             break;
                         case "HideApplication":
                             if (nmi.IsChecked)

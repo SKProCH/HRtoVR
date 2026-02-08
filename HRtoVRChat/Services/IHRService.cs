@@ -1,12 +1,11 @@
-using System.Threading.Tasks;
+using System;
 
 namespace HRtoVRChat.Services;
 
-public interface IHRService
+public interface IHRService : IDisposable
 {
-    Task StartAsync();
-    void Stop(bool quitApp = false, bool autoStart = false);
-    void RestartHRListener();
-    Task StartHRListenerAsync(bool fromRestart = false);
-    void StopHRListener();
+    IObservable<IHrListener?> ActiveListener { get; }
+    IObservable<bool> HasActiveGameHandle { get; }
+    IObservable<int> HeartRate { get; }
+    IObservable<bool> IsConnected { get; }
 }

@@ -27,24 +27,21 @@ public class MainWindowViewModel : ViewModelBase
     public event Action? RequestHide;
 
     private readonly ITrayIconService _trayIconService;
-    private readonly ISoftwareService _softwareService;
 
     public MainWindowViewModel(
         HomeViewModel homeVM,
         ProgramViewModel programVM,
         ConfigViewModel configVM,
-        ITrayIconService trayIconService,
-        ISoftwareService softwareService)
+        ITrayIconService trayIconService)
     {
         HomeVM = homeVM;
         ProgramVM = programVM;
         ConfigVM = configVM;
         _trayIconService = trayIconService;
-        _softwareService = softwareService;
 
         // Global Initialization
-        if (!string.IsNullOrEmpty(_softwareService.LocalDirectory) && !Directory.Exists(_softwareService.LocalDirectory))
-            Directory.CreateDirectory(_softwareService.LocalDirectory);
+        if (!string.IsNullOrEmpty(App.LocalDirectory) && !Directory.Exists(App.LocalDirectory))
+            Directory.CreateDirectory(App.LocalDirectory);
 
         // _configService.CreateConfig(); // Config is loaded via DI
 
@@ -67,8 +64,6 @@ public class MainWindowViewModel : ViewModelBase
 
         ExitAppCommand = ReactiveCommand.Create(() =>
         {
-            // Stop software if running
-            _softwareService.StopSoftware();
             try {
                 foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
                     process.Kill();
