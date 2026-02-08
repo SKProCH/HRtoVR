@@ -144,7 +144,7 @@ public class App : Application {
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
-        services.AddSingleton<HomeViewModel>();
+        services.AddSingleton<ListenersViewModel>();
 
         services.AddSingleton<ProgramViewModel>();
         services.AddSingleton<ConfigViewModel>();

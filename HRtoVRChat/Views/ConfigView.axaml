@@ -6,8 +6,8 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="HRtoVRChat.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
-    <Grid RowDefinitions="Auto, *">
-        <ScrollViewer Grid.Row="0" MaxHeight="200">
+    <Grid RowDefinitions="*">
+        <ScrollViewer Grid.Row="0">
             <StackPanel Margin="10">
                 <TextBlock Text="Global Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
                 <ItemsControl ItemsSource="{Binding GlobalSettings}">
@@ -31,35 +31,5 @@
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
-
-        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="0,1,0,0" Margin="0,5,0,0">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="Managers (Select to Activate)" FontSize="18" FontWeight="Bold" Margin="10"/>
-                <ListBox ItemsSource="{Binding Managers}" SelectedItem="{Binding SelectedManager}" Margin="10">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Expander HorizontalAlignment="Stretch">
-                                <Expander.Header>
-                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center"/>
-                                </Expander.Header>
-                                <ItemsControl ItemsSource="{Binding Settings}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid ColumnDefinitions="200, *" Margin="5">
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="Gray" FontStyle="Italic" TextWrapping="Wrap"/>
-                                                </StackPanel>
-                                                <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Expander>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
     </Grid>
 </UserControl>

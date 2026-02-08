@@ -9,8 +9,8 @@
   <Grid RowDefinitions="Auto,Auto" Margin="10">
     <StackPanel Grid.Row="0" Margin="0,5,0,0">
         <Label Name="StatusLabel" Content="{Binding StatusText}" FontWeight="Bold" />
-        <StackPanel Orientation="Horizontal" Spacing="20">
-            <TextBlock Text="{Binding ActiveListenerName, StringFormat='Source: {0}'}" />
+        <StackPanel Orientation="Vertical" Spacing="20">
+            <TextBlock Text="{Binding ActiveListenerName, StringFormat='Active listener: {0}'}" />
             <TextBlock Text="{Binding HeartRate, StringFormat='HR: {0}'}" />
             <TextBlock Text="{Binding IsConnected, StringFormat='Connected: {0}'}" />
         </StackPanel>

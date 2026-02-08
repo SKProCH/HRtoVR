@@ -12,8 +12,8 @@ public class MainWindowViewModel : ViewModelBase
 {
     [Reactive] public ViewModelBase CurrentPage { get; set; }
 
-    public HomeViewModel HomeVM { get; }
     public ProgramViewModel ProgramVM { get; }
+    public ListenersViewModel ListenersVM { get; }
     public ConfigViewModel ConfigVM { get; }
 
     // Commands
@@ -28,13 +28,13 @@ public class MainWindowViewModel : ViewModelBase
     private readonly ITrayIconService _trayIconService;
 
     public MainWindowViewModel(
-        HomeViewModel homeVM,
         ProgramViewModel programVM,
+        ListenersViewModel listenersVM,
         ConfigViewModel configVM,
         ITrayIconService trayIconService)
     {
-        HomeVM = homeVM;
         ProgramVM = programVM;
+        ListenersVM = listenersVM;
         ConfigVM = configVM;
         _trayIconService = trayIconService;
 
@@ -45,7 +45,7 @@ public class MainWindowViewModel : ViewModelBase
         // _configService.CreateConfig(); // Config is loaded via DI
 
         // Default Page
-        CurrentPage = HomeVM;
+        CurrentPage = ProgramVM;
 
         // Commands
         SwitchPanelCommand = ReactiveCommand.Create<ViewModelBase>(vm =>

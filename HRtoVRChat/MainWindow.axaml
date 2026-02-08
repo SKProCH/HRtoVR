@@ -16,8 +16,8 @@
   </Design.DataContext>
 
   <Window.DataTemplates>
-    <DataTemplate DataType="{x:Type vm:HomeViewModel}">
-      <views:HomeView />
+    <DataTemplate DataType="{x:Type vm:ListenersViewModel}">
+      <views:ListenersView />
     </DataTemplate>
     <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
       <views:ProgramView />
@@ -38,16 +38,16 @@
     <!--LeftBar-->
     <Grid Grid.Column="0" Background="#0c0c0c" RowDefinitions="*,Auto">
       <StackPanel Grid.Row="0" Spacing="0">
-        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding HomeVM}">
-          <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
-            <TextBlock Margin="5,1,0,0">Home</TextBlock>
-          </StackPanel>
-        </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ProgramVM}">
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource window_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Program</TextBlock>
+          </StackPanel>
+        </Button>
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ListenersVM}">
+          <StackPanel Orientation="Horizontal">
+            <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
+            <TextBlock Margin="5,1,0,0">Listeners</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ConfigVM}">

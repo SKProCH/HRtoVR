@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HRtoVRChat.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HRtoVRChat.Views.ListenersView"
+             x:DataType="vm:ListenersViewModel">
+    <Grid RowDefinitions="Auto, *">
+        <Border Grid.Row="1" Margin="0,5,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Listeners (Select to Activate)" FontSize="18" FontWeight="Bold" Margin="10"/>
+                <ListBox ItemsSource="{Binding ConfigVM.Listeners}" SelectedItem="{Binding ConfigVM.SelectedListener}" Margin="10">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Expander HorizontalAlignment="Stretch">
+                                <Expander.Header>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </Expander.Header>
+                                <ItemsControl ItemsSource="{Binding Settings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="200, *" Margin="5">
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="Gray" FontStyle="Italic" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                                <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Expander>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

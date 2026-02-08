@@ -3,12 +3,14 @@ using ReactiveUI;
 
 namespace HRtoVRChat.ViewModels;
 
-public class HomeViewModel : ViewModelBase
+public class ListenersViewModel : ViewModelBase
 {
+    public ConfigViewModel ConfigVM { get; }
     public ReactiveCommand<string, Unit> OpenUrlCommand { get; }
 
-    public HomeViewModel()
+    public ListenersViewModel(ConfigViewModel configVM)
     {
+        ConfigVM = configVM;
         OpenUrlCommand = ReactiveCommand.Create<string>(OpenUrl);
     }
 }
