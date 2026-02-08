@@ -43,6 +43,4 @@
     <PackageReference Include="WatsonWebsocket" Version="4.1.8" />
     <PackageReference Include="WritableJsonConfiguration" Version="8.0.1" />
   </ItemGroup>
-  <ItemGroup>
-  </ItemGroup>
 </Project>

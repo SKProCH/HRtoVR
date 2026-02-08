@@ -94,7 +94,8 @@ public class App : Application {
         Services = collection.BuildServiceProvider();
 
         // Initialize Services
-        var softwareService = Services.GetRequiredService<ISoftwareService>();
+        var hrService = Services.GetRequiredService<HRService>();
+        hrService.Start();
 
         var trayIconService = Services.GetRequiredService<ITrayIconService>();
         trayIconService.Init(this);
@@ -121,7 +122,6 @@ public class App : Application {
         services.AddSingleton<ISoftwareService, SoftwareService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IHRService, HRService>();
-        services.AddSingleton<IBrowserService, BrowserService>();
 
         // Register Options
         services.Configure<FitbitOptions>(configuration.GetSection("FitbitOptions"));

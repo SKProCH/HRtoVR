@@ -28,22 +28,19 @@ public class MainWindowViewModel : ViewModelBase
 
     private readonly ITrayIconService _trayIconService;
     private readonly ISoftwareService _softwareService;
-    private readonly IBrowserService _browserService;
 
     public MainWindowViewModel(
         HomeViewModel homeVM,
         ProgramViewModel programVM,
         ConfigViewModel configVM,
         ITrayIconService trayIconService,
-        ISoftwareService softwareService,
-        IBrowserService browserService)
+        ISoftwareService softwareService)
     {
         HomeVM = homeVM;
         ProgramVM = programVM;
         ConfigVM = configVM;
         _trayIconService = trayIconService;
         _softwareService = softwareService;
-        _browserService = browserService;
 
         // Global Initialization
         if (!string.IsNullOrEmpty(_softwareService.LocalDirectory) && !Directory.Exists(_softwareService.LocalDirectory))
@@ -60,7 +57,7 @@ public class MainWindowViewModel : ViewModelBase
             CurrentPage = vm;
         });
 
-        OpenUrlCommand = ReactiveCommand.Create<string>(_browserService.OpenUrl);
+        OpenUrlCommand = ReactiveCommand.Create<string>(OpenUrl);
 
         HideAppCommand = ReactiveCommand.Create(() =>
         {
