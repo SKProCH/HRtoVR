@@ -6,6 +6,7 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using HRtoVRChat.ViewModels;
+using ReactiveUI;
 
 namespace HRtoVRChat.Services;
 
@@ -72,6 +73,7 @@ public class TrayIconService : ITrayIconService
 
         _hrService.IsConnected.CombineLatest(_hrService.ActiveListener, (connected, listener) =>
                 $"{(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
+            .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(status => Update(new TrayIconInfo { Status = status }));
     }
 
