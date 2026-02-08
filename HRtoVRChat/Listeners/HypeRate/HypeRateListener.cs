@@ -1,6 +1,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
+using HRtoVRChat.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -14,14 +15,21 @@ public class HypeRateListener : IHrListener {
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<HypeRateListener> _logger;
     private readonly IOptionsMonitor<HypeRateOptions> _options;
+    private IDisposable? _optionsSubscription;
 
-    public HypeRateListener(ILogger<HypeRateListener> logger, IOptionsMonitor<HypeRateOptions> options)
+    public HypeRateListener(ILogger<HypeRateListener> logger, IOptionsManager<HypeRateOptions> options)
     {
         _logger = logger;
         _options = options;
     }
 
     public void Start() {
+        _optionsSubscription = _options.OnChange(opt =>
+        {
+            _logger.LogInformation("HypeRate configuration changed, restarting...");
+            Stop();
+            Start();
+        });
         var id = _options.CurrentValue.SessionId;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
@@ -57,12 +65,12 @@ public class HypeRateListener : IHrListener {
     }
 
     public string Name => "HypeRate";
-    public object? Settings => _options.CurrentValue;
-    public string? SettingsSectionName => "HypeRateOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     public void Stop() {
+        _optionsSubscription?.Dispose();
+        _optionsSubscription = null;
         _client?.Dispose();
         _client = null;
         _heartRate.OnNext(0);

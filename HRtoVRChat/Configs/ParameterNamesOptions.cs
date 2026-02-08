@@ -1,6 +1,8 @@
+using PropertyModels.ComponentModel;
+
 namespace HRtoVRChat.Configs;
 
-public class ParameterNamesOptions
+public class ParameterNamesOptions : ReactiveObject
 {
     public string OnesHR { get; set; } = "onesHR";
     public string TensHR { get; set; } = "tensHR";

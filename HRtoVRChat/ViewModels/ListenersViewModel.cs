@@ -2,9 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Infrastructure.Options;
+using HRtoVRChat.Listeners.Fitbit;
+using HRtoVRChat.Listeners.HrProxy;
+using HRtoVRChat.Listeners.HypeRate;
+using HRtoVRChat.Listeners.Pulsoid;
+using HRtoVRChat.Listeners.PulsoidSocket;
+using HRtoVRChat.Listeners.Stromno;
+using HRtoVRChat.Listeners.TextFile;
+using HRtoVRChat.ViewModels.Listeners;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -17,11 +28,13 @@ public class ListenersViewModel : ViewModelBase {
     private readonly IOptionsManager<AppOptions> _appOptions;
     private readonly IConfiguration _configuration;
     private readonly IEnumerable<IHrListener> _hrListeners;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ListenersViewModel(IOptionsManager<AppOptions> appOptions, IConfiguration configuration, IEnumerable<IHrListener> hrListeners) {
+    public ListenersViewModel(IOptionsManager<AppOptions> appOptions, IConfiguration configuration, IEnumerable<IHrListener> hrListeners, IServiceProvider serviceProvider) {
         _appOptions = appOptions;
         _configuration = configuration;
         _hrListeners = hrListeners;
+        _serviceProvider = serviceProvider;
 
         LoadListeners();
 
@@ -47,9 +60,9 @@ public class ListenersViewModel : ViewModelBase {
         // Load Listeners from IHrListener instances
         foreach (var listener in _hrListeners) {
             var listenerVM = new ListenerViewModel(listener.Name);
-            if (listener.Settings != null && listener.SettingsSectionName != null) {
-                AddSettings(listenerVM, listener.Settings, listener.SettingsSectionName);
-            }
+
+            // Map listener to its settings
+            listenerVM.Settings = CreateSettingsViewModel(listener);
 
             // Sync listener state to VM
             listener.HeartRate.Subscribe(hr => listenerVM.HeartRate = hr);
@@ -73,14 +86,25 @@ public class ListenersViewModel : ViewModelBase {
         }
     }
 
-    private void AddSettings(ListenerViewModel listener, object configObject, string sectionName) {
-        if (configObject == null) return;
+    private IListenerSettingsViewModel? CreateSettingsViewModel(IHrListener listener)
+    {
+        var optionsTypeName = $"{listener.Name}Options";
+        var optionsType = typeof(IHrListener).Assembly.GetTypes()
+            .FirstOrDefault(t => t.Name.Equals(optionsTypeName, StringComparison.OrdinalIgnoreCase));
 
-        foreach (var prop in configObject.GetType().GetProperties()) {
-            if (prop.CanRead && prop.CanWrite) {
-                listener.Settings.Add(new ConfigItemViewModel(configObject, prop, $"{sectionName}:{prop.Name}",
-                    _configuration));
-            }
-        }
+        if (optionsType == null) return null;
+
+        var managerType = typeof(IOptionsManager<>).MakeGenericType(optionsType);
+        var optionsManager = _serviceProvider.GetService(managerType);
+
+        if (optionsManager == null) return null;
+
+        // CurrentValue is defined in IOptionsMonitor<T>, which IOptionsManager<T> inherits from.
+        // Interface reflection doesn't automatically find properties from base interfaces.
+        var monitorType = typeof(IOptionsMonitor<>).MakeGenericType(optionsType);
+        var currentValueProperty = monitorType.GetProperty("CurrentValue");
+        var settings = currentValueProperty?.GetValue(optionsManager);
+
+        return settings != null ? new ConfigSettingsViewModel(settings) : null;
     }
 }

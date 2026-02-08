@@ -14,15 +14,22 @@ public class FitBitListener : IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<FitBitListener> _logger;
-    private readonly IOptionsMonitor<FitbitOptions> _options;
+    private readonly IOptionsMonitor<FitBitOptions> _options;
+    private IDisposable? _optionsSubscription;
 
-    public FitBitListener(ILogger<FitBitListener> logger, IOptionsMonitor<FitbitOptions> options)
+    public FitBitListener(ILogger<FitBitListener> logger, IOptionsMonitor<FitBitOptions> options)
     {
         _logger = logger;
         _options = options;
     }
 
     public void Start() {
+        _optionsSubscription = _options.OnChange(opt =>
+        {
+            _logger.LogInformation("Fitbit configuration changed, restarting...");
+            Stop();
+            Start();
+        });
         var url = _options.CurrentValue.Url;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
@@ -81,12 +88,12 @@ public class FitBitListener : IHrListener {
     }
 
     public string Name => "FitBit";
-    public object? Settings => _options.CurrentValue;
-    public string? SettingsSectionName => "FitbitOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     public void Stop() {
+        _optionsSubscription?.Dispose();
+        _optionsSubscription = null;
         _pollingCts?.Cancel();
         _client?.Dispose();
         _client = null;

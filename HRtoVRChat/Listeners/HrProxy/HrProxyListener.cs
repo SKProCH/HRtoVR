@@ -14,6 +14,7 @@ public class HrProxyListener : IHrListener {
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<HrProxyListener> _logger;
     private readonly IOptionsMonitor<HRProxyOptions> _options;
+    private IDisposable? _optionsSubscription;
 
     public HrProxyListener(ILogger<HrProxyListener> logger, IOptionsMonitor<HRProxyOptions> options)
     {
@@ -22,12 +23,16 @@ public class HrProxyListener : IHrListener {
     }
 
     public string Name => "HRProxy";
-    public object? Settings => _options.CurrentValue;
-    public string? SettingsSectionName => "HRProxyOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     public void Start() {
+        _optionsSubscription = _options.OnChange(opt =>
+        {
+            _logger.LogInformation("HRProxy configuration changed, restarting...");
+            Stop();
+            Start();
+        });
         var id = _options.CurrentValue.Id;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
@@ -57,6 +62,8 @@ public class HrProxyListener : IHrListener {
     }
 
     public void Stop() {
+        _optionsSubscription?.Dispose();
+        _optionsSubscription = null;
         _client?.Dispose();
         _client = null;
         _isConnected.OnNext(false);

@@ -13,6 +13,7 @@ internal class TextFileListener : IHrListener {
     private FileSystemWatcher? _watcher;
     private readonly ILogger<TextFileListener> _logger;
     private readonly IOptionsMonitor<TextFileOptions> _options;
+    private IDisposable? _optionsSubscription;
 
     public TextFileListener(ILogger<TextFileListener> logger, IOptionsMonitor<TextFileOptions> options)
     {
@@ -21,6 +22,12 @@ internal class TextFileListener : IHrListener {
     }
 
     public void Start() {
+        _optionsSubscription = _options.OnChange(opt =>
+        {
+            _logger.LogInformation("TextFile configuration changed, restarting...");
+            Stop();
+            Start();
+        });
         if (string.IsNullOrEmpty(_options.CurrentValue.Location))
         {
             _logger.LogError("Text file location is not configured!");
@@ -64,6 +71,8 @@ internal class TextFileListener : IHrListener {
     private void OnFileRenamed(object sender, RenamedEventArgs e) => _ = UpdateHeartRateAsync();
 
     public void Stop() {
+        _optionsSubscription?.Dispose();
+        _optionsSubscription = null;
         if (_watcher != null)
         {
             _watcher.EnableRaisingEvents = false;
@@ -79,8 +88,6 @@ internal class TextFileListener : IHrListener {
     }
 
     public string Name => "TextFile";
-    public object? Settings => _options.CurrentValue;
-    public string? SettingsSectionName => "TextFileOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 

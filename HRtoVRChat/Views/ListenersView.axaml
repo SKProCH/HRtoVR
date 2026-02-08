@@ -5,6 +5,7 @@
              xmlns:vm="using:HRtoVRChat.ViewModels"
              xmlns:dvm="using:HRtoVRChat.ViewModels.Design"
              xmlns:controls="using:HRtoVRChat.Controls"
+             xmlns:listeners="using:HRtoVRChat.Views.Listeners"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="HRtoVRChat.Views.ListenersView"
              x:DataType="vm:ListenersViewModel"
@@ -50,19 +51,7 @@
                                               Margin="10,0,0,0" />
               </Grid>
             </Expander.Header>
-            <ItemsControl ItemsSource="{Binding Settings}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Grid ColumnDefinitions="200, *" Margin="5">
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <TextBlock Text="{Binding Description}" FontSize="10" Foreground="Gray" FontStyle="Italic" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay}" VerticalAlignment="Center" />
-                  </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <listeners:ListenerSettingsView DataContext="{Binding}" Margin="5" />
           </Expander>
         </DataTemplate>
       </ListBox.ItemTemplate>

@@ -1,16 +1,10 @@
 using System.ComponentModel;
 using System.IO;
-using HRtoVRChat.Listeners.Fitbit;
-using HRtoVRChat.Listeners.HrProxy;
-using HRtoVRChat.Listeners.HypeRate;
-using HRtoVRChat.Listeners.Pulsoid;
-using HRtoVRChat.Listeners.PulsoidSocket;
-using HRtoVRChat.Listeners.Stromno;
-using HRtoVRChat.Listeners.TextFile;
+using PropertyModels.ComponentModel;
 
 namespace HRtoVRChat.Configs;
 
-public class AppOptions {
+public class AppOptions : ReactiveObject {
     // Main Config properties
     [Description("Allow HRtoVRChat to be used with ChilloutVR. Requires an OSC mod for ChilloutVR")]
     public bool ExpandCVR { get; set; } = true;

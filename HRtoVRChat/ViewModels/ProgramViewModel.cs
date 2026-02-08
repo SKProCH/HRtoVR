@@ -1,5 +1,4 @@
 using System;
-using System.Reactive;
 using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

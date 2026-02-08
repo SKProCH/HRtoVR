@@ -19,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using WritableJsonConfiguration;
 
@@ -123,7 +124,9 @@ public class App : Application {
 
         // Register Options
         services.AddOptions();
-        services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(OptionsManager<>)));
+        services.AddSingleton(typeof(IConfigureOptions<>), typeof(AutoConfigureFromConfigurationOptions<>));
+        services.AddSingleton(typeof(IOptionsChangeTokenSource<>), typeof(AutoConfigurationChangeTokenSource<>));
+        services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>)));
         services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>)));
         services.ConfigureOptionsPath<AppOptions>("App");
 

@@ -13,7 +13,8 @@ public class PulsoidListener : IHrListener {
     protected readonly ILogger _logger;
     protected readonly BehaviorSubject<int> _heartRate = new(0);
     protected readonly BehaviorSubject<bool> _isConnected = new(false);
-    private readonly IOptionsMonitor<PulsoidOptions> _options;
+    protected readonly IOptionsMonitor<PulsoidOptions> _options;
+    protected IDisposable? _optionsSubscription;
 
     public PulsoidListener(ILogger<PulsoidListener> logger, IOptionsMonitor<PulsoidOptions> options)
     {
@@ -33,6 +34,12 @@ public class PulsoidListener : IHrListener {
     public string Timestamp { get; private set; } = string.Empty;
 
     public virtual void Start() {
+        _optionsSubscription = _options.OnChange(opt =>
+        {
+            _logger.LogInformation("Pulsoid configuration changed, restarting...");
+            Stop();
+            Start();
+        });
         StartConnection(_options.CurrentValue.Widget);
         _logger.LogInformation("Initialized Pulsoid WebSocket!");
     }
@@ -70,12 +77,12 @@ public class PulsoidListener : IHrListener {
     }
 
     public virtual string Name => "Pulsoid";
-    public virtual object? Settings => _options.CurrentValue;
-    public virtual string? SettingsSectionName => "PulsoidOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     public void Stop() {
+        _optionsSubscription?.Dispose();
+        _optionsSubscription = null;
         _client?.Dispose();
         _client = null;
         _heartRate.OnNext(0);

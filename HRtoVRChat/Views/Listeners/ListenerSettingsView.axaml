@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:listeners="clr-namespace:HRtoVRChat.ViewModels.Listeners"
+             xmlns:pgc="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
+             xmlns:mxpg="https://schemas.eremexcontrols.net/avalonia/propertygrid"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HRtoVRChat.Views.Listeners.ListenerSettingsView">
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="listeners:ConfigSettingsViewModel">
+      <pgc:PropertyGrid DataContext="{Binding Settings}"
+                        IsHeaderVisible="False"
+                        IsQuickFilterVisible="False"
+                        IsCategoryVisible="False"
+                        IsTitleVisible="False" />
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <ContentControl Content="{Binding Settings}" />
+</UserControl>
