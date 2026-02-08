@@ -9,11 +9,9 @@ using Microsoft.Extensions.Options;
 namespace HRtoVRChat.Listeners.TextFile;
 
 internal class TextFileListener : IHrListener {
-    private Task? _task;
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
-    private string pubFe = string.Empty;
-    private CancellationTokenSource shouldUpdate = new();
+    private FileSystemWatcher? _watcher;
     private readonly ILogger<TextFileListener> _logger;
     private readonly TextFileOptions _options;
 
@@ -24,72 +22,106 @@ internal class TextFileListener : IHrListener {
     }
 
     public void Start() {
-        var fe = File.Exists(_options.Location);
-        if (fe) {
-            _logger.LogInformation("Found text file!");
-            pubFe = _options.Location;
-            shouldUpdate = new CancellationTokenSource();
-            _isConnected.OnNext(true);
-            StartThread();
-        }
-        else
+        if (string.IsNullOrEmpty(_options.Location))
         {
-            _logger.LogError("Failed to find text file!");
+            _logger.LogError("Text file location is not configured!");
             _isConnected.OnNext(false);
+            return;
         }
+
+        var fullPath = Path.GetFullPath(_options.Location);
+        var directory = Path.GetDirectoryName(fullPath);
+        var fileName = Path.GetFileName(fullPath);
+
+        if (directory == null || !Directory.Exists(directory))
+        {
+            _logger.LogError("Directory does not exist: {Directory}", directory);
+            _isConnected.OnNext(false);
+            return;
+        }
+
+        _ = UpdateHeartRateAsync().ConfigureAwait(false);
+
+        _watcher = new FileSystemWatcher(directory, fileName)
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.CreationTime
+        };
+
+        _watcher.Changed += OnFileChanged;
+        _watcher.Created += OnFileChanged;
+        _watcher.Deleted += OnFileDeleted;
+        _watcher.Renamed += OnFileRenamed;
+
+        _watcher.EnableRaisingEvents = true;
+        _logger.LogInformation("Started monitoring {File}", fullPath);
     }
 
-    public void Stop() {
-        shouldUpdate.Cancel();
+    private void OnFileChanged(object sender, FileSystemEventArgs e) => _ = UpdateHeartRateAsync();
+    private void OnFileDeleted(object sender, FileSystemEventArgs e)
+    {
         _isConnected.OnNext(false);
         _heartRate.OnNext(0);
-        VerifyClosedThread();
+    }
+    private void OnFileRenamed(object sender, RenamedEventArgs e) => _ = UpdateHeartRateAsync();
+
+    public void Stop() {
+        if (_watcher != null)
+        {
+            _watcher.EnableRaisingEvents = false;
+            _watcher.Changed -= OnFileChanged;
+            _watcher.Created -= OnFileChanged;
+            _watcher.Deleted -= OnFileDeleted;
+            _watcher.Renamed -= OnFileRenamed;
+            _watcher.Dispose();
+            _watcher = null;
+        }
+        _isConnected.OnNext(false);
+        _heartRate.OnNext(0);
     }
 
     public string Name => "TextFile";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
-    private void VerifyClosedThread() {
-        if (_task != null) {
-            if (!_task.IsCompleted)
-                shouldUpdate.Cancel();
+    private async Task UpdateHeartRateAsync()
+    {
+        if (!File.Exists(_options.Location))
+        {
+            _isConnected.OnNext(false);
+            _heartRate.OnNext(0);
+            return;
         }
-    }
 
-    private void StartThread() {
-        VerifyClosedThread();
-        var token = shouldUpdate.Token;
-        _task = Task.Run(async () => {
-            while (!token.IsCancellationRequested) {
-                var failed = false;
-                var tempHR = 0;
-                // get text
-                var text = string.Empty;
-                try { text = await File.ReadAllTextAsync(pubFe, token); }
-                catch (Exception e) {
-                    _logger.LogError(e, "Failed to find Text File!");
-                    failed = true;
-                    _isConnected.OnNext(false);
-                }
+        const int maxRetries = 3;
+        for (var i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                await using var stream = new FileStream(_options.Location, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(stream);
+                var text = await reader.ReadToEndAsync();
 
-                // cast to int
-                if (!failed)
+                if (int.TryParse(text.Trim(), out var hr))
                 {
-                    try {
-                        tempHR = Convert.ToInt32(text);
-                        _isConnected.OnNext(true);
-                    }
-                    catch (Exception e) {
-                        _logger.LogError(e, "Failed to parse to int!");
-                    }
+                    _heartRate.OnNext(hr);
+                    _isConnected.OnNext(true);
                 }
-
-                _heartRate.OnNext(tempHR);
-                try {
-                    await Task.Delay(500, token);
-                } catch (TaskCanceledException) { break; }
+                else
+                {
+                    _logger.LogWarning("Failed to parse heart rate from text: {Text}", text);
+                }
+                return;
             }
-        }, token);
+            catch (IOException) when (i < maxRetries - 1)
+            {
+                await Task.Delay(100);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error reading text file");
+                _isConnected.OnNext(false);
+                break;
+            }
+        }
     }
 }
