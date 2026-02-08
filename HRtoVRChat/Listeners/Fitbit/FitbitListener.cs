@@ -14,16 +14,16 @@ public class FitBitListener : IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<FitBitListener> _logger;
-    private readonly FitbitOptions _options;
+    private readonly IOptionsMonitor<FitbitOptions> _options;
 
-    public FitBitListener(ILogger<FitBitListener> logger, IOptions<FitbitOptions> options)
+    public FitBitListener(ILogger<FitBitListener> logger, IOptionsMonitor<FitbitOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     public void Start() {
-        var url = _options.Url;
+        var url = _options.CurrentValue.Url;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
@@ -81,7 +81,7 @@ public class FitBitListener : IHrListener {
     }
 
     public string Name => "FitBit";
-    public object? Settings => _options;
+    public object? Settings => _options.CurrentValue;
     public string? SettingsSectionName => "FitbitOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;

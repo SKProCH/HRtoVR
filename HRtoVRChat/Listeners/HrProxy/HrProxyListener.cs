@@ -13,22 +13,22 @@ public class HrProxyListener : IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<HrProxyListener> _logger;
-    private readonly HRProxyOptions _options;
+    private readonly IOptionsMonitor<HRProxyOptions> _options;
 
-    public HrProxyListener(ILogger<HrProxyListener> logger, IOptions<HRProxyOptions> options)
+    public HrProxyListener(ILogger<HrProxyListener> logger, IOptionsMonitor<HRProxyOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     public string Name => "HRProxy";
-    public object? Settings => _options;
+    public object? Settings => _options.CurrentValue;
     public string? SettingsSectionName => "HRProxyOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     public void Start() {
-        var id = _options.Id;
+        var id = _options.CurrentValue.Id;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }

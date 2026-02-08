@@ -13,16 +13,16 @@ internal class PulsoidSocketListener : IHrListener {
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private WebsocketClient? _client;
     private readonly ILogger<PulsoidSocketListener> _logger;
-    private readonly PulsoidSocketOptions _options;
+    private readonly IOptionsMonitor<PulsoidSocketOptions> _options;
 
-    public PulsoidSocketListener(ILogger<PulsoidSocketListener> logger, IOptions<PulsoidSocketOptions> options)
+    public PulsoidSocketListener(ILogger<PulsoidSocketListener> logger, IOptionsMonitor<PulsoidSocketOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     public void Start() {
-        var pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.Key;
+        var pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.CurrentValue.Key;
 
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
@@ -66,7 +66,7 @@ internal class PulsoidSocketListener : IHrListener {
     }
 
     public string Name => "PulsoidSocket";
-    public object? Settings => _options;
+    public object? Settings => _options.CurrentValue;
     public string? SettingsSectionName => "PulsoidSocketOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;

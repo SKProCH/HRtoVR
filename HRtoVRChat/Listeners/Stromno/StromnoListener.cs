@@ -6,20 +6,20 @@ namespace HRtoVRChat.Listeners.Stromno;
 
 public class StromnoListener : PulsoidListener
 {
-    private readonly StromnoOptions _options;
+    private readonly IOptionsMonitor<StromnoOptions> _options;
 
-    public StromnoListener(ILogger<StromnoListener> logger, IOptions<StromnoOptions> options) : base(logger)
+    public StromnoListener(ILogger<StromnoListener> logger, IOptionsMonitor<StromnoOptions> options, IOptionsMonitor<PulsoidOptions> pulsoidOptions) : base(logger, pulsoidOptions)
     {
-        _options = options.Value;
+        _options = options;
     }
 
     public override string Name => "Stromno";
-    public override object? Settings => _options;
+    public override object? Settings => _options.CurrentValue;
     public override string? SettingsSectionName => "StromnoOptions";
 
     public override void Start()
     {
         // Stromno uses the same protocol as Pulsoid, just with a different widget ID source
-        StartConnection(_options.Widget);
+        StartConnection(_options.CurrentValue.Widget);
     }
 }

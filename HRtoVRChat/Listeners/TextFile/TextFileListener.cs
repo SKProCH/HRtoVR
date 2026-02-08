@@ -12,23 +12,23 @@ internal class TextFileListener : IHrListener {
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private FileSystemWatcher? _watcher;
     private readonly ILogger<TextFileListener> _logger;
-    private readonly TextFileOptions _options;
+    private readonly IOptionsMonitor<TextFileOptions> _options;
 
-    public TextFileListener(ILogger<TextFileListener> logger, IOptions<TextFileOptions> options)
+    public TextFileListener(ILogger<TextFileListener> logger, IOptionsMonitor<TextFileOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     public void Start() {
-        if (string.IsNullOrEmpty(_options.Location))
+        if (string.IsNullOrEmpty(_options.CurrentValue.Location))
         {
             _logger.LogError("Text file location is not configured!");
             _isConnected.OnNext(false);
             return;
         }
 
-        var fullPath = Path.GetFullPath(_options.Location);
+        var fullPath = Path.GetFullPath(_options.CurrentValue.Location);
         var directory = Path.GetDirectoryName(fullPath);
         var fileName = Path.GetFileName(fullPath);
 
@@ -79,14 +79,14 @@ internal class TextFileListener : IHrListener {
     }
 
     public string Name => "TextFile";
-    public object? Settings => _options;
+    public object? Settings => _options.CurrentValue;
     public string? SettingsSectionName => "TextFileOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
     private async Task UpdateHeartRateAsync()
     {
-        if (!File.Exists(_options.Location))
+        if (!File.Exists(_options.CurrentValue.Location))
         {
             _isConnected.OnNext(false);
             _heartRate.OnNext(0);
@@ -98,7 +98,7 @@ internal class TextFileListener : IHrListener {
         {
             try
             {
-                await using var stream = new FileStream(_options.Location, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                await using var stream = new FileStream(_options.CurrentValue.Location, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var reader = new StreamReader(stream);
                 var text = await reader.ReadToEndAsync();
 

@@ -13,16 +13,16 @@ public class HypeRateListener : IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly ILogger<HypeRateListener> _logger;
-    private readonly HypeRateOptions _options;
+    private readonly IOptionsMonitor<HypeRateOptions> _options;
 
-    public HypeRateListener(ILogger<HypeRateListener> logger, IOptions<HypeRateOptions> options)
+    public HypeRateListener(ILogger<HypeRateListener> logger, IOptionsMonitor<HypeRateOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     public void Start() {
-        var id = _options.SessionId;
+        var id = _options.CurrentValue.SessionId;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
@@ -57,7 +57,7 @@ public class HypeRateListener : IHrListener {
     }
 
     public string Name => "HypeRate";
-    public object? Settings => _options;
+    public object? Settings => _options.CurrentValue;
     public string? SettingsSectionName => "HypeRateOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;

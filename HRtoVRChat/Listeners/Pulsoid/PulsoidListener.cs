@@ -13,19 +13,19 @@ public class PulsoidListener : IHrListener {
     protected readonly ILogger _logger;
     protected readonly BehaviorSubject<int> _heartRate = new(0);
     protected readonly BehaviorSubject<bool> _isConnected = new(false);
-    private readonly PulsoidOptions _options;
+    private readonly IOptionsMonitor<PulsoidOptions> _options;
 
-    public PulsoidListener(ILogger<PulsoidListener> logger, IOptions<PulsoidOptions> options)
+    public PulsoidListener(ILogger<PulsoidListener> logger, IOptionsMonitor<PulsoidOptions> options)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
     }
 
     // Protected constructor for Stromno
-    protected PulsoidListener(ILogger logger)
+    protected PulsoidListener(ILogger logger, IOptionsMonitor<PulsoidOptions> options)
     {
         _logger = logger;
-        _options = new PulsoidOptions();
+        _options = options;
     }
 
     private bool IsClientRunning => _client?.IsRunning ?? false;
@@ -33,7 +33,7 @@ public class PulsoidListener : IHrListener {
     public string Timestamp { get; private set; } = string.Empty;
 
     public virtual void Start() {
-        StartConnection(_options.Widget);
+        StartConnection(_options.CurrentValue.Widget);
         _logger.LogInformation("Initialized Pulsoid WebSocket!");
     }
 
@@ -70,7 +70,7 @@ public class PulsoidListener : IHrListener {
     }
 
     public virtual string Name => "Pulsoid";
-    public virtual object? Settings => _options;
+    public virtual object? Settings => _options.CurrentValue;
     public virtual string? SettingsSectionName => "PulsoidOptions";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
