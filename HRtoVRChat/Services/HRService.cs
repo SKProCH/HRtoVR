@@ -23,7 +23,7 @@ public class HRService : IHRService {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
     private readonly BehaviorSubject<IReadOnlyList<IGameHandler>> _activeGameHandlers = new([]);
-    private readonly CompositeDisposable _globalDisposable = new();
+    private CompositeDisposable? _globalDisposable = new();
     private CompositeDisposable? _listenerDisposable;
 
     public HRService(
@@ -39,7 +39,7 @@ public class HRService : IHRService {
 
     public void Start() {
         var optionsChangeDisposable = _appOptions.OnChange(options => ChangeListenerIfNeeded(options.ActiveListener));
-        _globalDisposable.Add(optionsChangeDisposable ?? Disposable.Empty);
+        _globalDisposable!.Add(optionsChangeDisposable ?? Disposable.Empty);
 
         ChangeListenerIfNeeded(_appOptions.CurrentValue.ActiveListener);
 
@@ -47,6 +47,8 @@ public class HRService : IHRService {
             // TODO: Disabling individual game handlers
             gameHandler.Start();
         }
+
+        _ = Task.Run(PollGameHandlers);
     }
 
     private void ChangeListenerIfNeeded(string? newListenerName) {
@@ -61,7 +63,7 @@ public class HRService : IHRService {
         var newListener = _hrListeners.FirstOrDefault(x =>
             x.Name.Equals(newListenerName, StringComparison.OrdinalIgnoreCase));
         _activeListener.OnNext(newListener);
-        
+
         if (newListener == null) return;
         _listenerDisposable = new CompositeDisposable();
         _listenerDisposable.Add(newListener.HeartRate.CombineLatest(newListener.IsConnected, _activeGameHandlers)
@@ -79,13 +81,41 @@ public class HRService : IHRService {
         }
     }
 
+    private async Task PollGameHandlers() {
+        var state = new bool[_gameHandlers.Length];
+        var active = new List<IGameHandler>(_gameHandlers.Length);
+
+        while (_globalDisposable is not null) {
+            var changed = false;
+            for (var i = 0; i < _gameHandlers.Length; i++) {
+                var isRunning = _gameHandlers[i].IsRunning();
+                if (state[i] != isRunning) {
+                    changed = true;
+                    if (isRunning)
+                        active.Add(_gameHandlers[i]);
+                    else
+                        active.Remove(_gameHandlers[i]);
+                }
+
+                state[i] = isRunning;
+            }
+
+            if (changed)
+                _activeGameHandlers.OnNext(active);
+
+            await Task.Delay(2000);
+        }
+    }
+
     public void Dispose() {
         _listenerDisposable?.Dispose();
+        _listenerDisposable = null;
         foreach (var gameHandler in _gameHandlers)
             gameHandler.Stop();
 
         _activeListener.Value?.Stop();
-        _globalDisposable.Dispose();
+        _globalDisposable!.Dispose();
+        _globalDisposable = null;
     }
 
     public IObservable<IHrListener?> ActiveListener => _activeListener;
