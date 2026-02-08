@@ -21,18 +21,12 @@ public class NeosHandler : IGameHandler {
         _logger = logger;
     }
 
-    public string Name => "Neos";
-
-    public bool IsGameRunning() {
+    public bool IsRunning() {
         return Process.GetProcessesByName("Neos").Length > 0;
     }
 
-    public void Init() {
-        _server = new WatsonWsServer("127.0.0.1", 4206, false);
-    }
-
     public void Start() {
-        if (_server == null) Init();
+        _server = new WatsonWsServer("127.0.0.1", 4206, false);
 
         try
         {
@@ -53,19 +47,20 @@ public class NeosHandler : IGameHandler {
         }
     }
 
-    public void UpdateHR(int ones, int tens, int hundreds, int hr, bool isConnected, bool isActive) {
+    public void Update(int heartBeat, bool isConnected)
+    {
+        // Split heartBeat into ones, tens, hundreds
+        var hundreds = heartBeat / 100 % 10;
+        var tens = heartBeat / 10 % 10;
+        var ones = heartBeat % 10;
+
         _neosMessage.onesHR = ones;
         _neosMessage.tensHR = tens;
         _neosMessage.hundredsHR = hundreds;
-        _neosMessage.HR = hr;
+        _neosMessage.HR = heartBeat;
         _neosMessage.isConnected = isConnected;
-        _neosMessage.isActive = isActive;
-        _neosMessage.HRPercent = GetHRPercent(hr);
-        BroadcastMessage();
-    }
-
-    public void UpdateHeartBeat(bool isHeartBeat, bool shouldStart) {
-        _neosMessage.isHRBeat = isHeartBeat;
+        _neosMessage.isActive = isConnected;
+        _neosMessage.HRPercent = GetHRPercent(heartBeat);
         BroadcastMessage();
     }
 

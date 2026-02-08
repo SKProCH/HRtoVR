@@ -40,8 +40,8 @@ namespace HRtoVRChat.Utils
         {
             foreach (var h in _model.GetHighlightings(line.Offset, line.Length))
             {
-                int start = h.Index;
-                int end = h.Index + h.Length;
+                var start = h.Index;
+                var end = h.Index + h.Length;
 
                 if (start < line.Offset) start = line.Offset;
                 if (end > line.EndOffset) end = line.EndOffset;

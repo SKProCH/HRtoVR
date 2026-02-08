@@ -21,17 +21,10 @@ public class VRChatOSCHandler : IGameHandler {
         _logger = logger;
     }
 
-    public string Name => "VRChat";
-
-    public bool IsGameRunning() {
-        bool vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
-        bool cvrRunning = _appOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
+    public bool IsRunning() {
+        var vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
+        var cvrRunning = _appOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
         return vrcRunning || cvrRunning;
-    }
-
-    public void Init() {
-        // Ensure params are ready?
-        // ParamsManager.InitParams() is usually called when VRChat is detected.
     }
 
     public void Start() {
@@ -55,19 +48,21 @@ public class VRChatOSCHandler : IGameHandler {
         }
     }
 
-    public void UpdateHR(int ones, int tens, int hundreds, int hr, bool isConnected, bool isActive) {
+    public void Update(int heartBeat, bool isConnected)
+    {
+        // Split heartBeat into ones, tens, hundreds
+        var hundreds = heartBeat / 100 % 10;
+        var tens = heartBeat / 10 % 10;
+        var ones = heartBeat % 10;
+
         var hro = new HROutput {
             ones = ones,
             tens = tens,
             hundreds = hundreds,
-            HR = hr,
+            HR = heartBeat,
             isConnected = isConnected,
-            isActive = isActive
+            isActive = isConnected
         };
         _paramsService.UpdateHRValues(hro);
-    }
-
-    public void UpdateHeartBeat(bool isHeartBeat, bool shouldStart) {
-        _paramsService.UpdateHeartBeat(isHeartBeat);
     }
 }

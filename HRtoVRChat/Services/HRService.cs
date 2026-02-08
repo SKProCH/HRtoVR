@@ -23,7 +23,6 @@ public class HRService : IHRService
 
     private IHrListener? activeHRManager;
     private bool isRestarting;
-    private bool RunHeartBeat;
 
     private List<IGameHandler> _gameHandlers = new();
 
@@ -31,8 +30,6 @@ public class HRService : IHRService
 
     private Task? VerifyVRCOpen;
     private CancellationTokenSource vvoToken = new();
-    private Task? BeatThread;
-    private CancellationTokenSource btToken = new();
 
     private CompositeDisposable _subscriptions = new();
     private int _lastHR;
@@ -80,7 +77,7 @@ public class HRService : IHRService
             }
         }
 
-        bool foundOnStart = _gameHandlers.Any(gh => gh.IsGameRunning());
+        var foundOnStart = _gameHandlers.Any(gh => gh.IsRunning());
 
         if (foundOnStart)
         {
@@ -102,7 +99,7 @@ public class HRService : IHRService
 
     private async Task LoopCheck()
     {
-        var foundGame = _gameHandlers.Any(gh => gh.IsGameRunning());
+        var foundGame = _gameHandlers.Any(gh => gh.IsRunning());
         if (foundGame)
         {
             _logger.LogInformation("Found Game! Starting...");
@@ -113,7 +110,7 @@ public class HRService : IHRService
     private async Task Check()
     {
         var fromAutoStart = _appOptions.CurrentValue.AutoStart;
-        bool gameRunning = _gameHandlers.Any(gh => gh.IsGameRunning());
+        var gameRunning = _gameHandlers.Any(gh => gh.IsRunning());
 
         if (gameRunning || _appOptions.CurrentValue.SkipVRCCheck)
         {
@@ -143,10 +140,10 @@ public class HRService : IHRService
             var token = vvoToken.Token;
             VerifyVRCOpen = Task.Run(async () =>
             {
-                var isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
+                var isOpen = _gameHandlers.Any(gh => gh.IsRunning());
                 while (!token.IsCancellationRequested)
                 {
-                    isOpen = _gameHandlers.Any(gh => gh.IsGameRunning());
+                    isOpen = _gameHandlers.Any(gh => gh.IsRunning());
                     if (!isOpen)
                         vvoToken.Cancel();
                     try {
@@ -165,12 +162,11 @@ public class HRService : IHRService
         {
             try
             {
-                handler.Init();
                 handler.Start();
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Failed to start handler {HandlerName}", handler.Name);
+                _logger.LogError(e, "Failed to start handler {HandlerName}", handler.GetType().Name);
             }
         }
 
@@ -193,7 +189,7 @@ public class HRService : IHRService
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Failed to stop handler {HandlerName}", handler.Name);
+                _logger.LogError(e, "Failed to stop handler {HandlerName}", handler.GetType().Name);
             }
         }
 
@@ -287,33 +283,6 @@ public class HRService : IHRService
         }).DisposeWith(_subscriptions);
 
         activeHRManager.Start();
-
-        // Set Logger for the created manager - No longer needed as it is injected
-
-        // Start HeartBeats if there was a valid choice
-        if (!RunHeartBeat)
-        {
-            if (BeatThread != null && !BeatThread.IsCompleted)
-            {
-                try
-                {
-                    btToken.Cancel();
-                }
-                catch (Exception) { }
-
-                RunHeartBeat = false;
-            }
-
-            btToken = new CancellationTokenSource();
-            BeatThread = Task.Run(async () =>
-            {
-                _logger.LogInformation("Starting Beating!");
-                RunHeartBeat = true;
-                await HeartBeat();
-            }, btToken.Token);
-        }
-        else if (activeHRManager == null)
-            _logger.LogWarning("Can't start beat as ActiveHRManager is null!");
     }
 
     public void StopHRListener()
@@ -323,171 +292,14 @@ public class HRService : IHRService
         activeHRManager = null;
         _subscriptions.Dispose();
         _subscriptions = new CompositeDisposable();
-
-        // Stop Beating
-        if (BeatThread != null && !BeatThread.IsCompleted)
-        {
-            try
-            {
-                btToken.Cancel();
-            }
-            catch (Exception) { }
-
-            RunHeartBeat = false;
-        }
     }
 
     private void UpdateHandlers()
     {
-        var chs = intToHRSplit(_lastHR);
         // Notify Handlers
         foreach (var handler in _gameHandlers)
         {
-            handler.UpdateHR(chs.ones, chs.tens, chs.hundreds, _lastHR, _lastIsConnected, _lastIsConnected);
+            handler.Update(_lastHR, _lastIsConnected);
         }
     }
-
-    private async Task HeartBeat()
-    {
-        var waited = false;
-        var token = btToken.Token;
-        while (!token.IsCancellationRequested)
-        {
-            if (!RunHeartBeat)
-                btToken.Cancel();
-            else
-            {
-                if (activeHRManager != null)
-                {
-                    // This should be started by the Melon Update void
-                    if (_lastIsConnected)
-                    {
-                        // Get HR
-                        float HR = _lastHR;
-                        if (HR > 0)
-                        {
-                            if (waited)
-                            {
-                                _logger.LogInformation("Found ActiveHRManager! Starting HeartBeat.");
-                                waited = false;
-                            }
-
-                            // HeartBeat OFF
-                            foreach (var handler in _gameHandlers)
-                            {
-                                handler.UpdateHeartBeat(false, false);
-                            }
-
-                            // Calculate wait interval
-                            var waitTime = default(float);
-                            // When lowering the HR significantly, this will cause issues with the beat bool
-                            // Dubbed the "Breathing Exercise" bug
-                            // There's a 'temp' fix for it right now, but I'm not sure how it'll hold up
-                            try { waitTime = 1 / ((HR - 0.2f) / 60); }
-                            catch (Exception)
-                            {
-                                /*Just a Divide by Zero Exception*/
-                            }
-
-                            try {
-                                await Task.Delay((int)(waitTime * 1000), token);
-                            } catch (TaskCanceledException) { break; }
-
-                            // HeartBeat ON
-                            foreach (var handler in _gameHandlers)
-                            {
-                                handler.UpdateHeartBeat(true, false);
-                            }
-
-                            try {
-                                await Task.Delay(100, token);
-                            } catch (TaskCanceledException) { break; }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Cannot beat as HR is Less than or equal to zero");
-                            try {
-                                await Task.Delay(1000, token);
-                            } catch (TaskCanceledException) { break; }
-                        }
-                    }
-                    else
-                    {
-                        foreach (var handler in _gameHandlers)
-                        {
-                            handler.UpdateHeartBeat(false, true);
-                        }
-
-                        _logger.LogDebug("Waiting for ActiveHRManager for beating");
-                        waited = true;
-                        try {
-                            await Task.Delay(1000, token);
-                        } catch (TaskCanceledException) { break; }
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("Cannot beat as ActiveHRManager is null!");
-                    try {
-                        await Task.Delay(1000, token);
-                    } catch (TaskCanceledException) { break; }
-                }
-            }
-        }
-    }
-
-    private currentHRSplit intToHRSplit(int hr)
-    {
-        var chs = new currentHRSplit();
-        if (hr < 0)
-            _logger.LogError("HeartRate is below zero.");
-        else
-        {
-            var currentNumber = hr.ToString().Select(x => int.Parse(x.ToString()));
-            var numbers = currentNumber.ToArray();
-            if (hr <= 9)
-            {
-                // why is your HR less than 10????
-                try
-                {
-                    chs.ones = numbers[0];
-                    chs.tens = 0;
-                    chs.hundreds = 0;
-                }
-                catch (Exception) { }
-            }
-            else if (hr <= 99)
-            {
-                try
-                {
-                    chs.ones = numbers[1];
-                    chs.tens = numbers[0];
-                    chs.hundreds = 0;
-                }
-                catch (Exception) { }
-            }
-            else if (hr >= 100)
-            {
-                try
-                {
-                    chs.ones = numbers[2];
-                    chs.tens = numbers[1];
-                    chs.hundreds = numbers[0];
-                }
-                catch (Exception) { }
-            }
-            // if your heart rate is above 999 then you need to see a doctor
-            // for real what
-        }
-
-        return chs;
-    }
-
-    private class currentHRSplit
-    {
-        public int hundreds;
-        public int ones;
-        public int tens;
-    }
-
 }

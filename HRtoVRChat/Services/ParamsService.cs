@@ -38,24 +38,7 @@ public class ParamsService : IParamsService
             "tensHR", _oscService, _logger));
         Parameters.Add(new IntParameter(hro => hro.hundreds,
             _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", _oscService, _logger));
-        Parameters.Add(new IntParameter(hro =>
-        {
-            var HRstring = $"{hro.hundreds}{hro.tens}{hro.ones}";
-            var HR = 0;
-            try
-            {
-                HR = Convert.ToInt32(HRstring);
-            }
-            catch (Exception)
-            {
-            }
-
-            if (HR > 255)
-                HR = 255;
-            if (HR < 0)
-                HR = 0;
-            return HR;
-        }, _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService, _logger));
+        Parameters.Add(new IntParameter(hro => Math.Clamp(hro.HR, 0, 255), _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
