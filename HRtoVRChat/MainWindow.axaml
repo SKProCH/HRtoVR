@@ -6,6 +6,7 @@
         xmlns:views="using:HRtoVRChat.Views"
         xmlns:gh="using:HRtoVRChat.ViewModels.GameHandlers"
         xmlns:ghv="using:HRtoVRChat.Views.GameHandlers"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
@@ -45,25 +46,25 @@
       <StackPanel Grid.Row="0" Spacing="0">
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ProgramVM}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource window_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="Application" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Program</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ListenersVM}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="Home" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Listeners</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding GameHandlersVM}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource games_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="Gamepad" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Game Handlers</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ConfigVM}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource content_settings_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="Cog" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Config</TextBlock>
           </StackPanel>
         </Button>
@@ -72,13 +73,13 @@
       <StackPanel Grid.Row="1" Spacing="0">
         <Button Width="150" Background="#212121" Command="{Binding HideAppCommand}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource slide_hide_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="EyeOff" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Hide Application</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="Red" Command="{Binding ExitAppCommand}">
           <StackPanel Orientation="Horizontal">
-            <PathIcon Data="{StaticResource prohibited_regular}" HorizontalAlignment="Left" />
+            <materialIcons:MaterialIcon Kind="Power" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Exit</TextBlock>
           </StackPanel>
         </Button>
