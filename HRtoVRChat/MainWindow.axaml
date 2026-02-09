@@ -4,6 +4,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:HRtoVRChat.ViewModels"
         xmlns:views="using:HRtoVRChat.Views"
+        xmlns:gh="using:HRtoVRChat.ViewModels.GameHandlers"
+        xmlns:ghv="using:HRtoVRChat.Views.GameHandlers"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
@@ -18,6 +20,9 @@
   <Window.DataTemplates>
     <DataTemplate DataType="{x:Type vm:ListenersViewModel}">
       <views:ListenersView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type gh:GameHandlersViewModel}">
+      <ghv:GameHandlersView />
     </DataTemplate>
     <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
       <views:ProgramView />
@@ -48,6 +53,12 @@
           <StackPanel Orientation="Horizontal">
             <PathIcon Data="{StaticResource home_regular}" HorizontalAlignment="Left" />
             <TextBlock Margin="5,1,0,0">Listeners</TextBlock>
+          </StackPanel>
+        </Button>
+        <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding GameHandlersVM}">
+          <StackPanel Orientation="Horizontal">
+            <PathIcon Data="{StaticResource games_regular}" HorizontalAlignment="Left" />
+            <TextBlock Margin="5,1,0,0">Game Handlers</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ConfigVM}">

@@ -17,6 +17,7 @@ public class HRService : IHRService {
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IHrListener[] _hrListeners;
     private readonly IGameHandler[] _gameHandlers;
+    private readonly bool[] _gameHandlerStarted;
     private readonly BehaviorSubject<IHrListener?> _activeListener = new(null);
     private readonly BehaviorSubject<bool> _hasActiveGameHandle = new(false);
     private readonly BehaviorSubject<int> _heartRate = new(0);
@@ -34,6 +35,7 @@ public class HRService : IHRService {
         _appOptions = appOptions;
         _hrListeners = hrListeners.ToArray();
         _gameHandlers = gameHandlers.ToArray();
+        _gameHandlerStarted = new bool[_gameHandlers.Length];
     }
 
     public void Start() {
@@ -42,9 +44,12 @@ public class HRService : IHRService {
 
         ChangeListenerIfNeeded(_appOptions.CurrentValue.ActiveListener);
 
-        foreach (var gameHandler in _gameHandlers) {
-            // TODO: Disabling individual game handlers
-            gameHandler.Start();
+        for (var i = 0; i < _gameHandlers.Length; i++) {
+            var gameHandler = _gameHandlers[i];
+            if (!_appOptions.CurrentValue.GameHandlers.TryGetValue(gameHandler.Name, out var enabled) || enabled) {
+                gameHandler.Start();
+                _gameHandlerStarted[i] = true;
+            }
         }
 
         _ = Task.Run(PollGameHandlers);
@@ -74,9 +79,8 @@ public class HRService : IHRService {
 
     private static void Broadcast(int heart, bool isConnected, IReadOnlyList<IGameHandler> gameHandlers) {
         foreach (var gameHandler in gameHandlers) {
-            if (gameHandler.IsRunning()) {
-                gameHandler.Update(heart, isConnected);
-            }
+            if (!gameHandler.IsConnected) continue;
+            gameHandler.Update(heart, isConnected);
         }
     }
 
@@ -87,7 +91,7 @@ public class HRService : IHRService {
         while (_globalDisposable is not null) {
             var changed = false;
             for (var i = 0; i < _gameHandlers.Length; i++) {
-                var isRunning = _gameHandlers[i].IsRunning();
+                var isRunning = _gameHandlers[i].IsConnected;
                 if (state[i] != isRunning) {
                     changed = true;
                     if (isRunning)
@@ -109,8 +113,12 @@ public class HRService : IHRService {
     public void Dispose() {
         _listenerDisposable?.Dispose();
         _listenerDisposable = null;
-        foreach (var gameHandler in _gameHandlers)
-            gameHandler.Stop();
+        for (var i = 0; i < _gameHandlers.Length; i++) {
+            if (_gameHandlerStarted[i]) {
+                _gameHandlers[i].Stop();
+                _gameHandlerStarted[i] = false;
+            }
+        }
 
         _activeListener.Value?.Stop();
         _globalDisposable!.Dispose();

@@ -29,22 +29,6 @@ public class TrayIconService : ITrayIconService
             ToggleType = NativeMenuItemToggleType.None
         },
         ["-1"] = new NativeMenuItemSeparator(),
-        ["AutoStart"] = new NativeMenuItem
-        {
-            Header = "Auto Start",
-            ToggleType = NativeMenuItemToggleType.CheckBox
-        },
-        ["SkipVRCCheck"] = new NativeMenuItem
-        {
-            Header = "Skip VRChat Check",
-            ToggleType = NativeMenuItemToggleType.CheckBox
-        },
-        ["NeosBridge"] = new NativeMenuItem
-        {
-            Header = "NeosBridge",
-            ToggleType = NativeMenuItemToggleType.CheckBox
-        },
-        ["-2"] = new NativeMenuItemSeparator(),
         ["HideApplication"] = new NativeMenuItem
         {
             Header = "Hide Application",
@@ -63,9 +47,6 @@ public class TrayIconService : ITrayIconService
     {
         _hrService = hrService;
         // Wire up commands
-        ((NativeMenuItem)_nativeMenuItems["AutoStart"]).Command = new TrayIconClicked(this, "AutoStart", "Auto Start");
-        ((NativeMenuItem)_nativeMenuItems["SkipVRCCheck"]).Command = new TrayIconClicked(this, "SkipVRCCheck", "Skip VRChat Check");
-        ((NativeMenuItem)_nativeMenuItems["NeosBridge"]).Command = new TrayIconClicked(this, "NeosBridge", "Neos Bridge");
         ((NativeMenuItem)_nativeMenuItems["HideApplication"]).Command = new TrayIconClicked(this, "HideApplication", "Hide Application");
         ((NativeMenuItem)_nativeMenuItems["Exit"]).Command = new TrayIconClicked(this, "Exit", "Exit");
 
@@ -105,27 +86,6 @@ public class TrayIconService : ITrayIconService
                     case "Status":
                         if (!string.IsNullOrEmpty(info.Status))
                             nativeMenuItem.Header = "Status: " + info.Status;
-                        break;
-                    case "AutoStart":
-                        if (info.AutoStart != null)
-                        {
-                            nativeMenuItem.Header = info.AutoStart ?? false ? "✅ Auto Start" : "Auto Start";
-                            nativeMenuItem.IsChecked = info.AutoStart ?? false;
-                        }
-                        break;
-                    case "SkipVRCCheck":
-                        if (info.SkipVRCCheck != null)
-                        {
-                            nativeMenuItem.Header = info.SkipVRCCheck ?? false ? "✅ Skip VRChat Check" : "Skip VRChat Check";
-                            nativeMenuItem.IsChecked = info.SkipVRCCheck ?? false;
-                        }
-                        break;
-                    case "NeosBridge":
-                        if (info.NeosBridge != null)
-                        {
-                            nativeMenuItem.Header = info.NeosBridge ?? false ? "✅ Neos Bridge" : "Neos Bridge";
-                            nativeMenuItem.IsChecked = info.NeosBridge ?? false;
-                        }
                         break;
                     case "HideApplication":
                         if (info.HideApplication != null)
@@ -168,15 +128,6 @@ public class TrayIconService : ITrayIconService
                 {
                     switch (_id)
                     {
-                        case "AutoStart":
-                            // Logic removed as Arguments window is gone
-                            break;
-                        case "SkipVRCCheck":
-                            // Logic removed as Arguments window is gone
-                            break;
-                        case "NeosBridge":
-                            // Logic removed as Arguments window is gone
-                            break;
                         case "HideApplication":
                             if (nmi.IsChecked)
                                 _service.MainWindow.Hide();

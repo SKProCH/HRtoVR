@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using HRtoVRChat.Configs;
+using HRtoVRChat.GameHandlers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -18,14 +19,16 @@ public interface IParamsService
 public class ParamsService : IParamsService
 {
     private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly IOptionsMonitor<VRChatOSCOptions> _vrcOptions;
     private readonly IOSCService _oscService;
     private readonly ILogger<ParamsService> _logger;
 
     public List<IHRParameter> Parameters = new();
 
-    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, ILogger<ParamsService> logger)
+    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOptionsMonitor<VRChatOSCOptions> vrcOptions, IOSCService oscService, ILogger<ParamsService> logger)
     {
         _appOptions = appOptions;
+        _vrcOptions = vrcOptions;
         _oscService = oscService;
         _logger = logger;
     }
@@ -52,7 +55,7 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return targetFloat;
-        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _appOptions, _oscService, _logger));
+        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _vrcOptions, _oscService, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
@@ -66,7 +69,7 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return 2f * targetFloat - 1f;
-        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _appOptions, _oscService, _logger));
+        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _vrcOptions, _oscService, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isActive,
             _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", _oscService, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isConnected,
@@ -232,16 +235,16 @@ public class ParamsService : IParamsService
     public class FloatParameter : IHRParameter
     {
         private Func<HROutput, float> _getVal;
-        private readonly IOptionsMonitor<AppOptions> _appOptions;
+        private readonly IOptionsMonitor<VRChatOSCOptions> _vrcOptions;
         private readonly IOSCService _oscService;
         private readonly ILogger _logger;
 
-        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<AppOptions> appOptions, IOSCService oscService, ILogger logger)
+        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<VRChatOSCOptions> vrcOptions, IOSCService oscService, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
-            _appOptions = appOptions;
+            _vrcOptions = vrcOptions;
             _oscService = oscService;
             _logger = logger;
             ParamValue = "0";

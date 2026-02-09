@@ -15,6 +15,7 @@ using HRtoVRChat.Listeners.Stromno;
 using HRtoVRChat.Listeners.TextFile;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels;
+using HRtoVRChat.ViewModels.GameHandlers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -129,6 +130,8 @@ public class App : Application {
         services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>)));
         services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>)));
         services.ConfigureOptionsPath<AppOptions>("App");
+        services.ConfigureOptionsPath<VRChatOSCOptions>("VRChatOSC");
+        services.ConfigureOptionsPath<NeosOptions>("Neos");
 
         // HR Listeners
         services.AddSingleton<IHrListener, FitBitListener>();
@@ -146,6 +149,7 @@ public class App : Application {
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<ListenersViewModel>();
+        services.AddSingleton<GameHandlersViewModel>();
 
         services.AddSingleton<ProgramViewModel>();
         services.AddSingleton<ConfigViewModel>();

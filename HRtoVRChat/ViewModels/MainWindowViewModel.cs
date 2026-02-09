@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reactive;
 using HRtoVRChat.Services;
+using HRtoVRChat.ViewModels.GameHandlers;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -14,6 +15,7 @@ public class MainWindowViewModel : ViewModelBase
 
     public ProgramViewModel ProgramVM { get; }
     public ListenersViewModel ListenersVM { get; }
+    public GameHandlersViewModel GameHandlersVM { get; }
     public ConfigViewModel ConfigVM { get; }
 
     // Commands
@@ -30,11 +32,13 @@ public class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         ProgramViewModel programVM,
         ListenersViewModel listenersVM,
+        GameHandlersViewModel gameHandlersVM,
         ConfigViewModel configVM,
         ITrayIconService trayIconService)
     {
         ProgramVM = programVM;
         ListenersVM = listenersVM;
+        GameHandlersVM = gameHandlersVM;
         ConfigVM = configVM;
         _trayIconService = trayIconService;
 
@@ -63,12 +67,6 @@ public class MainWindowViewModel : ViewModelBase
 
         ExitAppCommand = ReactiveCommand.Create(() =>
         {
-            try {
-                foreach (var process in Process.GetProcessesByName("HRtoVRChat")) {
-                    process.Kill();
-                }
-            }
-            catch (Exception) { }
             Environment.Exit(0);
         });
     }

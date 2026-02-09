@@ -51,7 +51,7 @@ public class ConfigViewModel : ViewModelBase
 
         // 1. Load Global Settings
         // We manually select fields that are global
-        var globalFields = new[] { "Ip", "Port", "ReceiverPort", "MaxHR", "MinHR", "ExpandCVR" };
+        var globalFields = new[] { "MaxHR", "MinHR", "AutoStart", "SkipVRCCheck" };
         foreach (var fieldName in globalFields)
         {
             var prop = config.GetType().GetProperty(fieldName);

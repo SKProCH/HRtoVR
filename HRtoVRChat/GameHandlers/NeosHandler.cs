@@ -1,35 +1,49 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using WatsonWebsocket;
 
 namespace HRtoVRChat.GameHandlers;
 
-public class NeosHandler : IGameHandler {
+public class NeosHandler : ReactiveObject, IGameHandler {
     private WatsonWsServer? _server;
     private NeosMessage _neosMessage = new();
+    private readonly IOptionsMonitor<NeosOptions> _options;
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly ILogger _logger;
 
-    public NeosHandler(IOptionsMonitor<AppOptions> appOptions, ILogger<NeosHandler> logger)
+    public string Name => "Neos";
+    [Reactive] public bool IsConnected { get; private set; }
+
+    public NeosHandler(IOptionsMonitor<NeosOptions> options, IOptionsMonitor<AppOptions> appOptions, ILogger<NeosHandler> logger)
     {
+        _options = options;
         _appOptions = appOptions;
         _logger = logger;
     }
 
-    public bool IsRunning() {
-        return Process.GetProcessesByName("Neos").Length > 0;
-    }
-
     public void Start() {
-        _server = new WatsonWsServer("127.0.0.1", 4206, false);
+        _server = new WatsonWsServer("127.0.0.1", _options.CurrentValue.Port, false);
 
         try
         {
             _server?.Start();
+            // Start a task to periodically update IsConnected
+            _ = Task.Run(async () => {
+                while (_server != null) {
+                    var processRunning = Process.GetProcessesByName("Neos").Length > 0;
+                    var hasClients = _server?.ListClients().Any() ?? false;
+                    IsConnected = processRunning && hasClients;
+                    await Task.Delay(2000);
+                }
+            });
         }
         catch (Exception e)
         {
@@ -44,6 +58,7 @@ public class NeosHandler : IGameHandler {
             _server.Dispose();
             _server = null;
         }
+        IsConnected = false;
     }
 
     public void Update(int heartBeat, bool isConnected)

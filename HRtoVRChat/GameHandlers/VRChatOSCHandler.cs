@@ -1,42 +1,55 @@
 using System.Diagnostics;
-using HRtoVRChat.Configs;
+using System.Threading.Tasks;
 using HRtoVRChat.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 using Vizcon.OSC;
 
 namespace HRtoVRChat.GameHandlers;
 
-public class VRChatOSCHandler : IGameHandler {
+public class VRChatOSCHandler : ReactiveObject, IGameHandler {
     private readonly IParamsService _paramsService;
     private readonly IOSCService _oscService;
-    private readonly IOptionsMonitor<AppOptions> _appOptions;
+    private readonly IOptionsMonitor<VRChatOSCOptions> _options;
     private readonly ILogger _logger;
 
-    public VRChatOSCHandler(IParamsService paramsService, IOSCService oscService, IOptionsMonitor<AppOptions> appOptions, ILogger<VRChatOSCHandler> logger)
+    public string Name => "VRChatOSC";
+    [Reactive] public bool IsConnected { get; private set; }
+
+    public VRChatOSCHandler(IParamsService paramsService, IOSCService oscService, IOptionsMonitor<VRChatOSCOptions> options, ILogger<VRChatOSCHandler> logger)
     {
         _paramsService = paramsService;
         _oscService = oscService;
-        _appOptions = appOptions;
+        _options = options;
         _logger = logger;
     }
 
-    public bool IsRunning() {
-        var vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
-        var cvrRunning = _appOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
-        return vrcRunning || cvrRunning;
-    }
+    private bool _active;
 
     public void Start() {
         _logger.LogInformation("Starting VRChat OSC Handler");
         _paramsService.InitParams();
         _oscService.OnOscMessage += OnOscMessage;
+        _active = true;
+        // Start a task to periodically update IsConnected
+        _ = Task.Run(async () => {
+            while (_active) {
+                var vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
+                var cvrRunning = _options.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
+                IsConnected = vrcRunning || cvrRunning;
+                await Task.Delay(2000);
+            }
+        });
     }
 
     public void Stop() {
         _logger.LogInformation("Stopping VRChat OSC Handler");
+        _active = false;
         _oscService.OnOscMessage -= OnOscMessage;
         _paramsService.ResetParams();
+        IsConnected = false;
     }
 
     private void OnOscMessage(OscMessage? message)
