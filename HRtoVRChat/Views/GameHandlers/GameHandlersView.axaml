@@ -32,7 +32,7 @@
                 <controls:ConnectionIndicator
                   Grid.Column="1"
                   IsVisible="{Binding IsEnabled}"
-                  IsConnected="{Binding IsConnected}"
+                  IsConnected="{Binding Handler.IsConnected}"
                   HeartRate="255" />
               </Grid>
             </Expander.Header>
