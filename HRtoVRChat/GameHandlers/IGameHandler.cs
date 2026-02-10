@@ -7,5 +7,5 @@ public interface IGameHandler : INotifyPropertyChanged {
     bool IsConnected { get; }
     void Start();
     void Stop();
-    void Update(int heartBeat, bool isConnected);
+    void Update(int heartBeat, float heartBeatPercentage, bool isConnected);
 }

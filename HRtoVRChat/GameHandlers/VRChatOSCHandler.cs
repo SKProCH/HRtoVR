@@ -81,7 +81,7 @@ public class VRChatOSCHandler : ReactiveObject, IGameHandler {
         }
     }
 
-    public void Update(int heartBeat, bool isConnected)
+    public void Update(int heartBeat, float heartBeatPercentage, bool isConnected)
     {
         // Split heartBeat into ones, tens, hundreds
         var hundreds = heartBeat / 100 % 10;

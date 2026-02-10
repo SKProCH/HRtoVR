@@ -77,10 +77,13 @@ public class HRService : IHRService {
         newListener.Start();
     }
 
-    private static void Broadcast(int heart, bool isConnected, IReadOnlyList<IGameHandler> gameHandlers) {
+    private void Broadcast(int heartRate, bool isConnected, IReadOnlyList<IGameHandler> gameHandlers) {
+        var heartBeatPercentage = (heartRate - (float)_appOptions.CurrentValue.MinHR) 
+                                  / ((float)_appOptions.CurrentValue.MaxHR - (float)_appOptions.CurrentValue.MinHR);
+        heartBeatPercentage = Math.Clamp(heartBeatPercentage, 0f, 1f);
         foreach (var gameHandler in gameHandlers) {
             if (!gameHandler.IsConnected) continue;
-            gameHandler.Update(heart, isConnected);
+            gameHandler.Update(heartRate, heartBeatPercentage, isConnected);
         }
     }
 
