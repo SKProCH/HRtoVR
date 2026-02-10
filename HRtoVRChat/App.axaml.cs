@@ -125,8 +125,8 @@ public class App : Application {
         services.AddOptions();
         services.AddSingleton(typeof(IConfigureOptions<>), typeof(AutoConfigureFromConfigurationOptions<>));
         services.AddSingleton(typeof(IOptionsChangeTokenSource<>), typeof(AutoConfigurationChangeTokenSource<>));
-        services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>)));
-        services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>)));
+        services.AddSingleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>));
+        services.AddSingleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>));
         services.ConfigureOptionsPath<AppOptions>("App");
 
         // HR Listeners

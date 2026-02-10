@@ -32,11 +32,15 @@ internal class OptionsManager<T> : OptionsMonitor<T>, IOptionsManager<T>, IDispo
     }
 
     private void NotifyPropertyChangedOnPropertyChanged(object? sender, PropertyChangedEventArgs e) {
-        Save();
+        Save(sender);
     }
 
+    public void Save(object? sender) {
+        _configuration.Set(_configPathResolver.Path, sender ?? CurrentValue);
+    }
+    
     public void Save() {
-        _configuration.Set(_configPathResolver.Path, CurrentValue);
+        Save(CurrentValue);
     }
 
     void IDisposable.Dispose() {
