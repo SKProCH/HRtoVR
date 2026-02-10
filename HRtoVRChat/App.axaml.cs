@@ -117,7 +117,6 @@ public class App : Application {
     private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // Services
-        services.AddSingleton<IParamsService, ParamsService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<HRService>();
         services.AddSingleton<IHRService>(provider => provider.GetRequiredService<HRService>());
@@ -140,7 +139,7 @@ public class App : Application {
         services.AddSingleton<IHrListener, TextFileListener>();
 
         // Game Handlers
-        services.AddSingleton<IGameHandler, VRChatOSCHandler>();
+        services.AddSingleton<IGameHandler, VrChatOscHandler>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
