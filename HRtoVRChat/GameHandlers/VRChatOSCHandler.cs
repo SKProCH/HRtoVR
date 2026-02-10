@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,7 @@ public class VrChatOscHandler : ReactiveObject, IGameHandler {
 
     private UDPListener? _listener;
     private UDPSender? _sender;
+    private CancellationTokenSource? _cts;
 
     // Last sent values to avoid redundant OSC messages
     private readonly Dictionary<string, object> _lastSentValues = new();
@@ -32,27 +34,46 @@ public class VrChatOscHandler : ReactiveObject, IGameHandler {
         _logger = logger;
     }
 
-    private bool _active;
-
     public void Start() {
         _logger.LogInformation("Starting VRChat OSC Handler");
-        _sender = new UDPSender(_vrcOptions.CurrentValue.Ip, _vrcOptions.CurrentValue.Port);
-        _listener = new UDPListener(_vrcOptions.CurrentValue.ReceiverPort, packet => OnOscMessage((OscMessage?)packet));
-        _active = true;
-        // Start a task to periodically update IsConnected
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        // Start a task to periodically update IsConnected and manage OSC lifecycle
         _ = Task.Run(async () => {
-            while (_active) {
-                var vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
-                var cvrRunning = _vrcOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
-                IsConnected = vrcRunning || cvrRunning;
-                await Task.Delay(2000);
+            var initialized = false;
+            var isLocal = _vrcOptions.CurrentValue.Ip is "localhost" or "127.0.0.1";
+
+            while (!token.IsCancellationRequested) {
+                IsConnected = UpdateConnectionStatus();
+
+                if (!initialized)
+                {
+                    if (!isLocal || IsConnected)
+                    {
+                        InitializeOsc();
+                        initialized = true;
+                    }
+                }
+
+                try
+                {
+                    await Task.Delay(2000, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
-        });
+        }, token);
     }
 
     public void Stop() {
         _logger.LogInformation("Stopping VRChat OSC Handler");
-        _active = false;
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+
         try
         {
             _listener?.Close();
@@ -67,6 +88,27 @@ public class VrChatOscHandler : ReactiveObject, IGameHandler {
         _lastSentValues.Clear();
 
         IsConnected = false;
+    }
+
+    private bool UpdateConnectionStatus()
+    {
+        var vrcRunning = Process.GetProcessesByName("VRChat").Length > 0;
+        var cvrRunning = _vrcOptions.CurrentValue.ExpandCVR && Process.GetProcessesByName("ChilloutVR").Length > 0;
+        return vrcRunning || cvrRunning;
+    }
+
+    private void InitializeOsc()
+    {
+        _logger.LogInformation("Initializing OSC Senders and Listeners");
+        _sender = new UDPSender(_vrcOptions.CurrentValue.Ip, _vrcOptions.CurrentValue.Port);
+        try
+        {
+            _listener = new UDPListener(_vrcOptions.CurrentValue.ReceiverPort, packet => OnOscMessage((OscMessage?)packet));
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Failed to initialize OSC Listener on port {Port}. It might already be in use", _vrcOptions.CurrentValue.ReceiverPort);
+        }
     }
 
     private void SendMessage(string address, object value)
@@ -115,7 +157,7 @@ public class VrChatOscHandler : ReactiveObject, IGameHandler {
 
     private void SendIfChanged(string address, object value)
     {
-        bool changed = !_lastSentValues.TryGetValue(address, out var lastValue);
+        var changed = !_lastSentValues.TryGetValue(address, out var lastValue);
 
         if (!changed)
         {
