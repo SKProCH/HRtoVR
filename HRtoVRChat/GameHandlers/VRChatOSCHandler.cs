@@ -119,7 +119,7 @@ public class VrChatOscHandler : ReactiveObject, IGameHandler {
             value = b ? 1 : 0;
         }
 
-        var message = new OscMessage(address, value);
+        var message = new OscMessage("/avatar/parameters/" + address, value);
         _sender?.Send(message);
     }
 

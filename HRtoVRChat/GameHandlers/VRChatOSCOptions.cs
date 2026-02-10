@@ -5,7 +5,7 @@ namespace HRtoVRChat.GameHandlers;
 public class VrChatOscOptions
 {
     [Description("The IP to send messages to")]
-    public string Ip { get; set; } = "localhost";
+    public string Ip { get; set; } = "127.0.0.1";
 
     [Description("The Port to send messages to")]
     public int Port { get; set; } = 9000;
