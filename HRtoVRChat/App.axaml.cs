@@ -117,7 +117,6 @@ public class App : Application {
     private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // Services
-        services.AddSingleton<IOSCService, OSCService>();
         services.AddSingleton<IParamsService, ParamsService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<HRService>();

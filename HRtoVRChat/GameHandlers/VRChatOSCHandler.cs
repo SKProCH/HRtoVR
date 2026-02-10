@@ -11,17 +11,18 @@ namespace HRtoVRChat.GameHandlers;
 
 public class VRChatOSCHandler : ReactiveObject, IGameHandler {
     private readonly IParamsService _paramsService;
-    private readonly IOSCService _oscService;
     private readonly IOptionsMonitor<VRChatOSCOptions> _options;
     private readonly ILogger _logger;
+
+    private UDPListener? _listener;
+    private UDPSender? _sender;
 
     public string Name => "VRChatOSC";
     [Reactive] public bool IsConnected { get; private set; }
 
-    public VRChatOSCHandler(IParamsService paramsService, IOSCService oscService, IOptionsMonitor<VRChatOSCOptions> options, ILogger<VRChatOSCHandler> logger)
+    public VRChatOSCHandler(IParamsService paramsService, IOptionsMonitor<VRChatOSCOptions> options, ILogger<VRChatOSCHandler> logger)
     {
         _paramsService = paramsService;
-        _oscService = oscService;
         _options = options;
         _logger = logger;
     }
@@ -30,8 +31,9 @@ public class VRChatOSCHandler : ReactiveObject, IGameHandler {
 
     public void Start() {
         _logger.LogInformation("Starting VRChat OSC Handler");
-        _paramsService.InitParams();
-        _oscService.OnOscMessage += OnOscMessage;
+        _sender = new UDPSender(_options.CurrentValue.Ip, _options.CurrentValue.Port);
+        _listener = new UDPListener(_options.CurrentValue.ReceiverPort, packet => OnOscMessage((OscMessage?)packet));
+        _paramsService.InitParams(SendMessage);
         _active = true;
         // Start a task to periodically update IsConnected
         _ = Task.Run(async () => {
@@ -47,9 +49,27 @@ public class VRChatOSCHandler : ReactiveObject, IGameHandler {
     public void Stop() {
         _logger.LogInformation("Stopping VRChat OSC Handler");
         _active = false;
-        _oscService.OnOscMessage -= OnOscMessage;
+        try
+        {
+            _listener?.Close();
+            _sender = null;
+        }
+        catch { }
         _paramsService.ResetParams();
         IsConnected = false;
+    }
+
+    private void SendMessage(string address, object value)
+    {
+        var realData = value;
+        // If it's a bool, it needs to be converted to a 0, 1 format
+        if (value is bool b && _options.CurrentValue.UseLegacyBool)
+        {
+            realData = b ? 1 : 0;
+        }
+
+        var message = new OscMessage(address, realData);
+        _sender?.Send(message);
     }
 
     private void OnOscMessage(OscMessage? message)

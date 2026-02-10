@@ -9,7 +9,7 @@ namespace HRtoVRChat.Services;
 
 public interface IParamsService
 {
-    void InitParams();
+    void InitParams(Action<string, object> sendCallback);
     void ResetParams();
     void UpdateHRValues(HROutput hro);
     void UpdateHeartBeat(bool isHeartBeat);
@@ -20,28 +20,26 @@ public class ParamsService : IParamsService
 {
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOptionsMonitor<VRChatOSCOptions> _vrcOptions;
-    private readonly IOSCService _oscService;
     private readonly ILogger<ParamsService> _logger;
 
     public List<IHRParameter> Parameters = new();
 
-    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOptionsMonitor<VRChatOSCOptions> vrcOptions, IOSCService oscService, ILogger<ParamsService> logger)
+    public ParamsService(IOptionsMonitor<AppOptions> appOptions, IOptionsMonitor<VRChatOSCOptions> vrcOptions, ILogger<ParamsService> _logger)
     {
         _appOptions = appOptions;
         _vrcOptions = vrcOptions;
-        _oscService = oscService;
-        _logger = logger;
+        this._logger = _logger;
     }
 
-    public void InitParams()
+    public void InitParams(Action<string, object> sendCallback)
     {
         Parameters.Add(new IntParameter(hro => hro.ones, _appOptions.CurrentValue.ParameterNames.OnesHR,
-            "onesHR", _oscService, _logger));
+            "onesHR", sendCallback, _logger));
         Parameters.Add(new IntParameter(hro => hro.tens, _appOptions.CurrentValue.ParameterNames.TensHR,
-            "tensHR", _oscService, _logger));
+            "tensHR", sendCallback, _logger));
         Parameters.Add(new IntParameter(hro => hro.hundreds,
-            _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", _oscService, _logger));
-        Parameters.Add(new IntParameter(hro => Math.Clamp(hro.HR, 0, 255), _appOptions.CurrentValue.ParameterNames.HR, "HR", _oscService, _logger));
+            _appOptions.CurrentValue.ParameterNames.HundredsHR, "hundredsHR", sendCallback, _logger));
+        Parameters.Add(new IntParameter(hro => Math.Clamp(hro.HR, 0, 255), _appOptions.CurrentValue.ParameterNames.HR, "HR", sendCallback, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
@@ -55,7 +53,7 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return targetFloat;
-        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _vrcOptions, _oscService, _logger));
+        }, _appOptions.CurrentValue.ParameterNames.HRPercent, "HRPercent", _vrcOptions, sendCallback, _logger));
         Parameters.Add(new FloatParameter(hro =>
         {
             var targetFloat = 0f;
@@ -69,13 +67,13 @@ public class ParamsService : IParamsService
             else
                 targetFloat = (HR - minhr) / (maxhr - minhr);
             return 2f * targetFloat - 1f;
-        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _vrcOptions, _oscService, _logger));
+        }, _appOptions.CurrentValue.ParameterNames.FullHRPercent, "FullHRPercent", _vrcOptions, sendCallback, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isActive,
-            _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", _oscService, _logger));
+            _appOptions.CurrentValue.ParameterNames.IsHRActive, "isHRActive", sendCallback, _logger));
         Parameters.Add(new BoolParameter(hro => hro.isConnected,
-            _appOptions.CurrentValue.ParameterNames.IsHRConnected, "isHRConnected", _oscService, _logger));
+            _appOptions.CurrentValue.ParameterNames.IsHRConnected, "isHRConnected", sendCallback, _logger));
         Parameters.Add(
-            new BoolParameter(BoolCheckType.HeartBeat, _appOptions.CurrentValue.ParameterNames.IsHRBeat, _oscService, _logger));
+            new BoolParameter(BoolCheckType.HeartBeat, _appOptions.CurrentValue.ParameterNames.IsHRBeat, sendCallback, _logger));
     }
 
     public void ResetParams()
@@ -117,15 +115,15 @@ public class ParamsService : IParamsService
     public class IntParameter : IHRParameter
     {
         private Func<HROutput, int> _getVal;
-        private readonly IOSCService _oscService;
+        private readonly Action<string, object> _sendCallback;
         private readonly ILogger _logger;
 
-        public IntParameter(Func<HROutput, int> getVal, string parameterName, string original, IOSCService oscService, ILogger logger)
+        public IntParameter(Func<HROutput, int> getVal, string parameterName, string original, Action<string, object> sendCallback, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
-            _oscService = oscService;
+            _sendCallback = sendCallback;
             _logger = logger;
             ParamValue = "0";
             _logger.LogDebug("IntParameter with ParameterName: {ParameterName}, has been created!", parameterName);
@@ -152,7 +150,7 @@ public class ParamsService : IParamsService
 
         public void UpdateParameter(bool fromReset = false)
         {
-            _oscService.SendMessage(ParameterName, fromReset ? Convert.ToInt32(DefaultValue) : Convert.ToInt32(ParamValue));
+            _sendCallback.Invoke(ParameterName, fromReset ? Convert.ToInt32(DefaultValue) : Convert.ToInt32(ParamValue));
         }
     }
 
@@ -160,21 +158,21 @@ public class ParamsService : IParamsService
     {
         private Func<HROutput, bool>? _getVal;
         private BoolCheckType? _bct;
-        private readonly IOSCService _oscService;
+        private readonly Action<string, object> _sendCallback;
         private readonly ILogger _logger;
 
-        public BoolParameter(Func<HROutput, bool> getVal, string parameterName, string original, IOSCService oscService, ILogger logger)
+        public BoolParameter(Func<HROutput, bool> getVal, string parameterName, string original, Action<string, object> sendCallback, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
-            _oscService = oscService;
+            _sendCallback = sendCallback;
             _logger = logger;
             ParamValue = "false";
             _logger.LogDebug("BoolParameter with ParameterName: {ParameterName}, has been created!", parameterName);
         }
 
-        public BoolParameter(BoolCheckType bct, string parameterName, IOSCService oscService, ILogger logger)
+        public BoolParameter(BoolCheckType bct, string parameterName, Action<string, object> sendCallback, ILogger logger)
         {
             switch (bct)
             {
@@ -188,7 +186,7 @@ public class ParamsService : IParamsService
 
             _bct = bct;
             ParameterName = parameterName;
-            _oscService = oscService;
+            _sendCallback = sendCallback;
             _logger = logger;
             ParamValue = "false";
             _logger.LogDebug(
@@ -228,7 +226,7 @@ public class ParamsService : IParamsService
 
         public void UpdateParameter(bool fromReset = false)
         {
-            _oscService.SendMessage(ParameterName, fromReset ? Convert.ToBoolean(DefaultValue) : Convert.ToBoolean(ParamValue));
+            _sendCallback.Invoke(ParameterName, fromReset ? Convert.ToBoolean(DefaultValue) : Convert.ToBoolean(ParamValue));
         }
     }
 
@@ -236,16 +234,16 @@ public class ParamsService : IParamsService
     {
         private Func<HROutput, float> _getVal;
         private readonly IOptionsMonitor<VRChatOSCOptions> _vrcOptions;
-        private readonly IOSCService _oscService;
+        private readonly Action<string, object> _sendCallback;
         private readonly ILogger _logger;
 
-        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<VRChatOSCOptions> vrcOptions, IOSCService oscService, ILogger logger)
+        public FloatParameter(Func<HROutput, float> getVal, string parameterName, string original, IOptionsMonitor<VRChatOSCOptions> vrcOptions, Action<string, object> sendCallback, ILogger logger)
         {
             OriginalParameterName = original;
             ParameterName = parameterName;
             _getVal = getVal;
             _vrcOptions = vrcOptions;
-            _oscService = oscService;
+            _sendCallback = sendCallback;
             _logger = logger;
             ParamValue = "0";
             _logger.LogDebug("FloatParameter with ParameterName: {ParameterName} has been created!", parameterName);
@@ -272,7 +270,7 @@ public class ParamsService : IParamsService
 
         public void UpdateParameter(bool fromReset = false)
         {
-            _oscService.SendMessage(ParameterName, fromReset ? Convert.ToSingle(DefaultValue) : Convert.ToSingle(ParamValue));
+            _sendCallback.Invoke(ParameterName, fromReset ? Convert.ToSingle(DefaultValue) : Convert.ToSingle(ParamValue));
         }
     }
 }
