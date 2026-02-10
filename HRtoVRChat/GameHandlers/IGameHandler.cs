@@ -1,11 +1,10 @@
 using System.ComponentModel;
+using HRtoVRChat.Infrastructure;
 
 namespace HRtoVRChat.GameHandlers;
 
-public interface IGameHandler : INotifyPropertyChanged {
+public interface IGameHandler : IStartStopService, INotifyPropertyChanged {
     string Name { get; }
     bool IsConnected { get; }
-    void Start();
-    void Stop();
     void Update(int heartBeat, float heartBeatPercentage, bool isConnected);
 }
