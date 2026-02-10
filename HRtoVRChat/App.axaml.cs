@@ -130,8 +130,6 @@ public class App : Application {
         services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>)));
         services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>)));
         services.ConfigureOptionsPath<AppOptions>("App");
-        services.ConfigureOptionsPath<VRChatOSCOptions>("VRChatOSC");
-        services.ConfigureOptionsPath<NeosOptions>("Neos");
 
         // HR Listeners
         services.AddSingleton<IHrListener, FitBitListener>();
@@ -144,7 +142,6 @@ public class App : Application {
 
         // Game Handlers
         services.AddSingleton<IGameHandler, VRChatOSCHandler>();
-        services.AddSingleton<IGameHandler, NeosHandler>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();

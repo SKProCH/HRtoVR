@@ -19,16 +19,14 @@ public class OSCService : IOSCService
 {
     private readonly IOptionsMonitor<AppOptions> _appOptions;
     private readonly IOptionsMonitor<VRChatOSCOptions> _vrcOptions;
-    private readonly IOptionsMonitor<NeosOptions> _neosOptions;
     private UDPListener? _listener;
 
     public Action<OscMessage?> OnOscMessage { get; set; } = _ => { };
 
-    public OSCService(IOptionsMonitor<AppOptions> appOptions, IOptionsMonitor<VRChatOSCOptions> vrcOptions, IOptionsMonitor<NeosOptions> neosOptions)
+    public OSCService(IOptionsMonitor<AppOptions> appOptions, IOptionsMonitor<VRChatOSCOptions> vrcOptions)
     {
         _appOptions = appOptions;
         _vrcOptions = vrcOptions;
-        _neosOptions = neosOptions;
     }
 
     public void Init()
