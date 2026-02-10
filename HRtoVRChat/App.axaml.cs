@@ -125,9 +125,12 @@ public class App : Application {
         services.AddOptions();
         services.AddSingleton(typeof(IConfigureOptions<>), typeof(AutoConfigureFromConfigurationOptions<>));
         services.AddSingleton(typeof(IOptionsChangeTokenSource<>), typeof(AutoConfigurationChangeTokenSource<>));
+        services.AddSingleton(typeof(IOptionsMonitor<>), typeof(Infrastructure.Options.OptionsManager<>));
         services.AddSingleton(typeof(IOptionsManager<>), typeof(Infrastructure.Options.OptionsManager<>));
         services.AddSingleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>));
         services.ConfigureOptionsPath<AppOptions>("App");
+        services.ConfigureOptionsPath<EditableAppOptions>("App");
+        services.ConfigureOptionsPath<ParameterNamesOptions>("App::ParameterNames");
 
         // HR Listeners
         services.AddSingleton<IHrListener, FitBitListener>();

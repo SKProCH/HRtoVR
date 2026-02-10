@@ -3,33 +3,25 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:HRtoVRChat.ViewModels"
+             xmlns:pgc="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="HRtoVRChat.Views.ConfigView"
              x:DataType="vm:ConfigViewModel">
-    <Grid RowDefinitions="*">
-        <ScrollViewer Grid.Row="0">
-            <StackPanel Margin="10">
-                <TextBlock Text="Global Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
-                <ItemsControl ItemsSource="{Binding GlobalSettings}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="5" Width="200">
-                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                                <TextBox Text="{Binding StringValue, Mode=TwoWay}" ToolTip.Tip="{Binding Description}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
-                    <Button Content="Parameter Names" Command="{Binding OpenParameterNamesCommand}"/>
-                    <Button Content="Force Save" Command="{Binding SaveConfigCommand}"/>
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+  <Grid RowDefinitions="*">
+    <ScrollViewer Grid.Row="0">
+      <StackPanel>
+        <TextBlock Text="Global Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,10" />
+        <pgc:PropertyGrid DataContext="{Binding AppOptions}"
+                          IsHeaderVisible="False"
+                          IsQuickFilterVisible="False"
+                          IsCategoryVisible="False"
+                          IsTitleVisible="False" />
+        <pgc:PropertyGrid DataContext="{Binding ParameterNamesOptions}"
+                          IsHeaderVisible="False"
+                          IsQuickFilterVisible="False"
+                          IsCategoryVisible="False"
+                          IsTitleVisible="False" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
 </UserControl>
