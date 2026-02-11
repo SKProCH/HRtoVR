@@ -2,16 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.Listeners.Fitbit;
-using HRtoVRChat.Listeners.HrProxy;
-using HRtoVRChat.Listeners.HypeRate;
-using HRtoVRChat.Listeners.Pulsoid;
-using HRtoVRChat.Listeners.PulsoidSocket;
-using HRtoVRChat.Listeners.Stromno;
-using HRtoVRChat.Listeners.TextFile;
+using HRtoVRChat.Listeners.Ble;
 using HRtoVRChat.ViewModels.Listeners;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -88,6 +81,11 @@ public class ListenersViewModel : ViewModelBase {
 
     private IListenerSettingsViewModel? CreateSettingsViewModel(IHrListener listener)
     {
+        if (listener.SettingsViewModelType != null)
+        {
+            return _serviceProvider.GetRequiredService(listener.SettingsViewModelType) as IListenerSettingsViewModel;
+        }
+
         var optionsTypeName = $"{listener.Name}Options";
         var optionsType = typeof(IHrListener).Assembly.GetTypes()
             .FirstOrDefault(t => t.Name.Equals(optionsTypeName, StringComparison.OrdinalIgnoreCase));

@@ -86,6 +86,7 @@ public class DesignListenersViewModel : ListenersViewModel
         public string Name { get; }
         public IObservable<int> HeartRate { get; }
         public IObservable<bool> IsConnected { get; }
+        public Type? SettingsViewModelType => null;
 
         public FakeHrListener(string name, bool isConnected, int hr)
         {

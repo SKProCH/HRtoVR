@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:listeners="clr-namespace:HRtoVRChat.ViewModels.Listeners"
+             xmlns:listeners1="clr-namespace:HRtoVRChat.Views.Listeners"
              xmlns:pgc="clr-namespace:Avalonia.PropertyGrid.Controls;assembly=Avalonia.PropertyGrid"
              xmlns:mxpg="https://schemas.eremexcontrols.net/avalonia/propertygrid"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -14,6 +15,9 @@
                         IsQuickFilterVisible="False"
                         IsCategoryVisible="False"
                         IsTitleVisible="False" />
+    </DataTemplate>
+    <DataTemplate DataType="listeners:BleSettingsViewModel">
+      <listeners1:BleSettingsView />
     </DataTemplate>
   </UserControl.DataTemplates>
   <ContentControl Content="{Binding Settings}" />

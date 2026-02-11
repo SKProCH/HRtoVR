@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:HRtoVRChat.ViewModels.Listeners"
+             xmlns:ble="clr-namespace:HRtoVRChat.Listeners.Ble"
+             xmlns:pble="clr-namespace:Plugin.BLE.Abstractions.Contracts;assembly=Plugin.BLE"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+             x:DataType="vm:BleSettingsViewModel"
+             x:Class="HRtoVRChat.Views.Listeners.BleSettingsView">
+    <StackPanel Spacing="10" Margin="10">
+        <TextBlock Text="Bluetooth LE Settings" Classes="h1" FontWeight="Bold"/>
+
+        <Button Command="{Binding ScanCommand}" IsEnabled="{Binding !IsScanning}">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" IsVisible="{Binding IsScanning}"/>
+                <TextBlock Text="{Binding IsScanning}"/>
+            </StackPanel>
+        </Button>
+
+        <TextBlock Text="Discovered Devices:"/>
+        <ListBox ItemsSource="{Binding DiscoveredDevices}"
+                 SelectedItem="{Binding SelectedDevice}"
+                 Height="150">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="ble:BleDevice">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding Id}" Foreground="Gray" FontSize="10" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Content="Connect to Selected"
+                Command="{Binding ConnectCommand}"
+                CommandParameter="{Binding SelectedDevice}"
+                IsEnabled="{Binding SelectedDevice, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+        <Separator IsVisible="{Binding IsConnected}"/>
+
+        <StackPanel IsVisible="{Binding IsConnected}" Spacing="5">
+            <TextBlock Text="Select Service:"/>
+            <ComboBox ItemsSource="{Binding Services}"
+                      SelectedItem="{Binding SelectedService}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="pble:IService">
+                        <TextBlock Text="{Binding Name}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Select Characteristic:"/>
+            <ComboBox ItemsSource="{Binding Characteristics}"
+                      SelectedItem="{Binding SelectedCharacteristic}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="pble:ICharacteristic">
+                        <TextBlock Text="{Binding Name}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

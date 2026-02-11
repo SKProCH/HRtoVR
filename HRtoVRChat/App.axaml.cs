@@ -13,6 +13,8 @@ using HRtoVRChat.Listeners.Pulsoid;
 using HRtoVRChat.Listeners.PulsoidSocket;
 using HRtoVRChat.Listeners.Stromno;
 using HRtoVRChat.Listeners.TextFile;
+using HRtoVRChat.Listeners.Ble;
+using HRtoVRChat.ViewModels.Listeners;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels;
 using HRtoVRChat.ViewModels.GameHandlers;
@@ -140,6 +142,7 @@ public class App : Application {
         services.AddSingleton<IHrListener, PulsoidSocketListener>();
         services.AddSingleton<IHrListener, StromnoListener>();
         services.AddSingleton<IHrListener, TextFileListener>();
+        services.AddSingleton<IHrListener, BleHrListener>();
 
         // Game Handlers
         services.AddSingleton<IGameHandler, VrChatOscHandler>();
@@ -147,6 +150,7 @@ public class App : Application {
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<ListenersViewModel>();
+        services.AddSingleton<BleSettingsViewModel>();
         services.AddSingleton<GameHandlersViewModel>();
 
         services.AddSingleton<ProgramViewModel>();
