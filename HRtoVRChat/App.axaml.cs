@@ -157,6 +157,5 @@ public class App : Application {
 
         services.AddSingleton<ProgramViewModel>();
         services.AddSingleton<ConfigViewModel>();
-        services.AddSingleton<ParameterNamesViewModel>();
     }
 }
