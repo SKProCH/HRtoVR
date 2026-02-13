@@ -5,62 +5,106 @@
              xmlns:vm="clr-namespace:HRtoVRChat.ViewModels.Listeners"
              xmlns:ble="clr-namespace:HRtoVRChat.Listeners.Ble"
              xmlns:pble="clr-namespace:Plugin.BLE.Abstractions.Contracts;assembly=Plugin.BLE"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
-             x:DataType="vm:BleSettingsViewModel"
-             x:Class="HRtoVRChat.Views.Listeners.BleSettingsView">
-    <StackPanel Spacing="10" Margin="10">
-        <TextBlock Text="Bluetooth LE Settings" Classes="h1" FontWeight="Bold"/>
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="using:HRtoVRChat.Controls"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="550"
+             x:Class="HRtoVRChat.Views.Listeners.BleSettingsView"
+             x:DataType="vm:BleSettingsViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <StackPanel Grid.Row="0" Spacing="20">
+      <!-- Connected Device Card -->
+      <StackPanel IsVisible="{Binding ActiveDevice, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="SELECTED DEVICE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+        <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                Padding="16">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Panel VerticalAlignment="Center" Margin="0,0,16,0">
+              <materialIcons:MaterialIcon Kind="BluetoothConnected" Width="32" Height="32" Foreground="{DynamicResource SystemAccentColor}" />
+              <controls:ConnectionIndicator IsConnected="True"
+                                            Width="10" Height="10"
+                                            VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+            </Panel>
 
-        <Button Command="{Binding ScanCommand}" IsEnabled="{Binding !IsScanning}">
-            <StackPanel Orientation="Horizontal" Spacing="5">
-                <ProgressBar IsIndeterminate="True" Width="16" Height="16" IsVisible="{Binding IsScanning}"/>
-                <TextBlock Text="{Binding IsScanning}"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding ActiveDevice.Name}" FontSize="16" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="2" TextElement.FontSize="11">
+                <TextBlock Text="{Binding ActiveService.Name}" />
+                <TextBlock Text="-" />
+                <TextBlock Text="{Binding ActiveCharacteristic.Name}" />
+              </StackPanel>
             </StackPanel>
-        </Button>
 
-        <TextBlock Text="Discovered Devices:"/>
-        <ListBox ItemsSource="{Binding DiscoveredDevices}"
-                 SelectedItem="{Binding SelectedDevice}"
-                 Height="150">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="ble:BleDevice">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                        <TextBlock Text="{Binding Id}" Foreground="Gray" FontSize="10" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+            <ToggleButton Grid.Column="2"
+                          Name="EditButton"
+                          Background="Transparent"
+                          Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                          ToolTip.Tip="Edit">
+              <materialIcons:MaterialIcon Kind="Edit" Width="20" Height="20" />
+            </ToggleButton>
+          </Grid>
+        </Border>
 
-        <Button Content="Connect to Selected"
-                Command="{Binding ConnectCommand}"
-                CommandParameter="{Binding SelectedDevice}"
-                IsEnabled="{Binding SelectedDevice, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+        <!-- Advanced Settings Expander -->
+        <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                Padding="16"
+                IsVisible="{Binding #EditButton.IsChecked}">
+          <StackPanel Spacing="12" Margin="0,10,0,0">
+            <StackPanel Spacing="5">
+              <TextBlock Text="GATT Service" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <ComboBox ItemsSource="{Binding Services}"
+                        SelectedItem="{Binding ActiveService}"
+                        DisplayMemberBinding="{Binding Name}"
+                        HorizontalAlignment="Stretch"
+                        PlaceholderText="Select service" />
+            </StackPanel>
 
-        <Separator IsVisible="{Binding IsConnected}"/>
-
-        <StackPanel IsVisible="{Binding IsConnected}" Spacing="5">
-            <TextBlock Text="Select Service:"/>
-            <ComboBox ItemsSource="{Binding Services}"
-                      SelectedItem="{Binding SelectedService}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="pble:IService">
-                        <TextBlock Text="{Binding Name}"/>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-
-            <TextBlock Text="Select Characteristic:"/>
-            <ComboBox ItemsSource="{Binding Characteristics}"
-                      SelectedItem="{Binding SelectedCharacteristic}"
-                      HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="pble:ICharacteristic">
-                        <TextBlock Text="{Binding Name}"/>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </StackPanel>
+            <StackPanel Spacing="5">
+              <TextBlock Text="GATT Characteristic" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+              <ComboBox ItemsSource="{Binding Characteristics}"
+                        SelectedItem="{Binding ActiveCharacteristic}"
+                        DisplayMemberBinding="{Binding Name}"
+                        HorizontalAlignment="Stretch"
+                        PlaceholderText="Select characteristic"
+                        IsEnabled="{Binding ActiveService, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
     </StackPanel>
+
+    <!-- Device Discovery List -->
+    <DockPanel Grid.Row="1" Margin="0,10,0,0">
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="5,0,5,12">
+        <TextBlock Text="AVAILABLE DEVICES" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+        <ProgressBar Grid.Column="1"
+                     IsIndeterminate="True"
+                     IsVisible="{Binding !DisplayedDevices.Count}"
+                     VerticalAlignment="Center" />
+      </Grid>
+
+      <ListBox ItemsSource="{Binding DisplayedDevices}"
+               SelectedItem="{Binding SelectedDevice}"
+               BorderThickness="0">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Margin" Value="0,2" />
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="ble:BleDescriptor">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <materialIcons:MaterialIcon Kind="Bluetooth" Width="22" Height="22" Margin="0,0,16,0" Opacity="0.5" />
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding Name}" FontWeight="Medium" FontSize="14" />
+                <TextBlock Text="{Binding Id}" FontSize="10" Opacity="0.4" />
+              </StackPanel>
+              <materialIcons:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" Opacity="0.2" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Grid>
 </UserControl>

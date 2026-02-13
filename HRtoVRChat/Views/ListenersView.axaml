@@ -11,20 +11,23 @@
              x:DataType="vm:ListenersViewModel"
              d:DataContext="{x:Static dvm:DesignListenersViewModel.Instance}">
   <Grid>
-    <ListBox ItemsSource="{Binding Listeners}" SelectedItem="{Binding SelectedListener}" Padding="10">
+    <ListBox ItemsSource="{Binding Listeners}" 
+             SelectedItem="{Binding SelectedListener}" 
+             Padding="10"
+             Classes="ListenersListBox">
       <ListBox.Styles>
-        <Style Selector="ListBoxItem">
+        <Style Selector="ListBox.ListenersListBox>ListBoxItem">
           <Setter Property="Padding" Value="0,0,0,10" />
           <Setter Property="HorizontalContentAlignment" Value="Stretch" />
           <Setter Property="Background" Value="Transparent" />
         </Style>
-        <Style Selector="ListBoxItem:last-child">
+        <Style Selector="ListBox.ListenersListBox>ListBoxItem:last-child">
           <Setter Property="Padding" Value="0" />
         </Style>
-        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Style Selector="ListBox.ListenersListBox>ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
           <Setter Property="Background" Value="Transparent" />
         </Style>
-        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Style Selector="ListBox.ListenersListBox>ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
           <Setter Property="Background" Value="Transparent" />
         </Style>
       </ListBox.Styles>

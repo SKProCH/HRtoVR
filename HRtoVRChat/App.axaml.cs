@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -135,6 +136,8 @@ public class App : Application {
         services.ConfigureOptionsPath<ParameterNamesOptions>("App::ParameterNames");
 
         // HR Listeners
+        services.AddSingleton<BleHrListener>();
+        services.AddSingleton<IHrListener>(x => x.GetRequiredService<BleHrListener>());
         services.AddSingleton<IHrListener, FitBitListener>();
         services.AddSingleton<IHrListener, HrProxyListener>();
         services.AddSingleton<IHrListener, HypeRateListener>();
@@ -142,7 +145,6 @@ public class App : Application {
         services.AddSingleton<IHrListener, PulsoidSocketListener>();
         services.AddSingleton<IHrListener, StromnoListener>();
         services.AddSingleton<IHrListener, TextFileListener>();
-        services.AddSingleton<IHrListener, BleHrListener>();
 
         // Game Handlers
         services.AddSingleton<IGameHandler, VrChatOscHandler>();

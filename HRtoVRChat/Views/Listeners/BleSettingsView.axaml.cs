@@ -1,17 +1,13 @@
-using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+using Avalonia.ReactiveUI;
+using HRtoVRChat.ViewModels.Listeners;
+using ReactiveUI;
 
 namespace HRtoVRChat.Views.Listeners;
 
-public partial class BleSettingsView : UserControl
+public partial class BleSettingsView : ReactiveUserControl<BleSettingsViewModel>
 {
     public BleSettingsView()
     {
         InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 }

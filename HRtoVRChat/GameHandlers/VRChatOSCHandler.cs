@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Configs;
@@ -35,7 +36,7 @@ public class VrChatOscHandler : StartStopServiceBase, IGameHandler {
         _logger = logger;
     }
 
-    protected override async Task Run(CancellationToken token) {
+    protected override async Task Run(CompositeDisposable disposables, CancellationToken token) {
         while (!token.IsCancellationRequested) {
             // TODO: Handle remote VRChat process
             var vrchatProcess = GetVrchatProcess();
