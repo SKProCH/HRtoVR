@@ -44,6 +44,5 @@
     <PackageReference Include="Vizcon.OSC" Version="1.0.3" />
     <PackageReference Include="Websocket.Client" Version="4.6.1" />
     <PackageReference Include="WatsonWebsocket" Version="4.1.8" />
-    <PackageReference Include="WritableJsonConfiguration" Version="8.0.1" />
   </ItemGroup>
 </Project>

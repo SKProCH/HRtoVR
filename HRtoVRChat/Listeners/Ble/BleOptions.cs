@@ -1,10 +1,10 @@
-using PropertyModels.ComponentModel;
+using ReactiveUI.Fody.Helpers;
+using ReactiveObject = ReactiveUI.ReactiveObject;
 
 namespace HRtoVRChat.Listeners.Ble;
 
-public class BleOptions : ReactiveObject
-{
-    public string? SelectedDeviceId { get; set; }
-    public string ServiceGuid { get; set; } = "0000180d-0000-1000-8000-00805f9b34fb"; // Heart Rate Service
-    public string CharacteristicGuid { get; set; } = "00002a37-0000-1000-8000-00805f9b34fb"; // Heart Rate Measurement
+public class BleOptions : ReactiveObject {
+    [Reactive] public BleDescriptor? Device { get; set; }
+    [Reactive] public BleDescriptor? Service { get; set; }
+    [Reactive] public BleDescriptor? Characteristic { get; set; }
 }
