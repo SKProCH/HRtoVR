@@ -17,7 +17,5 @@ public class ConfigViewModel : ViewModelBase
     {
         ParameterNamesOptions = parameterNamesOptions.CurrentValue;
         AppOptions = appOptions.CurrentValue;
-        appOptions.OnChange(options => AppOptions = options);
-        parameterNamesOptions.OnChange(options => ParameterNamesOptions = options);
     }
 }
