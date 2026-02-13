@@ -30,7 +30,7 @@ public class BleHrListener : StartStopServiceBase, IHrListener {
     public IObservable<bool> IsConnected => _isConnected;
     public Type SettingsViewModelType => typeof(ViewModels.Listeners.BleSettingsViewModel);
     [Reactive] public IReadOnlyList<BleDescriptor>? Services { get; private set; }
-    [Reactive] public IReadOnlyList<BleDescriptor>? Characteristics { get; private set; }
+    [Reactive] public IReadOnlyList<BleCharacteristic>? Characteristics { get; private set; }
 
     public BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOptions> options) {
         _logger = logger;
@@ -59,7 +59,7 @@ public class BleHrListener : StartStopServiceBase, IHrListener {
             var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
             nestedCts = cts;
             await oldCts.CancelAsync();
-            if (options.Device is null) {
+            if (_options.CurrentValue.Device is null) {
                 _logger.LogWarning("No valid BLE device selected in options");
                 return;
             }
@@ -126,7 +126,7 @@ public class BleHrListener : StartStopServiceBase, IHrListener {
 
                             var characteristics = await service.GetCharacteristicsAsync(token);
                             var bleDescriptors = characteristics.Select(c =>
-                                new BleDescriptor(c.Id, c.Name ?? "Unknown Characteristic"));
+                                new BleCharacteristic(c.Id, c.Name ?? "Unknown Characteristic", c.CanUpdate));
                             Characteristics = bleDescriptors.ToArray();
                             var recovered = await WaitForRecoveryAsync(device, opts =>
                                 opts.Characteristic?.Id == characteristicId &&

@@ -19,7 +19,6 @@ using ReactiveUI.Fody.Helpers;
 namespace HRtoVRChat.ViewModels.Listeners;
 
 public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, IActivatableViewModel {
-    private readonly IOptionsManager<BleOptions> _optionsManager;
     private readonly ILogger<BleSettingsViewModel> _logger;
     private readonly IAdapter _adapter;
     private readonly ReadOnlyObservableCollection<BleDescriptor> _displayedDevices;
@@ -40,19 +39,25 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     public BleSettingsViewModel(BleHrListener bleListener, IOptionsManager<BleOptions> optionsManager,
         ILogger<BleSettingsViewModel> logger) {
-        _optionsManager = optionsManager;
         _logger = logger;
         _adapter = CrossBluetoothLE.Current.Adapter;
 
-        ActiveDevice = _optionsManager.CurrentValue.Device;
-        ActiveService = _optionsManager.CurrentValue.Service;
-        ActiveCharacteristic = _optionsManager.CurrentValue.Characteristic;
+        ActiveDevice = optionsManager.CurrentValue.Device;
+        if (optionsManager.CurrentValue.Service is { } service) {
+            Services = [service];
+            ActiveService = service;
+        }
+
+        if (optionsManager.CurrentValue.Characteristic is { } characteristic) {
+            Characteristics = [characteristic];
+            ActiveCharacteristic = characteristic;
+        }
 
         DiscoveredDevices.Connect()
             .AutoRefreshOnObservable(_ => this
                 .WhenAnyValue(x => x.ActiveDevice)
                 .Select(_ => Unit.Default))
-            .Filter(device => device.Id != _optionsManager.CurrentValue.Device?.Id)
+            .Filter(device => device.Id != optionsManager.CurrentValue.Device?.Id)
             .Bind(out _displayedDevices)
             .Subscribe();
 
@@ -61,33 +66,33 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
             .Subscribe(ChangeDevice);
 
         this.WhenAnyValue(x => x.ActiveDevice)
+            .Skip(1)
             .Subscribe(descriptor => {
                 ActiveService = null;
-                _optionsManager.CurrentValue.Device = descriptor;
-                // _optionsManager.Save();
+                optionsManager.CurrentValue.Device = descriptor;
             });
 
         this.WhenAnyValue(x => x.ActiveService)
+            .Skip(1)
             .Subscribe(descriptor => {
                 ActiveCharacteristic = null;
-                _optionsManager.CurrentValue.Service = descriptor;
+                optionsManager.CurrentValue.Service = descriptor;
             });
 
         this.WhenAnyValue(x => x.ActiveCharacteristic)
-            .Subscribe(descriptor => _optionsManager.CurrentValue.Characteristic = descriptor);
+            .Subscribe(descriptor => optionsManager.CurrentValue.Characteristic = descriptor);
 
         // From listener
         bleListener.WhenAnyValue(x => x.Services)
-            .BindTo(this, x => x.Services);
+            .Subscribe(OnServicesDiscovered);
 
         bleListener.WhenAnyValue(x => x.Characteristics)
-            .BindTo(this, x => x.Characteristics);
+            .Subscribe(OnCharacteristicsDiscovered);
 
         this.WhenActivated(disposables => {
             _ = StartScanAsync(disposables.RegisterToken());
         });
     }
-
 
     private async Task StartScanAsync(CancellationToken token) {
         DiscoveredDevices.Clear();
@@ -119,6 +124,29 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
                 ChangeDevice(deviceDescriptor);
             }
         }
+    }
+
+    private static readonly Guid HeartRateServiceUuid = Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
+
+    private void OnServicesDiscovered(IReadOnlyList<BleDescriptor>? obj) {
+        Services = obj ?? [];
+        if (obj is null)
+            return;
+
+        ActiveService ??= obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
+                          ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static readonly Guid HeartRateMeasurementCharacteristicUuid =
+        Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
+
+    private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic>? obj) {
+        Characteristics = obj ?? [];
+        if (obj is null)
+            return;
+
+        ActiveCharacteristic ??= obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
+                                 ?? obj.FirstOrDefault(x => x.CanUpdate);
     }
 
     /// <summary>
