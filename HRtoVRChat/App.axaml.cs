@@ -133,7 +133,7 @@ public class App : Application {
         services.AddSingleton(typeof(OptionsConfigPathResolver<>), typeof(OptionsConfigPathResolver<>));
         services.ConfigureOptionsPath<AppOptions>("App");
         services.ConfigureOptionsPath<EditableAppOptions>("App");
-        services.ConfigureOptionsPath<ParameterNamesOptions>("App::ParameterNames");
+        services.ConfigureOptionsPath<ParameterNamesOptions>("App:ParameterNames");
 
         // HR Listeners
         services.AddSingleton<BleHrListener>();
