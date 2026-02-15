@@ -1,10 +1,21 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.Infrastructure.Options;
 
 public static class OptionsExtensions {
+    public static IObservable<TOptions> Observe<TOptions>(this IOptionsMonitor<TOptions> monitor)
+        where TOptions : class {
+        return Observable.Create<TOptions>(observer => {
+            observer.OnNext(monitor.CurrentValue);
+            return monitor.OnChange(value => observer.OnNext(value)) ?? Disposable.Empty;
+        });
+    }
+
     public static IServiceCollection ConfigureOptionsPath<TOptions>(this IServiceCollection services, string path)
         where TOptions : class {
         services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(provider =>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reactive.Disposables;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace HRtoVRChat.Infrastructure;
 
@@ -22,5 +23,11 @@ public static class ExtensionMethods {
 
         compositeDisposable.Add(item);
         return item;
+    }
+
+    public static Task WaitAsync(this CancellationToken cancellationToken) {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        cancellationToken.Register(() => tcs.TrySetResult());
+        return tcs.Task;
     }
 }

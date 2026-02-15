@@ -83,10 +83,22 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
             .Subscribe(descriptor => optionsManager.CurrentValue.Characteristic = descriptor);
 
         // From listener
-        bleListener.WhenAnyValue(x => x.Services)
+        bleListener.WhenAnyValue(x => x.DeviceWrapper)
+            .Select(dw => dw?.WhenAnyValue(x => x.ServiceWrapper) ?? Observable.Return<BleServiceWrapper?>(null))
+            .Switch()
+            .Select(sw => sw?.WhenAnyValue(x => x.Services) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
+            .Switch()
+            .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnServicesDiscovered);
 
-        bleListener.WhenAnyValue(x => x.Characteristics)
+        bleListener.WhenAnyValue(x => x.DeviceWrapper)
+            .Select(dw => dw?.WhenAnyValue(x => x.ServiceWrapper) ?? Observable.Return<BleServiceWrapper?>(null))
+            .Switch()
+            .Select(sw => sw?.WhenAnyValue(x => x.NotificationClient) ?? Observable.Return<BleNotificationClient?>(null))
+            .Switch()
+            .Select(nc => nc?.WhenAnyValue(x => x.Characteristics) ?? Observable.Return<IReadOnlyList<BleCharacteristic>>([]))
+            .Switch()
+            .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnCharacteristicsDiscovered);
 
         this.WhenActivated(disposables => {
