@@ -59,7 +59,7 @@
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding GameHandlersVM}">
           <StackPanel Orientation="Horizontal">
             <materialIcons:MaterialIcon Kind="Gamepad" HorizontalAlignment="Left" />
-            <TextBlock Margin="5,1,0,0">Game Handlers</TextBlock>
+            <TextBlock Margin="5,1,0,0">Games</TextBlock>
           </StackPanel>
         </Button>
         <Button Width="150" Background="transparent" Command="{Binding SwitchPanelCommand}" CommandParameter="{Binding ConfigVM}">
