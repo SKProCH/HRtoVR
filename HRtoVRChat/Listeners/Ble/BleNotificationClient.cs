@@ -21,7 +21,7 @@ public sealed class BleNotificationClient : ReactiveObject, IAsyncDisposable {
 
     public IObservable<int> HeartRate => _heartRate;
 
-    [Reactive] public IReadOnlyList<BleCharacteristic> Characteristics { get; private set; } = Array.Empty<BleCharacteristic>();
+    [Reactive] public IReadOnlyList<BleCharacteristic> Characteristics { get; private set; } = [];
     [Reactive] public ICharacteristic? Characteristic { get; private set; }
 
     public BleNotificationClient(IService service, Guid? characteristicId, ILogger logger) {
@@ -47,13 +47,15 @@ public sealed class BleNotificationClient : ReactiveObject, IAsyncDisposable {
         _logger.LogInformation("Discovering all characteristics for service {ServiceId}", _service.Id);
         try {
             var characteristics = await _service.GetCharacteristicsAsync(ct);
-            Characteristics = characteristics.Select(c =>
-                new BleCharacteristic(c.Id, c.Name ?? "Unknown Characteristic", c.CanUpdate)).ToArray();
+            Characteristics = characteristics
+                .Select(c => new BleCharacteristic(c.Id, c.Name ?? "Unknown Characteristic", c.CanUpdate))
+                .ToArray();
+            _logger.LogInformation("Discovered {Count} characteristics for service {ServiceId}", Characteristics.Count, _service.Id);
             return Characteristics;
         }
         catch (Exception ex) when (ex is not OperationCanceledException) {
             _logger.LogError(ex, "Error discovering characteristics for service {ServiceId}", _service.Id);
-            Characteristics = Array.Empty<BleCharacteristic>();
+            Characteristics = [];
             return Characteristics;
         }
     }

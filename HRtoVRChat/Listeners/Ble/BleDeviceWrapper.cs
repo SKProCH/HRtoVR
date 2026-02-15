@@ -57,20 +57,14 @@ public sealed class BleDeviceWrapper : ReactiveObject, IAsyncDisposable {
             .DistinctUntilChanged()
             .ToPropertyEx(this, x => x.IsConnected);
     }
-    
+
     public void UpdateConfiguration(Guid? serviceId, Guid? characteristicId) {
         ServiceId = serviceId;
         CharacteristicId = characteristicId;
+        _ = SyncConfigurationAsync(CancellationToken.None);
     }
 
     public async Task ManagedRunAsync(CancellationToken ct) {
-        // Reactive subscription to configuration changes
-        using var configSub = this.WhenAnyValue(x => x.ServiceId, x => x.CharacteristicId)
-            .Skip(1) // Skip initial values
-            .Where(_ => IsConnected)
-            .SelectMany(_ => Observable.FromAsync(() => SyncConfigurationAsync(ct)))
-            .Subscribe();
-
         var attempt = 1;
         while (!ct.IsCancellationRequested) {
             try {
@@ -80,6 +74,7 @@ public sealed class BleDeviceWrapper : ReactiveObject, IAsyncDisposable {
                         await WaitRetry(ct, attempt++);
                         continue;
                     }
+
                     attempt = 1; // Reset attempt on successful connection
                 }
 
@@ -126,13 +121,13 @@ public sealed class BleDeviceWrapper : ReactiveObject, IAsyncDisposable {
             if (Device == null) return false;
 
             // Sync Service
-            if (ServiceWrapper?.Service?.Id != ServiceId) {
+            if (ServiceId == null || ServiceWrapper?.Service?.Id != ServiceId) {
                 if (ServiceWrapper != null) {
                     await ServiceWrapper.DisposeAsync();
                 }
 
                 ServiceWrapper = new BleServiceWrapper(Device, ServiceId, _logger);
-                var service = await ServiceWrapper.GetServiceAsync(ct);
+                var service = ServiceId == null ? null : await ServiceWrapper.GetServiceAsync(ct);
 
                 if (service == null) {
                     _logger.LogWarning("Service {ServiceId} not found for device {DeviceId}", ServiceId, _deviceId);
@@ -160,7 +155,7 @@ public sealed class BleDeviceWrapper : ReactiveObject, IAsyncDisposable {
     }
 
     private async Task WaitRetry(CancellationToken ct, int attempt) {
-        var delay = Math.Min(2000 * attempt, 30_000);
+        var delay = Math.Min(2000 * attempt, 15_000);
         _logger.LogError("BLE operation failed, waiting {Delay} ms before retry", delay);
         await Task.Delay(delay, ct);
     }

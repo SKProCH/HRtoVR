@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Plugin.BLE.Abstractions.Contracts;
-
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -47,14 +46,17 @@ public sealed class BleServiceWrapper : ReactiveObject, IAsyncDisposable {
     public async Task<bool> SyncCharacteristicAsync(Guid? characteristicId, CancellationToken ct) {
         if (Service == null) return false;
 
-        if (NotificationClient?.Characteristic?.Id != characteristicId) {
+        if (NotificationClient is null ||
+            NotificationClient?.Characteristic?.Id != characteristicId) {
             if (NotificationClient != null) {
                 await NotificationClient.DisposeAsync();
                 NotificationClient = null;
             }
 
             NotificationClient = new BleNotificationClient(Service, characteristicId, _logger);
-            var characteristic = await NotificationClient.GetCharacteristicAsync(ct);
+            var characteristic = NotificationClient.Characteristic?.Id is null
+                ? null
+                : await NotificationClient.GetCharacteristicAsync(ct);
 
             if (characteristic == null) {
                 _logger.LogWarning("Characteristic {CharacteristicId} not found for service {ServiceId}",

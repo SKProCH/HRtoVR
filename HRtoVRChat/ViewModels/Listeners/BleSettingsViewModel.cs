@@ -138,10 +138,12 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         }
     }
 
-    private static readonly Guid HeartRateServiceUuid = Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid HeartRateServiceUuid = 
+        Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
 
     private void OnServicesDiscovered(IReadOnlyList<BleDescriptor>? obj) {
         Services = obj ?? [];
+        ActiveService = obj?.FirstOrDefault(x => x.Id == ActiveService?.Id);
         if (obj is null)
             return;
 
@@ -154,6 +156,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic>? obj) {
         Characteristics = obj ?? [];
+        ActiveCharacteristic = obj?.FirstOrDefault(x => x.Id == ActiveCharacteristic?.Id);
         if (obj is null)
             return;
 
