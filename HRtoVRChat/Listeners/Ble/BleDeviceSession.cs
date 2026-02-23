@@ -135,7 +135,10 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                 await BleExtensions.RetryWithDelayAsync(token => _device.GetServicesAsync(token),
                     cancellationToken: ct);
             ct.ThrowIfCancellationRequested();
-            DiscoveredServices = services.Select(s => new BleDescriptor(s.Id, s.Name ?? "Unknown Service")).ToArray();
+            DiscoveredServices = services
+                .DistinctBy(service => service.Id)
+                .Select(s => new BleDescriptor(s.Id, s.Name ?? "Unknown Service"))
+                .ToArray();
             _logger.LogInformation("Discovered {Count} services for device {DeviceId}: [{Services}]",
                 DiscoveredServices.Count, _device.Id,
                 string.Join(", ", DiscoveredServices.Select(s => $"{s.Name} ({s.Id})")));
@@ -160,6 +163,7 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                     cancellationToken: ct);
             ct.ThrowIfCancellationRequested();
             DiscoveredCharacteristics = characteristics
+                .DistinctBy(characteristic => characteristic.Id)
                 .Select(c => new BleCharacteristic(c.Id, c.Name ?? "Unknown Characteristic", c.CanUpdate))
                 .ToArray();
             _logger.LogInformation("Discovered {Count} characteristics for service {ServiceId}: [{Characteristics}]",
