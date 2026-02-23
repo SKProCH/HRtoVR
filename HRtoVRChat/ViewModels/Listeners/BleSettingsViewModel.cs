@@ -31,10 +31,10 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
     [Reactive] public BleDescriptor? ActiveDevice { get; set; }
     [Reactive] public BleDescriptor? SelectedDevice { get; set; }
 
-    [Reactive] public IReadOnlyList<BleDescriptor> Services { get; set; } = [];
+    [Reactive] public ObservableCollection<BleDescriptor> Services { get; set; } = [];
     [Reactive] public BleDescriptor? ActiveService { get; set; }
 
-    [Reactive] public IReadOnlyList<BleDescriptor> Characteristics { get; set; } = [];
+    [Reactive] public ObservableCollection<BleDescriptor> Characteristics { get; set; } = [];
     [Reactive] public BleDescriptor? ActiveCharacteristic { get; set; }
 
     public BleSettingsViewModel(BleHrListener bleListener, IOptionsManager<BleOptions> optionsManager,
@@ -123,7 +123,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
     private static readonly Guid HeartRateServiceUuid = Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
 
     private void OnServicesDiscovered(IReadOnlyList<BleDescriptor> obj) {
-        Services = obj;
+        Services = new ObservableCollection<BleDescriptor>(obj);
         if (ActiveService == null || obj.All(x => x.Id != ActiveService.Id)) {
             ActiveService = obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
                           ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
@@ -133,7 +133,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
     private static readonly Guid HeartRateMeasurementCharacteristicUuid = Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
 
     private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic> obj) {
-        Characteristics = obj;
+        Characteristics = new ObservableCollection<BleDescriptor>(obj);
         if (ActiveCharacteristic == null || obj.All(x => x.Id != ActiveCharacteristic.Id)) {
             ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
                                  ?? obj.FirstOrDefault(x => x.CanUpdate);
