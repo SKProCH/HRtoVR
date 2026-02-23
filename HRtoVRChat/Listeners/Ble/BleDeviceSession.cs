@@ -72,7 +72,8 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                         // Attempt to get the specific service (fast operation without full scan)
                         var service = await _device.GetServiceAsync(x.ServiceId.Value, ct);
                         if (service == null) {
-                            _logger.LogWarning("Service {ServiceId} not found. Triggering fallback discovery", x.ServiceId);
+                            _logger.LogWarning("Service {ServiceId} not found. Triggering fallback discovery",
+                                x.ServiceId);
                             EnableDiscovery(); // If service not found (invalid settings) -> trigger full scan
                             return Disposable.Empty;
                         }
@@ -80,7 +81,9 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                         // Attempt to get the specific characteristic
                         var characteristic = await service.GetCharacteristicAsync(x.CharacteristicId.Value, ct);
                         if (characteristic == null) {
-                            _logger.LogWarning("Characteristic {CharacteristicId} not found. Triggering fallback discovery", x.CharacteristicId);
+                            _logger.LogWarning(
+                                "Characteristic {CharacteristicId} not found. Triggering fallback discovery",
+                                x.CharacteristicId);
                             EnableDiscovery(); // If characteristic not found -> trigger full scan
                             return Disposable.Empty;
                         }
@@ -124,7 +127,7 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
 
     [Reactive] public IReadOnlyList<BleDescriptor> DiscoveredServices { get; private set; } = [];
     [Reactive] public IReadOnlyList<BleCharacteristic> DiscoveredCharacteristics { get; private set; } = [];
-    
+
     public void EnableDiscovery() {
         if (!_discoveryMode.Value) {
             _logger.LogInformation("Enabling discovery mode for device {DeviceId}", _device.Id);
@@ -132,20 +135,22 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
         }
     }
 
-    public async ValueTask DisposeAsync() {
-        try
-        {
-            await CrossBluetoothLE.Current.Adapter.DisconnectDeviceAsync(_device, CancellationToken.None);
-        }
-        catch (Exception) {
-            // ignored
-        }
-
+    public ValueTask DisposeAsync() {
+        _ = Task.Run(async () => {
+            try {
+                await CrossBluetoothLE.Current.Adapter.DisconnectDeviceAsync(_device, CancellationToken.None);
+            }
+            catch (Exception) {
+                // ignored
+            }
+        });
         Dispose();
+        return ValueTask.CompletedTask;
     }
 
     public void UpdateConfiguration(Guid? serviceId, Guid? characteristicId) {
-        _logger.LogDebug("UpdateConfiguration: service={ServiceId}, characteristic={CharId}", serviceId, characteristicId);
+        _logger.LogDebug("UpdateConfiguration: service={ServiceId}, characteristic={CharId}", serviceId,
+            characteristicId);
         _targetServiceId.OnNext(serviceId);
         _targetCharacteristicId.OnNext(characteristicId);
     }
@@ -190,7 +195,8 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                 .ToArray();
             _logger.LogInformation("Discovered {Count} characteristics for service {ServiceId}: [{Characteristics}]",
                 DiscoveredCharacteristics.Count, serviceId,
-                string.Join(", ", DiscoveredCharacteristics.Select(c => $"{c.Name} ({c.Id}, canUpdate={c.CanUpdate})")));
+                string.Join(", ",
+                    DiscoveredCharacteristics.Select(c => $"{c.Name} ({c.Id}, canUpdate={c.CanUpdate})")));
         }
         catch (Exception ex) when (ex is not OperationCanceledException) {
             _logger.LogError(ex, "Error discovering characteristics for service {ServiceId}", serviceId);
