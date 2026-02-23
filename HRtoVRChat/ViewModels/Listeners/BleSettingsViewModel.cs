@@ -147,6 +147,9 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     private void OnServicesDiscovered(IReadOnlyList<BleDescriptor> obj) {
         Services = new ObservableCollection<BleDescriptor>(obj);
+        if (obj.Count == 0)
+            return;
+        ActiveService = obj.FirstOrDefault(x => x.Id == ActiveService?.Id);
         if (ActiveService == null || obj.All(x => x.Id != ActiveService.Id)) {
             ActiveService = obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
                           ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
@@ -157,6 +160,9 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic> obj) {
         Characteristics = new ObservableCollection<BleDescriptor>(obj);
+        if (obj.Count == 0)
+            return;
+        ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == ActiveCharacteristic?.Id);
         if (ActiveCharacteristic == null || obj.All(x => x.Id != ActiveCharacteristic.Id)) {
             ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
                                  ?? obj.FirstOrDefault(x => x.CanUpdate);
