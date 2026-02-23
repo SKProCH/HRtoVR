@@ -69,7 +69,7 @@ public class ConfigItemViewModel : ViewModelBase
 
     private static string FriendlyName(Type type) {
         if (type.IsGenericType) {
-            var namePrefix = type.Name.Split(new[] { '`' }, StringSplitOptions.RemoveEmptyEntries)[0];
+            var namePrefix = type.Name.Split(['`'], StringSplitOptions.RemoveEmptyEntries)[0];
             var genericParameters = ToCsv(type.GetGenericArguments().Select(FriendlyName));
             return namePrefix + "<" + genericParameters + ">";
         }

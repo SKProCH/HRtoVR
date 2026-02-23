@@ -15,7 +15,7 @@ using ReactiveUI.Fody.Helpers;
 namespace HRtoVRChat.ViewModels;
 
 public class ListenersViewModel : ViewModelBase {
-    public ObservableCollection<ListenerViewModel> Listeners { get; } = new();
+    public ObservableCollection<ListenerViewModel> Listeners { get; } = [];
     [Reactive] public ListenerViewModel? SelectedListener { get; set; }
 
     private readonly IOptionsManager<AppOptions> _appOptions;

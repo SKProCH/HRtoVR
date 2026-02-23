@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,6 +16,20 @@ public static class OptionsExtensions {
             observer.OnNext(monitor.CurrentValue);
             return monitor.OnChange(value => observer.OnNext(value)) ?? Disposable.Empty;
         });
+    }
+
+    public static Task WaitForChange<TOptions>(this IOptionsMonitor<TOptions> monitor, CancellationToken token) {
+        var tcs = new TaskCompletionSource();
+        var compositeDisposable = new CompositeDisposable();
+        token.Register(() => {
+            compositeDisposable.Dispose();
+            tcs.TrySetCanceled();
+        }).DisposeWith(compositeDisposable);
+        monitor.OnChange(_ => {
+            compositeDisposable.Dispose();
+            tcs.TrySetResult();
+        }).DisposeNullableWith(compositeDisposable);
+        return tcs.Task;
     }
 
     public static IServiceCollection ConfigureOptionsPath<TOptions>(this IServiceCollection services, string path)

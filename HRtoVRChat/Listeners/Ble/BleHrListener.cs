@@ -1,4 +1,5 @@
 using System;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
@@ -15,10 +16,8 @@ using HRtoVRChat.Infrastructure.Options;
 
 namespace HRtoVRChat.Listeners.Ble;
 
-public class BleHrListener : StartStopServiceBase, IHrListener {
-    private readonly ILogger<BleHrListener> _logger;
-    private readonly IOptionsMonitor<BleOptions> _options;
-
+public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOptions> options)
+    : StartStopServiceBase, IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
 
@@ -26,78 +25,107 @@ public class BleHrListener : StartStopServiceBase, IHrListener {
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
     public Type SettingsViewModelType => typeof(ViewModels.Listeners.BleSettingsViewModel);
-    [Reactive] public BleDeviceWrapper? DeviceWrapper { get; private set; }
 
-    public BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOptions> options) {
-        _logger = logger;
-        _options = options;
-    }
+    [Reactive] public BleDeviceSession? Session { get; private set; }
 
     protected override async Task Run(CompositeDisposable disposables, CancellationToken token) {
-        var nestedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        _options.Observe()
-            .Select(options => options.Device)
-            .Prepend(_options.CurrentValue.Device)
-            .DistinctUntilChanged()
-            .Subscribe(newOptions => {
-                nestedCts.Cancel();
-                nestedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-                _ = RunCore(nestedCts.Token);
-            })
-            .DisposeWith(disposables);
-        
-        _options.Observe()
-            .Select(options => options.Service)
-            .DistinctUntilChanged()
-            .Subscribe(newService => {
-                DeviceWrapper?.UpdateConfiguration(newService?.Id, DeviceWrapper.CharacteristicId);
-            });
-        
-        _options.Observe()
-            .Select(options => options.Characteristic)
-            .DistinctUntilChanged()
-            .Subscribe(newCharacteristic => {
-                DeviceWrapper?.UpdateConfiguration(DeviceWrapper.ServiceId, newCharacteristic?.Id);
-            });
-        
-        this.WhenAnyValue(x => x.DeviceWrapper)
-            .Select(dw => dw?.WhenAnyValue(x => x.IsConnected) ?? Observable.Return(false))
-            .Switch()
-            .DistinctUntilChanged()
+        // Track session state for IsConnected
+        this.WhenAnyValue(x => x.Session)
+            .Select(s => s != null)
             .Subscribe(connected => _isConnected.OnNext(connected))
             .DisposeWith(disposables);
 
-        this.WhenAnyValue(x => x.DeviceWrapper)
-            .Select(dw => dw?.HeartRate ?? Observable.Return(0))
+        // Proxy heart rate from session
+        this.WhenAnyValue(x => x.Session)
+            .Select(s => s?.HeartRate ?? Observable.Return(0))
             .Switch()
             .Subscribe(hr => _heartRate.OnNext(hr))
             .DisposeWith(disposables);
+
+        // Sync configuration to session when options change
+        options.Observe()
+            .Subscribe(o => {
+                if (Session?.DeviceId == o.Device?.Id) {
+                    Session?.UpdateConfiguration(o.Service?.Id, o.Characteristic?.Id);
+                }
+            })
+            .DisposeWith(disposables);
+
+        // Manage connection lifecycle based on configured device
+        options.Observe()
+            .Select(o => o.Device?.Id)
+            .DistinctUntilChanged()
+            .Do(_ => Session = null)
+            .Select(deviceId => deviceId == null
+                ? Observable.Empty<Unit>()
+                : Observable.FromAsync(ct => Task.Run(() => ConnectionLoop(deviceId.Value, ct), ct)))
+            .Switch()
+            .Subscribe()
+            .DisposeWith(disposables);
+
+        await Task.Delay(-1, token);
     }
 
-    private async Task RunCore(CancellationToken token) {
-        var currentOptions = _options.CurrentValue;
-        if (currentOptions.Device is null) {
-            _logger.LogWarning("No valid BLE device selected in options");
-            return;
-        }
+    private async Task ConnectionLoop(Guid deviceId, CancellationToken token) {
+        var attempt = 1;
+        while (!token.IsCancellationRequested) {
+            BleDeviceSession? session = null;
+            try {
+                logger.LogInformation("Connecting to BLE device: {DeviceId}", deviceId);
+                var device = await CrossBluetoothLE.Current.Adapter.ConnectToKnownDeviceAsync(
+                        deviceId, default, token.WithTimeout(TimeSpan.FromSeconds(10)))
+                    .WithTimeout(TimeSpan.FromSeconds(10));
 
-        var deviceId = currentOptions.Device.Id;
-        var deviceWrapper = new BleDeviceWrapper(deviceId, currentOptions.Service?.Id,
-            currentOptions.Characteristic?.Id,
-            CrossBluetoothLE.Current.Adapter, _logger);
-        DeviceWrapper = deviceWrapper;
+                logger.LogInformation("Connected to BLE device: {DeviceId}", device.Id);
+                attempt = 1;
 
-        try {
-            await deviceWrapper.ManagedRunAsync(token);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException) {
-            _logger.LogError(ex, "Error in BLE listener for {DeviceId}", deviceId);
-            await Task.Delay(2000, token);
-        }
-        finally {
-            await DeviceWrapper.DisposeAsync();
-            if (DeviceWrapper == deviceWrapper)
-                DeviceWrapper = null;
+                await using (session = new BleDeviceSession(device, logger)) {
+                    Session = session;
+
+                    // Sync initial configuration
+                    var currentOptions = options.CurrentValue;
+                    session.UpdateConfiguration(currentOptions.Service?.Id, currentOptions.Characteristic?.Id);
+
+                    // Wait until device disconnects or connection task is cancelled
+                    var tcs = new TaskCompletionSource();
+                    await using var _ = token.Register(() => tcs.TrySetResult());
+
+                    void OnDisconnected(object? sender, Plugin.BLE.Abstractions.EventArgs.DeviceEventArgs e) {
+                        if (e.Device.Id == device.Id) {
+                            logger.LogInformation("BLE Device {DeviceId} disconnected", e.Device.Id);
+                            tcs.TrySetResult();
+                        }
+                    }
+
+                    CrossBluetoothLE.Current.Adapter.DeviceDisconnected += OnDisconnected;
+                    try {
+                        await tcs.Task;
+                    }
+                    finally {
+                        CrossBluetoothLE.Current.Adapter.DeviceDisconnected -= OnDisconnected;
+                    }
+                }
+
+                logger.LogInformation("Disconnecting from BLE device: {DeviceId}", deviceId);
+                await CrossBluetoothLE.Current.Adapter.DisconnectDeviceAsync(device, CancellationToken.None);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) {
+                return;
+            }
+            catch (TimeoutException) {
+                logger.LogWarning("Timeout connecting to BLE device: {DeviceId}", deviceId);
+                var delay = Math.Min(2000 * attempt++, 15000);
+                await Task.Delay(delay, token);
+            }
+            catch (Exception ex) {
+                logger.LogError(ex, "Error in BLE connection loop for device {DeviceId}", deviceId);
+                var delay = Math.Min(2000 * attempt++, 15000);
+                await Task.Delay(delay, token);
+            }
+            finally {
+                if (Session == session)
+                    Session = null;
+            }
         }
     }
 }

@@ -30,4 +30,17 @@ public static class ExtensionMethods {
         cancellationToken.Register(() => tcs.TrySetResult());
         return tcs.Task;
     }
+
+    public static async Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout) {
+        var completedTask = await Task.WhenAny(task, Task.Delay(timeout));
+        if (completedTask == task)
+            return await task;
+        throw new TimeoutException();
+    }
+    
+    public static CancellationToken WithTimeout(this CancellationToken token, TimeSpan timeout) {
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        cts.CancelAfter(timeout);
+        return cts.Token;
+    }
 }

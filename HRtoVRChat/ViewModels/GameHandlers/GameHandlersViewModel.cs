@@ -12,7 +12,7 @@ namespace HRtoVRChat.ViewModels.GameHandlers;
 
 public class GameHandlersViewModel : ViewModelBase
 {
-    public ObservableCollection<GameHandlerViewModel> Handlers { get; } = new();
+    public ObservableCollection<GameHandlerViewModel> Handlers { get; } = [];
 
     private readonly IServiceProvider _serviceProvider;
 

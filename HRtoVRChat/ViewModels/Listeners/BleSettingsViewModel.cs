@@ -43,15 +43,8 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         _adapter = CrossBluetoothLE.Current.Adapter;
 
         ActiveDevice = optionsManager.CurrentValue.Device;
-        if (optionsManager.CurrentValue.Service is { } service) {
-            Services = [service];
-            ActiveService = service;
-        }
-
-        if (optionsManager.CurrentValue.Characteristic is { } characteristic) {
-            Characteristics = [characteristic];
-            ActiveCharacteristic = characteristic;
-        }
+        ActiveService = optionsManager.CurrentValue.Service;
+        ActiveCharacteristic = optionsManager.CurrentValue.Characteristic;
 
         DiscoveredDevices.Connect()
             .AutoRefreshOnObservable(_ => this
@@ -63,40 +56,31 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
         this.WhenAnyValue(x => x.SelectedDevice)
             .WhereNotNull()
-            .Subscribe(ChangeDevice);
+            .Subscribe(descriptor => {
+                SelectedDevice = null;
+                ActiveDevice = descriptor;
+                ActiveService = null;
+                ActiveCharacteristic = null;
+            });
 
         this.WhenAnyValue(x => x.ActiveDevice)
-            .Skip(1)
-            .Subscribe(descriptor => {
-                ActiveService = null;
-                optionsManager.CurrentValue.Device = descriptor;
-            });
+            .Subscribe(descriptor => optionsManager.CurrentValue.Device = descriptor);
 
         this.WhenAnyValue(x => x.ActiveService)
-            .Skip(1)
-            .Subscribe(descriptor => {
-                ActiveCharacteristic = null;
-                optionsManager.CurrentValue.Service = descriptor;
-            });
+            .Subscribe(descriptor => optionsManager.CurrentValue.Service = descriptor);
 
         this.WhenAnyValue(x => x.ActiveCharacteristic)
             .Subscribe(descriptor => optionsManager.CurrentValue.Characteristic = descriptor);
 
-        // From listener
-        bleListener.WhenAnyValue(x => x.DeviceWrapper)
-            .Select(dw => dw?.WhenAnyValue(x => x.ServiceWrapper) ?? Observable.Return<BleServiceWrapper?>(null))
-            .Switch()
-            .Select(sw => sw?.WhenAnyValue(x => x.Services) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
+        // Bind services and characteristics from the listener's session
+        bleListener.WhenAnyValue(x => x.Session)
+            .Select(s => s?.WhenAnyValue(x => x.DiscoveredServices) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
             .Switch()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnServicesDiscovered);
 
-        bleListener.WhenAnyValue(x => x.DeviceWrapper)
-            .Select(dw => dw?.WhenAnyValue(x => x.ServiceWrapper) ?? Observable.Return<BleServiceWrapper?>(null))
-            .Switch()
-            .Select(sw => sw?.WhenAnyValue(x => x.NotificationClient) ?? Observable.Return<BleNotificationClient?>(null))
-            .Switch()
-            .Select(nc => nc?.WhenAnyValue(x => x.Characteristics) ?? Observable.Return<IReadOnlyList<BleCharacteristic>>([]))
+        bleListener.WhenAnyValue(x => x.Session)
+            .Select(s => s?.WhenAnyValue(x => x.DiscoveredCharacteristics) ?? Observable.Return<IReadOnlyList<BleCharacteristic>>([]))
             .Switch()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnCharacteristicsDiscovered);
@@ -114,8 +98,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
             _adapter.ScanTimeout = int.MaxValue;
             await _adapter.StartScanningForDevicesAsync(cancellationToken: token);
         }
-        catch (OperationCanceledException) {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception ex) {
             _logger.LogError(ex, "Error scanning for devices");
         }
@@ -130,46 +113,30 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         var deviceDescriptor = new BleDescriptor(e.Device.Id, e.Device.Name ?? "Unknown Device");
         DiscoveredDevices.AddOrUpdate(deviceDescriptor);
 
-        // Trying to guess
         if (ActiveDevice is null && e.Device.Name is not null) {
             if (CommonDeviceNames.Any(s => e.Device.Name.Contains(s, StringComparison.OrdinalIgnoreCase))) {
-                ChangeDevice(deviceDescriptor);
+                ActiveDevice = deviceDescriptor;
             }
         }
     }
 
-    private static readonly Guid HeartRateServiceUuid = 
-        Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid HeartRateServiceUuid = Guid.Parse("0000180d-0000-1000-8000-00805f9b34fb");
 
-    private void OnServicesDiscovered(IReadOnlyList<BleDescriptor>? obj) {
-        Services = obj ?? [];
-        ActiveService = obj?.FirstOrDefault(x => x.Id == ActiveService?.Id);
-        if (obj is null)
-            return;
-
-        ActiveService ??= obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
+    private void OnServicesDiscovered(IReadOnlyList<BleDescriptor> obj) {
+        Services = obj;
+        if (ActiveService == null || obj.All(x => x.Id != ActiveService.Id)) {
+            ActiveService = obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
                           ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
+        }
     }
 
-    private static readonly Guid HeartRateMeasurementCharacteristicUuid =
-        Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid HeartRateMeasurementCharacteristicUuid = Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
 
-    private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic>? obj) {
-        Characteristics = obj ?? [];
-        ActiveCharacteristic = obj?.FirstOrDefault(x => x.Id == ActiveCharacteristic?.Id);
-        if (obj is null)
-            return;
-
-        ActiveCharacteristic ??= obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
+    private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic> obj) {
+        Characteristics = obj;
+        if (ActiveCharacteristic == null || obj.All(x => x.Id != ActiveCharacteristic.Id)) {
+            ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
                                  ?? obj.FirstOrDefault(x => x.CanUpdate);
-    }
-
-    /// <summary>
-    /// Device changed by the user
-    /// </summary>
-    private void ChangeDevice(BleDescriptor descriptor) {
-        SelectedDevice = null;
-        ActiveDevice = descriptor;
-        ActiveService = null;
+        }
     }
 }

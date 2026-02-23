@@ -28,7 +28,7 @@ public class DesignListenersViewModel : ListenersViewModel
     {
         public string? this[string key] { get => null; set { } }
         public IConfigurationSection GetSection(string key) => new FakeConfigurationSection(key);
-        public IEnumerable<IConfigurationSection> GetChildren() => Array.Empty<IConfigurationSection>();
+        public IEnumerable<IConfigurationSection> GetChildren() => [];
         public IChangeToken GetReloadToken() => new FakeChangeToken();
 
         private class FakeConfigurationSection : IConfigurationSection
@@ -37,7 +37,7 @@ public class DesignListenersViewModel : ListenersViewModel
             public string Key { get; }
             public string Path => Key;
             public string? Value { get; set; }
-            public IEnumerable<IConfigurationSection> GetChildren() => Array.Empty<IConfigurationSection>();
+            public IEnumerable<IConfigurationSection> GetChildren() => [];
             public IChangeToken GetReloadToken() => new FakeChangeToken();
             public IConfigurationSection GetSection(string key) => new FakeConfigurationSection(key);
             public FakeConfigurationSection(string key) => Key = key;
