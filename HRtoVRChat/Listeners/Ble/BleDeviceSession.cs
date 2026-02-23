@@ -8,6 +8,7 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Plugin.BLE;
 using Plugin.BLE.Abstractions.Contracts;
 using Plugin.BLE.Abstractions.EventArgs;
 using ReactiveUI;
@@ -17,18 +18,12 @@ namespace HRtoVRChat.Listeners.Ble;
 
 public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
     private readonly IDevice _device;
-    private readonly ILogger _logger;
-    private readonly BehaviorSubject<Guid?> _targetServiceId = new(null);
-    private readonly BehaviorSubject<Guid?> _targetCharacteristicId = new(null);
+
+    private readonly CompositeDisposable _disposables = new();
     private readonly BehaviorSubject<int> _heartRate = new(0);
-
-    public IObservable<int> HeartRate => _heartRate;
-    public IObservable<Guid?> TargetServiceId => _targetServiceId;
-    public IObservable<Guid?> TargetCharacteristicId => _targetCharacteristicId;
-    public Guid DeviceId => _device.Id;
-
-    [Reactive] public IReadOnlyList<BleDescriptor> DiscoveredServices { get; private set; } = [];
-    [Reactive] public IReadOnlyList<BleCharacteristic> DiscoveredCharacteristics { get; private set; } = [];
+    private readonly ILogger _logger;
+    private readonly BehaviorSubject<Guid?> _targetCharacteristicId = new(null);
+    private readonly BehaviorSubject<Guid?> _targetServiceId = new(null);
 
     public BleDeviceSession(IDevice device, ILogger logger) {
         _device = device;
@@ -107,18 +102,43 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
             .DisposeWith(_disposables);
     }
 
+    public IObservable<int> HeartRate => _heartRate;
+    public IObservable<Guid?> TargetServiceId => _targetServiceId;
+    public IObservable<Guid?> TargetCharacteristicId => _targetCharacteristicId;
+    public Guid DeviceId => _device.Id;
+
+    [Reactive] public IReadOnlyList<BleDescriptor> DiscoveredServices { get; private set; } = [];
+    [Reactive] public IReadOnlyList<BleCharacteristic> DiscoveredCharacteristics { get; private set; } = [];
+
+    public async ValueTask DisposeAsync() {
+        try
+        {
+            await CrossBluetoothLE.Current.Adapter.DisconnectDeviceAsync(_device, CancellationToken.None);
+        }
+        catch (Exception) {
+            // ignored
+        }
+
+        Dispose();
+    }
+
     public void UpdateConfiguration(Guid? serviceId, Guid? characteristicId) {
+        _logger.LogDebug("UpdateConfiguration: service={ServiceId}, characteristic={CharId}", serviceId, characteristicId);
         _targetServiceId.OnNext(serviceId);
         _targetCharacteristicId.OnNext(characteristicId);
     }
 
     private async Task DiscoverServicesInternalAsync(CancellationToken ct) {
         try {
+            _logger.LogInformation("Discovering services for device {DeviceId}...", _device.Id);
             var services =
                 await BleExtensions.RetryWithDelayAsync(token => _device.GetServicesAsync(token),
                     cancellationToken: ct);
             ct.ThrowIfCancellationRequested();
             DiscoveredServices = services.Select(s => new BleDescriptor(s.Id, s.Name ?? "Unknown Service")).ToArray();
+            _logger.LogInformation("Discovered {Count} services for device {DeviceId}: [{Services}]",
+                DiscoveredServices.Count, _device.Id,
+                string.Join(", ", DiscoveredServices.Select(s => $"{s.Name} ({s.Id})")));
         }
         catch (Exception ex) when (ex is not OperationCanceledException) {
             _logger.LogError(ex, "Error discovering services for device {DeviceId}", _device.Id);
@@ -128,8 +148,12 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
 
     private async Task DiscoverCharacteristicsInternalAsync(Guid serviceId, CancellationToken ct) {
         try {
+            _logger.LogInformation("Discovering characteristics for service {ServiceId}...", serviceId);
             var service = await _device.GetServiceAsync(serviceId, ct);
-            if (service == null) return;
+            if (service == null) {
+                _logger.LogWarning("Service {ServiceId} not found during characteristic discovery", serviceId);
+                return;
+            }
 
             var characteristics =
                 await BleExtensions.RetryWithDelayAsync(token => service.GetCharacteristicsAsync(token),
@@ -138,6 +162,9 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
             DiscoveredCharacteristics = characteristics
                 .Select(c => new BleCharacteristic(c.Id, c.Name ?? "Unknown Characteristic", c.CanUpdate))
                 .ToArray();
+            _logger.LogInformation("Discovered {Count} characteristics for service {ServiceId}: [{Characteristics}]",
+                DiscoveredCharacteristics.Count, serviceId,
+                string.Join(", ", DiscoveredCharacteristics.Select(c => $"{c.Name} ({c.Id}, canUpdate={c.CanUpdate})")));
         }
         catch (Exception ex) when (ex is not OperationCanceledException) {
             _logger.LogError(ex, "Error discovering characteristics for service {ServiceId}", serviceId);
@@ -159,14 +186,7 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
         return data[1];
     }
 
-    private readonly CompositeDisposable _disposables = new();
-
     public void Dispose() {
         _disposables.Dispose();
-    }
-
-    public ValueTask DisposeAsync() {
-        Dispose();
-        return ValueTask.CompletedTask;
     }
 }

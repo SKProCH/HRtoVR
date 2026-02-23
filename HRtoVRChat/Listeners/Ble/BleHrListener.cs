@@ -9,7 +9,6 @@ using HRtoVRChat.Infrastructure;
 using Plugin.BLE;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Plugin.BLE.Abstractions.Contracts;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using HRtoVRChat.Infrastructure.Options;
@@ -71,12 +70,13 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
         while (!token.IsCancellationRequested) {
             BleDeviceSession? session = null;
             try {
-                logger.LogInformation("Connecting to BLE device: {DeviceId}", deviceId);
+                logger.LogInformation("Connecting to BLE device {DeviceId} (attempt #{Attempt})", deviceId, attempt);
                 var device = await CrossBluetoothLE.Current.Adapter.ConnectToKnownDeviceAsync(
                         deviceId, default, token.WithTimeout(TimeSpan.FromSeconds(10)))
                     .WithTimeout(TimeSpan.FromSeconds(10));
 
-                logger.LogInformation("Connected to BLE device: {DeviceId}", device.Id);
+                logger.LogInformation("Connected to BLE device {DeviceId} (name={DeviceName}, state={State})",
+                    device.Id, device.Name, device.State);
                 attempt = 1;
 
                 await using (session = new BleDeviceSession(device, logger)) {
@@ -105,21 +105,20 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
                         CrossBluetoothLE.Current.Adapter.DeviceDisconnected -= OnDisconnected;
                     }
                 }
-
-                logger.LogInformation("Disconnecting from BLE device: {DeviceId}", deviceId);
-                await CrossBluetoothLE.Current.Adapter.DisconnectDeviceAsync(device, CancellationToken.None);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) {
                 return;
             }
             catch (TimeoutException) {
-                logger.LogWarning("Timeout connecting to BLE device: {DeviceId}", deviceId);
                 var delay = Math.Min(2000 * attempt++, 15000);
+                logger.LogWarning("Timeout connecting to BLE device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
+                    deviceId, delay, attempt);
                 await Task.Delay(delay, token);
             }
             catch (Exception ex) {
-                logger.LogError(ex, "Error in BLE connection loop for device {DeviceId}", deviceId);
                 var delay = Math.Min(2000 * attempt++, 15000);
+                logger.LogError(ex, "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
+                    deviceId, delay, attempt);
                 await Task.Delay(delay, token);
             }
             finally {
