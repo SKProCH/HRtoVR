@@ -36,6 +36,7 @@
 
             <ToggleButton Grid.Column="2"
                           Name="EditButton"
+                          IsChecked="{Binding IsCharacteristicsEditOpened}"
                           Background="Transparent"
                           Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
                           ToolTip.Tip="Edit">
@@ -46,7 +47,7 @@
 
         <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
                 Padding="16"
-                IsVisible="{Binding #EditButton.IsChecked}">
+                IsVisible="{Binding IsCharacteristicsEditOpened}">
           <StackPanel Spacing="12" Margin="0,10,0,0">
             <StackPanel.Styles>
               <Style Selector="ComboBox[IsEnabled=False]">

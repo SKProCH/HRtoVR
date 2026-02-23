@@ -25,8 +25,9 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     public ViewModelActivator Activator { get; } = new();
 
+    [Reactive] public bool IsCharacteristicsEditOpened { get; set; }
+    
     public ReadOnlyObservableCollection<BleDescriptor> DisplayedDevices => _displayedDevices;
-
     public SourceCache<BleDescriptor, Guid> DiscoveredDevices { get; } = new(device => device.Id);
     [Reactive] public BleDescriptor? ActiveDevice { get; set; }
     [Reactive] public BleDescriptor? SelectedDevice { get; set; }
@@ -71,6 +72,17 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
         this.WhenAnyValue(x => x.ActiveCharacteristic)
             .Subscribe(descriptor => optionsManager.CurrentValue.Characteristic = descriptor);
+
+        Observable.CombineLatest(
+                this.WhenAnyValue(x => x.ActiveDevice),
+                this.WhenAnyValue(x => x.ActiveService),
+                this.WhenAnyValue(x => x.ActiveCharacteristic),
+                (device, service, characteristic) =>
+                    device == null || service == null || characteristic == null)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(shouldOpen => {
+                if (shouldOpen) IsCharacteristicsEditOpened = true;
+            });
 
         // Bind services and characteristics from the listener's session
         bleListener.WhenAnyValue(x => x.Session)
