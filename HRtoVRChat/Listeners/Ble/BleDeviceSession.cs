@@ -25,24 +25,35 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
     private readonly BehaviorSubject<Guid?> _targetCharacteristicId = new(null);
     private readonly BehaviorSubject<Guid?> _targetServiceId = new(null);
 
+    // New state to control lazy discovery
+    private readonly BehaviorSubject<bool> _discoveryMode = new(false);
+
     public BleDeviceSession(IDevice device, ILogger logger) {
         _device = device;
         _logger = logger;
 
-        // Discovered services pipeline
-        Observable.FromAsync(_ => DiscoverServicesInternalAsync(CancellationToken.None))
+        // Service discovery pipeline (triggers once after DiscoveryMode is enabled)
+        _discoveryMode
+            .Where(isEnabled => isEnabled)
+            .Take(1) // Discover services once per session
+            .Select(_ => Observable.FromAsync(DiscoverServicesInternalAsync))
+            .Switch()
             .Subscribe()
             .DisposeWith(_disposables);
 
-        // Discovered characteristics pipeline
-        _targetServiceId
-            .DistinctUntilChanged()
-            .Select(serviceId => {
-                DiscoveredCharacteristics = [];
-                return serviceId == null
-                    ? Observable.Empty<Unit>()
-                    : Observable.FromAsync(ct => DiscoverCharacteristicsInternalAsync(serviceId.Value, ct))
-                        .Select(_ => Unit.Default);
+        // Characteristic discovery pipeline (triggers on service change ONLY if DiscoveryMode is enabled)
+        Observable.CombineLatest(
+                _targetServiceId.DistinctUntilChanged(),
+                _discoveryMode.DistinctUntilChanged(),
+                (serviceId, isDiscovery) => (ServiceId: serviceId, IsDiscovery: isDiscovery)
+            )
+            .Select(x => {
+                DiscoveredCharacteristics = []; // Clear old characteristics
+                if (!x.IsDiscovery || x.ServiceId == null)
+                    return Observable.Empty<Unit>();
+
+                return Observable.FromAsync(ct => DiscoverCharacteristicsInternalAsync(x.ServiceId.Value, ct))
+                    .Select(_ => Unit.Default);
             })
             .Switch()
             .Subscribe()
@@ -58,15 +69,19 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
 
                 return Observable.Create<int>(async (observer, ct) => {
                     try {
+                        // Attempt to get the specific service (fast operation without full scan)
                         var service = await _device.GetServiceAsync(x.ServiceId.Value, ct);
                         if (service == null) {
-                            _logger.LogWarning("Service {ServiceId} not found", x.ServiceId);
+                            _logger.LogWarning("Service {ServiceId} not found. Triggering fallback discovery", x.ServiceId);
+                            EnableDiscovery(); // If service not found (invalid settings) -> trigger full scan
                             return Disposable.Empty;
                         }
 
+                        // Attempt to get the specific characteristic
                         var characteristic = await service.GetCharacteristicAsync(x.CharacteristicId.Value, ct);
                         if (characteristic == null) {
-                            _logger.LogWarning("Characteristic {CharacteristicId} not found", x.CharacteristicId);
+                            _logger.LogWarning("Characteristic {CharacteristicId} not found. Triggering fallback discovery", x.CharacteristicId);
+                            EnableDiscovery(); // If characteristic not found -> trigger full scan
                             return Disposable.Empty;
                         }
 
@@ -109,6 +124,13 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
 
     [Reactive] public IReadOnlyList<BleDescriptor> DiscoveredServices { get; private set; } = [];
     [Reactive] public IReadOnlyList<BleCharacteristic> DiscoveredCharacteristics { get; private set; } = [];
+    
+    public void EnableDiscovery() {
+        if (!_discoveryMode.Value) {
+            _logger.LogInformation("Enabling discovery mode for device {DeviceId}", _device.Id);
+            _discoveryMode.OnNext(true);
+        }
+    }
 
     public async ValueTask DisposeAsync() {
         try

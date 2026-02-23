@@ -84,6 +84,17 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
                 if (shouldOpen) IsCharacteristicsEditOpened = true;
             });
 
+        Observable.CombineLatest(
+                this.WhenAnyValue(x => x.IsCharacteristicsEditOpened),
+                bleListener.WhenAnyValue(x => x.Session),
+                (isOpen, session) => (IsOpen: isOpen, Session: session)
+            )
+            .Where(x => x is { IsOpen: true, Session: not null })
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(x => {
+                x.Session!.EnableDiscovery();
+            });
+
         // Bind services and characteristics from the listener's session
         bleListener.WhenAnyValue(x => x.Session)
             .Select(s => s?.WhenAnyValue(x => x.DiscoveredServices) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
