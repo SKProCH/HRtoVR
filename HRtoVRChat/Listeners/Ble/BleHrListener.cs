@@ -90,6 +90,23 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
                     var tcs = new TaskCompletionSource();
                     await using var _ = token.Register(() => tcs.TrySetResult());
 
+                    // Watchdog: force disconnect if no HR data for 30s while characteristic is configured
+                    using var watchdog = session.TargetCharacteristicId
+                        .Select(charId => charId == null
+                            ? Observable.Never<int>()
+                            : session.HeartRate.Where(hr => hr > 0).Timeout(TimeSpan.FromSeconds(30)))
+                        .Switch()
+                        .Subscribe(
+                            _ => { },
+                            ex => {
+                                if (ex is TimeoutException) {
+                                    logger.LogWarning(
+                                        "No heart rate data for 30 seconds from device {DeviceId}, forcing disconnect",
+                                        device.Id);
+                                    tcs.TrySetResult();
+                                }
+                            });
+
                     void OnDisconnected(object? sender, Plugin.BLE.Abstractions.EventArgs.DeviceEventArgs e) {
                         if (e.Device.Id == device.Id) {
                             logger.LogInformation("BLE Device {DeviceId} disconnected", e.Device.Id);
@@ -111,13 +128,15 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
             }
             catch (TimeoutException) {
                 var delay = Math.Min(2000 * attempt++, 15000);
-                logger.LogWarning("Timeout connecting to BLE device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
+                logger.LogWarning(
+                    "Timeout connecting to BLE device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
                     deviceId, delay, attempt);
                 await Task.Delay(delay, token);
             }
             catch (Exception ex) {
                 var delay = Math.Min(2000 * attempt++, 15000);
-                logger.LogError(ex, "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
+                logger.LogError(ex,
+                    "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
                     deviceId, delay, attempt);
                 await Task.Delay(delay, token);
             }
