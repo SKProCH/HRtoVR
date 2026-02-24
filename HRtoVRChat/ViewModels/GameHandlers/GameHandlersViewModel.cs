@@ -6,12 +6,16 @@ using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
 using HRtoVRChat.Infrastructure.Options;
 using HRtoVRChat.ViewModels.Listeners;
+using Material.Icons;
 using Microsoft.Extensions.Options;
 
 namespace HRtoVRChat.ViewModels.GameHandlers;
 
-public class GameHandlersViewModel : ViewModelBase
+public class GameHandlersViewModel : ViewModelBase, IPageViewModel
 {
+    public string Title => "Games";
+    public MaterialIconKind Icon => MaterialIconKind.Gamepad;
+
     public ObservableCollection<GameHandlerViewModel> Handlers { get; } = [];
 
     private readonly IServiceProvider _serviceProvider;

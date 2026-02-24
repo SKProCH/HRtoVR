@@ -6,6 +6,7 @@ using HRtoVRChat.Configs;
 using HRtoVRChat.Infrastructure.Options;
 using HRtoVRChat.Listeners.Ble;
 using HRtoVRChat.ViewModels.Listeners;
+using Material.Icons;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,10 @@ using ReactiveUI.Fody.Helpers;
 
 namespace HRtoVRChat.ViewModels;
 
-public class ListenersViewModel : ViewModelBase {
+public class ListenersViewModel : ViewModelBase, IPageViewModel {
+    public string Title => "Listeners";
+    public MaterialIconKind Icon => MaterialIconKind.Home;
+
     public ObservableCollection<ListenerViewModel> Listeners { get; } = [];
     [Reactive] public ListenerViewModel? SelectedListener { get; set; }
 

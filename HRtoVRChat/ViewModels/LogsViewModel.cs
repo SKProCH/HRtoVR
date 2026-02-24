@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using HRtoVRChat.Infrastructure.Logging;
+using Material.Icons;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Serilog;
@@ -11,8 +12,11 @@ using Serilog.Events;
 
 namespace HRtoVRChat.ViewModels;
 
-public class LogsViewModel : ViewModelBase
+public class LogsViewModel : ViewModelBase, IPageViewModel
 {
+    public string Title => "Logs";
+    public MaterialIconKind Icon => MaterialIconKind.FileDocument;
+
     private readonly LogSink _logSink;
 
     [Reactive]

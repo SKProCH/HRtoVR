@@ -158,12 +158,22 @@ public class App : Application {
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
-        services.AddSingleton<ListenersViewModel>();
         services.AddSingleton<BleSettingsViewModel>();
-        services.AddSingleton<GameHandlersViewModel>();
 
+        // Page ViewModels
         services.AddSingleton<ProgramViewModel>();
+        services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<ProgramViewModel>());
+
+        services.AddSingleton<ListenersViewModel>();
+        services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<ListenersViewModel>());
+
+        services.AddSingleton<GameHandlersViewModel>();
+        services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<GameHandlersViewModel>());
+
         services.AddSingleton<ConfigViewModel>();
+        services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<ConfigViewModel>());
+
         services.AddSingleton<LogsViewModel>();
+        services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<LogsViewModel>());
     }
 }

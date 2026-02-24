@@ -1,14 +1,18 @@
 using System.Collections.ObjectModel;
 using System.Reactive;
 using HRtoVRChat.Configs;
+using Material.Icons;
 using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
 namespace HRtoVRChat.ViewModels;
 
-public class ConfigViewModel : ViewModelBase
+public class ConfigViewModel : ViewModelBase, IPageViewModel
 {
+    public string Title => "Config";
+    public MaterialIconKind Icon => MaterialIconKind.Cog;
+
     [Reactive] public ParameterNamesOptions ParameterNamesOptions { get; set; }
     [Reactive] public EditableAppOptions AppOptions { get; set; }
 

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reactive;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels.GameHandlers;
@@ -11,16 +14,12 @@ namespace HRtoVRChat.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
-    [Reactive] public ViewModelBase CurrentPage { get; set; }
+    [Reactive] public IPageViewModel CurrentPage { get; set; }
 
-    public ProgramViewModel ProgramVM { get; }
-    public ListenersViewModel ListenersVM { get; }
-    public GameHandlersViewModel GameHandlersVM { get; }
-    public ConfigViewModel ConfigVM { get; }
-    public LogsViewModel LogsVM { get; }
+    public ObservableCollection<IPageViewModel> Pages { get; }
 
     // Commands
-    public ReactiveCommand<ViewModelBase, Unit> SwitchPanelCommand { get; }
+    public ReactiveCommand<IPageViewModel, Unit> SwitchPanelCommand { get; }
     public ReactiveCommand<Unit, Unit> HideAppCommand { get; }
     public ReactiveCommand<Unit, Unit> ExitAppCommand { get; }
     public ReactiveCommand<string, Unit> OpenUrlCommand { get; }
@@ -31,18 +30,10 @@ public class MainWindowViewModel : ViewModelBase
     private readonly ITrayIconService _trayIconService;
 
     public MainWindowViewModel(
-        ProgramViewModel programVM,
-        ListenersViewModel listenersVM,
-        GameHandlersViewModel gameHandlersVM,
-        ConfigViewModel configVM,
-        LogsViewModel logsVM,
+        IEnumerable<IPageViewModel> pages,
         ITrayIconService trayIconService)
     {
-        ProgramVM = programVM;
-        ListenersVM = listenersVM;
-        GameHandlersVM = gameHandlersVM;
-        ConfigVM = configVM;
-        LogsVM = logsVM;
+        Pages = new ObservableCollection<IPageViewModel>(pages);
         _trayIconService = trayIconService;
 
         // Global Initialization
@@ -52,10 +43,10 @@ public class MainWindowViewModel : ViewModelBase
         // _configService.CreateConfig(); // Config is loaded via DI
 
         // Default Page
-        CurrentPage = ProgramVM;
+        CurrentPage = Pages.FirstOrDefault() ?? throw new InvalidOperationException("No pages registered");
 
         // Commands
-        SwitchPanelCommand = ReactiveCommand.Create<ViewModelBase>(vm =>
+        SwitchPanelCommand = ReactiveCommand.Create<IPageViewModel>(vm =>
         {
             CurrentPage = vm;
         });
