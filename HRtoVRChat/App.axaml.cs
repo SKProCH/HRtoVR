@@ -26,6 +26,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 using WritableJsonConfiguration;
+using HRtoVRChat.Infrastructure.Logging;
 
 namespace HRtoVRChat;
 
@@ -74,9 +75,12 @@ public class App : Application {
         if (!Directory.Exists(Path.Combine(OutputPath, "Logs")))
             Directory.CreateDirectory(Path.Combine(OutputPath, "Logs"));
 
+        var logSink = new LogSink();
+
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
+            .WriteTo.Sink(logSink)
             .WriteTo.File(Path.Combine(OutputPath, "Logs", "log-.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
@@ -85,6 +89,9 @@ public class App : Application {
 
         // Register Configuration
         collection.AddSingleton(configuration);
+
+        // Register Log Sink
+        collection.AddSingleton(logSink);
 
         // Register Logging
         collection.AddLogging(loggingBuilder =>
@@ -157,5 +164,6 @@ public class App : Application {
 
         services.AddSingleton<ProgramViewModel>();
         services.AddSingleton<ConfigViewModel>();
+        services.AddSingleton<LogsViewModel>();
     }
 }

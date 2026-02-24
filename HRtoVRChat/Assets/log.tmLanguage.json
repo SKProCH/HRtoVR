@@ -1,0 +1,55 @@
+{
+  "name": "Log Files",
+  "scopeName": "source.log",
+  "fileTypes": ["log"],
+  "patterns": [
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Fatal\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "invalid.illegal.fatal" },
+        "3": { "name": "invalid.illegal.fatal.message" }
+      }
+    },
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Error\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "invalid.illegal.error" },
+        "3": { "name": "invalid.illegal.error.message" }
+      }
+    },
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Warning\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "markup.changed.warning" },
+        "3": { "name": "markup.changed.warning.message" }
+      }
+    },
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Information\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "markup.inserted.information" },
+        "3": { "name": "markup.inserted.information.message" }
+      }
+    },
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Debug\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "comment.line.debug" },
+        "3": { "name": "comment.line.debug.message" }
+      }
+    },
+    {
+      "match": "^(\\[.*?\\])\\s+(\\[Verbose\\])(.*)$",
+      "captures": {
+        "1": { "name": "comment.line.timestamp" },
+        "2": { "name": "comment.block.verbose" },
+        "3": { "name": "comment.block.verbose.message" }
+      }
+    }
+  ]
+}

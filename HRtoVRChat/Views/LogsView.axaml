@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HRtoVRChat.ViewModels"
+             xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HRtoVRChat.Views.LogsView">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:LogsViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Controls -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="10">
+            <TextBlock Text="Minimum Level:" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding LogLevels}" SelectedItem="{Binding MinimumLevel}" Width="150" />
+            <Button Command="{Binding ClearCommand}" Content="Clear Logs" />
+        </StackPanel>
+
+        <!-- Log List (AvaloniaEdit) -->
+        <avaloniaEdit:TextEditor Grid.Row="1" Name="LogEditor" Margin="10"
+                                 FontFamily="Consolas, monospace"
+                                 IsReadOnly="True"
+                                 ShowLineNumbers="False"
+                                 WordWrap="True"
+                                 HorizontalScrollBarVisibility="Disabled"
+                                 VerticalScrollBarVisibility="Auto" />
+    </Grid>
+</UserControl>

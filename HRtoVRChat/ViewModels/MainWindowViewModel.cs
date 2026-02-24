@@ -17,6 +17,7 @@ public class MainWindowViewModel : ViewModelBase
     public ListenersViewModel ListenersVM { get; }
     public GameHandlersViewModel GameHandlersVM { get; }
     public ConfigViewModel ConfigVM { get; }
+    public LogsViewModel LogsVM { get; }
 
     // Commands
     public ReactiveCommand<ViewModelBase, Unit> SwitchPanelCommand { get; }
@@ -34,12 +35,14 @@ public class MainWindowViewModel : ViewModelBase
         ListenersViewModel listenersVM,
         GameHandlersViewModel gameHandlersVM,
         ConfigViewModel configVM,
+        LogsViewModel logsVM,
         ITrayIconService trayIconService)
     {
         ProgramVM = programVM;
         ListenersVM = listenersVM;
         GameHandlersVM = gameHandlersVM;
         ConfigVM = configVM;
+        LogsVM = logsVM;
         _trayIconService = trayIconService;
 
         // Global Initialization

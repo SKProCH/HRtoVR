@@ -14,10 +14,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.11" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.4.1" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.11" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.11" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.4.1" />
     <PackageReference Include="bodong.Avalonia.PropertyGrid" Version="11.3.11.1" />
     <PackageReference Include="DynamicData" Version="9.4.1" />
     <PackageReference Include="ReactiveUI.Avalonia" Version="14.7.1" />
@@ -42,6 +44,7 @@
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="2.0.3" />
     <PackageReference Include="Vizcon.OSC" Version="1.0.3" />
     <PackageReference Include="Websocket.Client" Version="4.6.1" />
     <PackageReference Include="WatsonWebsocket" Version="4.1.8" />
