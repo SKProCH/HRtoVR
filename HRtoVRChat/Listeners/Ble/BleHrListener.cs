@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using HRtoVRChat.Infrastructure.Options;
+using Plugin.BLE.Abstractions.Exceptions;
 
 namespace HRtoVRChat.Listeners.Ble;
 
@@ -127,17 +128,13 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
                 return;
             }
             catch (TimeoutException) {
-                var delay = Math.Min(2000 * attempt++, 15000);
-                logger.LogWarning(
-                    "Timeout connecting to BLE device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
-                    deviceId, delay, attempt);
-                await Task.Delay(delay, token);
+                attempt++;
+                logger.LogWarning("Timeout connecting to BLE device {DeviceId}, retrying", deviceId);
             }
             catch (Exception ex) {
                 var delay = Math.Min(2000 * attempt++, 15000);
-                logger.LogError(ex,
-                    "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms (attempt #{Attempt})",
-                    deviceId, delay, attempt);
+                logger.LogError(ex is DeviceConnectionException ? null : ex,
+                    "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms", deviceId, delay);
                 await Task.Delay(delay, token);
             }
             finally {
