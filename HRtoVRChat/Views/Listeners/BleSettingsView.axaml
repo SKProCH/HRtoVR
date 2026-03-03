@@ -20,7 +20,7 @@
           <Grid ColumnDefinitions="Auto,*,Auto">
             <Panel VerticalAlignment="Center" Margin="0,0,16,0">
               <materialIcons:MaterialIcon Kind="BluetoothConnected" Width="32" Height="32" Foreground="{DynamicResource SystemAccentColor}" />
-              <controls:ConnectionIndicator IsConnected="True"
+              <controls:ConnectionIndicator State="{Binding State}"
                                             Width="10" Height="10"
                                             VerticalAlignment="Bottom" HorizontalAlignment="Right" />
             </Panel>
@@ -38,7 +38,6 @@
                           Name="EditButton"
                           IsChecked="{Binding IsCharacteristicsEditOpened}"
                           Background="Transparent"
-                          Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"
                           ToolTip.Tip="Edit">
               <materialIcons:MaterialIcon Kind="Edit" Width="20" Height="20" />
             </ToggleButton>

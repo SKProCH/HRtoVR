@@ -3,6 +3,7 @@ using System.Reactive.Disposables;
 using HRtoVRChat.Configs;
 using HRtoVRChat.GameHandlers;
 using HRtoVRChat.Infrastructure.Options;
+using HRtoVRChat.Models;
 using HRtoVRChat.ViewModels.Listeners;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -14,6 +15,7 @@ public class GameHandlerViewModel : ViewModelBase {
     public IGameHandler Handler { get; }
     [Reactive] public bool IsEnabled { get; set; } = true;
     [Reactive] public IListenerSettingsViewModel? Settings { get; set; }
+    [Reactive] public ConnectionState State { get; set; }
 
     public GameHandlerViewModel(IGameHandler handler, IOptionsManager<AppOptions> appOptionsManager) {
         Handler = handler;
@@ -28,5 +30,8 @@ public class GameHandlerViewModel : ViewModelBase {
                 currentOptions.GameHandlers[handler.Name] = nowEnabled;
                 appOptionsManager.Save();
             });
+
+        this.WhenAnyValue(x => x.Handler.IsConnected)
+            .Subscribe(connected => State = connected ? ConnectionState.Active : ConnectionState.Disconnected);
     }
 }

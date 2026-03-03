@@ -10,6 +10,7 @@ using DynamicData;
 using HRtoVRChat.Infrastructure;
 using HRtoVRChat.Infrastructure.Options;
 using HRtoVRChat.Listeners.Ble;
+using HRtoVRChat.Models;
 using Microsoft.Extensions.Logging;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions.Contracts;
@@ -26,7 +27,8 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
     public ViewModelActivator Activator { get; } = new();
 
     [Reactive] public bool IsCharacteristicsEditOpened { get; set; }
-    
+    [Reactive] public ConnectionState State { get; set; }
+
     public ReadOnlyObservableCollection<BleDescriptor> DisplayedDevices => _displayedDevices;
     public SourceCache<BleDescriptor, Guid> DiscoveredDevices { get; } = new(device => device.Id);
     [Reactive] public BleDescriptor? ActiveDevice { get; set; }
@@ -46,6 +48,10 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         ActiveDevice = optionsManager.CurrentValue.Device;
         ActiveService = optionsManager.CurrentValue.Service;
         ActiveCharacteristic = optionsManager.CurrentValue.Characteristic;
+
+        bleListener.State
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(state => State = state);
 
         DiscoveredDevices.Connect()
             .AutoRefreshOnObservable(_ => this

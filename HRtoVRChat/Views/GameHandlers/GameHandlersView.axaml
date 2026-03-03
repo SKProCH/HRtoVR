@@ -32,8 +32,7 @@
                 <controls:ConnectionIndicator
                   Grid.Column="1"
                   IsVisible="{Binding IsEnabled}"
-                  IsConnected="{Binding Handler.IsConnected}"
-                  HeartRate="255" />
+                  State="{Binding State}" />
               </Grid>
             </Expander.Header>
             <listeners:ListenerSettingsView DataContext="{Binding}" Margin="5" />

@@ -48,8 +48,7 @@
               <Grid ColumnDefinitions="*, Auto">
                 <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" />
                 <controls:ConnectionIndicator Grid.Column="1"
-                                              IsConnected="{Binding IsConnected}"
-                                              HeartRate="{Binding HeartRate}"
+                                              State="{Binding State}"
                                               IsVisible="{Binding IsExpanded}"
                                               Margin="10,0,0,0" />
               </Grid>

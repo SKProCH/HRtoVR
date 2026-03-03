@@ -7,6 +7,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using HRtoVRChat.Models;
 using Microsoft.Extensions.Logging;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions.Contracts;
@@ -27,6 +28,9 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
 
     // New state to control lazy discovery
     private readonly BehaviorSubject<bool> _discoveryMode = new(false);
+
+    // Connection state
+    private readonly BehaviorSubject<ConnectionState> _state = new(ConnectionState.Connecting);
 
     public BleDeviceSession(IDevice device, ILogger logger) {
         _device = device;
@@ -96,8 +100,11 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                         characteristic.ValueUpdated += OnValueUpdated;
                         await characteristic.StartUpdatesAsync(ct);
 
+                        _state.OnNext(ConnectionState.Active);
+
                         // ReSharper disable once AsyncVoidMethod
                         return Disposable.Create(async void () => {
+                            _state.OnNext(ConnectionState.Connecting);
                             characteristic.ValueUpdated -= OnValueUpdated;
                             try {
                                 await characteristic.StopUpdatesAsync();
@@ -124,6 +131,7 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
     public IObservable<Guid?> TargetServiceId => _targetServiceId;
     public IObservable<Guid?> TargetCharacteristicId => _targetCharacteristicId;
     public Guid DeviceId => _device.Id;
+    public IObservable<ConnectionState> State => _state;
 
     [Reactive] public IReadOnlyList<BleDescriptor> DiscoveredServices { get; private set; } = [];
     [Reactive] public IReadOnlyList<BleCharacteristic> DiscoveredCharacteristics { get; private set; } = [];

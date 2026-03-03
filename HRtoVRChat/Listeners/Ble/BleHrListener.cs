@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using HRtoVRChat.Infrastructure;
+using HRtoVRChat.Models;
 using Plugin.BLE;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,10 +21,12 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
     : StartStopServiceBase, IHrListener {
     private readonly BehaviorSubject<int> _heartRate = new(0);
     private readonly BehaviorSubject<bool> _isConnected = new(false);
+    private readonly BehaviorSubject<ConnectionState> _state = new(ConnectionState.Disconnected);
 
     public string Name => "Bluetooth LE";
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
+    public IObservable<ConnectionState> State => _state;
     public Type SettingsViewModelType => typeof(ViewModels.Listeners.BleSettingsViewModel);
 
     [Reactive] public BleDeviceSession? Session { get; private set; }
@@ -33,6 +36,13 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
         this.WhenAnyValue(x => x.Session)
             .Select(s => s != null)
             .Subscribe(connected => _isConnected.OnNext(connected))
+            .DisposeWith(disposables);
+
+        // Proxy state from session
+        this.WhenAnyValue(x => x.Session)
+            .Select(s => s?.State ?? Observable.Return(ConnectionState.Disconnected))
+            .Switch()
+            .Subscribe(state => _state.OnNext(state))
             .DisposeWith(disposables);
 
         // Proxy heart rate from session
