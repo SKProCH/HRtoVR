@@ -69,7 +69,7 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
 
         // Load Listeners from IHrListener instances
         foreach (var listener in _hrListeners) {
-            var listenerVM = new ListenerViewModel(listener.Name);
+            var listenerVM = new ListenerViewModel(listener);
 
             // Map listener to its settings
             listenerVM.Settings = CreateSettingsViewModel(listener);

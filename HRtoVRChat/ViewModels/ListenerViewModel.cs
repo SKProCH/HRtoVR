@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Windows.Input;
 using HRtoVRChat.Models;
 using HRtoVRChat.ViewModels.Listeners;
 using ReactiveUI;
@@ -13,9 +14,14 @@ public class ListenerViewModel : ViewModelBase {
     [Reactive] public ConnectionState State { get; set; }
     [Reactive] public string Name { get; set; }
     [Reactive] public IListenerSettingsViewModel? Settings { get; set; }
+    public ICommand? RestartCommand { get; set; }
 
-    public ListenerViewModel(string name) {
-        Name = name;
+    public ListenerViewModel(IHrListener listener) {
+        Name = listener.Name;
+        RestartCommand = ReactiveCommand.Create(() => {
+            listener.Stop();
+            listener.Start();
+        });
         this.WhenAnyValue(model => model.IsConnected, model => model.HeartRate)
             .Select(tuple => ConnectionState.FromListenerState(tuple.Item1, tuple.Item2))
             .BindTo(this, model => model.State);
