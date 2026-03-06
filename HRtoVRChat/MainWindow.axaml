@@ -6,6 +6,8 @@
         xmlns:views="using:HRtoVRChat.Views"
         xmlns:gh="using:HRtoVRChat.ViewModels.GameHandlers"
         xmlns:ghv="using:HRtoVRChat.Views.GameHandlers"
+        xmlns:models="using:HRtoVRChat.Models"
+        xmlns:controls="using:HRtoVRChat.Controls"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
@@ -53,10 +55,12 @@
               <Button Width="150" Background="Transparent"
                       Command="{Binding $parent[ItemsControl].DataContext.SwitchPanelCommand}"
                       CommandParameter="{Binding}">
-                <StackPanel Orientation="Horizontal">
-                  <materialIcons:MaterialIcon Kind="{Binding Icon}" HorizontalAlignment="Left" />
-                  <TextBlock Margin="5,1,0,0" Text="{Binding Title}" />
-                </StackPanel>
+                <Grid ColumnDefinitions="Auto 5 * Auto">
+                  <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" />
+                  <TextBlock Grid.Column="2" Text="{Binding Title}" />
+                  <controls:ConnectionIndicator Grid.Column="3" State="{Binding State, FallbackValue={x:Static models:ConnectionState.Disconnected}, Mode=OneWay}"
+                                               IsVisible="{Binding State, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </Grid>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

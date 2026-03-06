@@ -3,6 +3,7 @@ using HRtoVRChat.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.Reactive.Linq;
+using HRtoVRChat.Models;
 using Material.Icons;
 
 namespace HRtoVRChat.ViewModels;
@@ -11,7 +12,7 @@ public class ProgramViewModel : ViewModelBase, IPageViewModel
 {
     public string Title => "Program";
     public MaterialIconKind Icon => MaterialIconKind.Application;
-
+    public ConnectionState? State => null;
     [Reactive] public string StatusText { get; set; } = "STATUS: INITIALIZING";
     [Reactive] public int HeartRate { get; set; }
     [Reactive] public bool IsConnected { get; set; }

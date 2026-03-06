@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using HRtoVRChat.Infrastructure.Logging;
+using HRtoVRChat.Models;
 using Material.Icons;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -16,7 +17,7 @@ public class LogsViewModel : ViewModelBase, IPageViewModel
 {
     public string Title => "Logs";
     public MaterialIconKind Icon => MaterialIconKind.FileDocument;
-
+    public ConnectionState? State => null;
     private readonly LogSink _logSink;
 
     [Reactive]

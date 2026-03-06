@@ -15,9 +15,15 @@ using ReactiveUI.Fody.Helpers;
 
 namespace HRtoVRChat.ViewModels;
 
+using HRtoVRChat.Models;
+
+using System.Reactive.Linq;
+
 public class ListenersViewModel : ViewModelBase, IPageViewModel {
     public string Title => "Listeners";
     public MaterialIconKind Icon => MaterialIconKind.Home;
+    private readonly ObservableAsPropertyHelper<ConnectionState?> _connectionState;
+    public ConnectionState? State => _connectionState.Value;
 
     public ObservableCollection<ListenerViewModel> Listeners { get; } = [];
     [Reactive] public ListenerViewModel? SelectedListener { get; set; }
@@ -48,6 +54,13 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
                     _appOptions.Save();
                 }
             });
+
+        _connectionState = this.WhenAnyValue(x => x.SelectedListener)
+            .Select(listener => listener != null
+                ? listener.WhenAnyValue(x => (ConnectionState?)x.State)
+                : Observable.Return((ConnectionState?)null))
+            .Switch()
+            .ToProperty(this, x => x.State);
     }
 
     private void LoadListeners() {
