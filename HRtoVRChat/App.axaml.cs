@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -31,7 +32,7 @@ using HRtoVRChat.Infrastructure.Logging;
 namespace HRtoVRChat;
 
 public class App : Application {
-    public IServiceProvider? Services { get; private set; }
+    public static IServiceProvider? Services { get; private set; }
 
     public static string LocalDirectory {
         get {
@@ -105,7 +106,7 @@ public class App : Application {
 
         // Initialize Services
         var hrService = Services.GetRequiredService<HRService>();
-        hrService.Start();
+        _ = hrService.Start();
 
         var trayIconService = Services.GetRequiredService<ITrayIconService>();
         trayIconService.Init(this);
@@ -175,5 +176,13 @@ public class App : Application {
 
         services.AddSingleton<LogsViewModel>();
         services.AddSingleton<IPageViewModel>(x => x.GetRequiredService<LogsViewModel>());
+    }
+
+    public static async Task Shutdown() {
+        if (Services is IAsyncDisposable disposable) {
+            await disposable.DisposeAsync();
+        }
+        
+        Environment.Exit(0);
     }
 }

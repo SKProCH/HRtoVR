@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive;
+using Avalonia;
 using HRtoVRChat.Services;
 using HRtoVRChat.ViewModels.GameHandlers;
 using ReactiveUI;
@@ -59,9 +60,8 @@ public class MainWindowViewModel : ViewModelBase
              RequestHide?.Invoke();
         });
 
-        ExitAppCommand = ReactiveCommand.Create(() =>
-        {
-            Environment.Exit(0);
+        ExitAppCommand = ReactiveCommand.CreateFromTask(async () => {
+            await App.Shutdown();
         });
     }
 }
