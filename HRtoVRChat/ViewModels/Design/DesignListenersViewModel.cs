@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using HRtoVRChat.Configs;
 using HRtoVRChat.Infrastructure.Options;
 using Microsoft.Extensions.Configuration;
@@ -95,7 +96,7 @@ public class DesignListenersViewModel : ListenersViewModel
             HeartRate = Observable.Return(hr);
         }
 
-        public void Start() { }
-        public void Stop() { }
+        public Task Start() => Task.CompletedTask;
+        public Task Stop() => Task.CompletedTask;
     }
 }

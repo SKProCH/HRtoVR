@@ -23,12 +23,12 @@ public class FitBitListener : IHrListener {
         _options = options;
     }
 
-    public void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("Fitbit configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         var url = _options.CurrentValue.Url;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
@@ -48,13 +48,15 @@ public class FitBitListener : IHrListener {
             StartPolling();
         });
 
-        _client.Start().ContinueWith(t =>
+        try
         {
-            if (t.IsFaulted)
-                _logger.LogError(t.Exception, "Failed to connect to Fitbit Server!");
-            else
-                StartPolling();
-        });
+            await _client.Start();
+            StartPolling();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to connect to Fitbit Server!");
+        }
 
         _logger.LogInformation("Initialized Fitbit WebSocket!");
     }
@@ -91,7 +93,7 @@ public class FitBitListener : IHrListener {
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         _pollingCts?.Cancel();
@@ -100,6 +102,7 @@ public class FitBitListener : IHrListener {
         _heartRate.OnNext(0);
         _isConnected.OnNext(false);
         _logger.LogDebug("Stopped Fitbit WebSocket");
+        return Task.CompletedTask;
     }
 
     private void HandleMessage(string msg) {

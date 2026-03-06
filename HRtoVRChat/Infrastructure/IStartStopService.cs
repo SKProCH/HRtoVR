@@ -1,6 +1,7 @@
-﻿namespace HRtoVRChat.Infrastructure;
+﻿using System.Threading.Tasks;
+namespace HRtoVRChat.Infrastructure;
 
 public interface IStartStopService {
-    void Start();
-    void Stop();
+    Task Start();
+    Task Stop();
 }

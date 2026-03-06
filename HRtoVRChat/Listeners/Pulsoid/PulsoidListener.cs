@@ -1,6 +1,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -33,18 +34,18 @@ public class PulsoidListener : IHrListener {
 
     public string Timestamp { get; private set; } = string.Empty;
 
-    public virtual void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public virtual async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("Pulsoid configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
-        StartConnection(_options.CurrentValue.Widget);
+        await StartConnection(_options.CurrentValue.Widget);
         _logger.LogInformation("Initialized Pulsoid WebSocket!");
     }
 
-    protected void StartConnection(string id) {
+    protected async Task StartConnection(string id) {
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
         {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
@@ -64,11 +65,15 @@ public class PulsoidListener : IHrListener {
 
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        _client.Start().ContinueWith(t =>
+        try
         {
-            if (t.IsFaulted) _logger.LogError(t.Exception, "Failed to start Pulsoid/Stromno WebSocket");
-            else SendSubscription(id);
-        });
+            await _client.Start();
+            SendSubscription(id);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to start Pulsoid/Stromno WebSocket");
+        }
     }
 
     private void SendSubscription(string id)
@@ -80,7 +85,7 @@ public class PulsoidListener : IHrListener {
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         _client?.Dispose();
@@ -88,6 +93,7 @@ public class PulsoidListener : IHrListener {
         _heartRate.OnNext(0);
         _isConnected.OnNext(false);
         _logger.LogInformation("Stopped Pulsoid/Stromno WebSocket");
+        return Task.CompletedTask;
     }
 
     private void HandleMessage(string message) {

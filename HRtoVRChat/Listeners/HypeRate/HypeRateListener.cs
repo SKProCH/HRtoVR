@@ -1,6 +1,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using HRtoVRChat.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,12 +24,12 @@ public class HypeRateListener : IHrListener {
         _options = options;
     }
 
-    public void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("HypeRate configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         var id = _options.CurrentValue.SessionId;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
@@ -50,11 +51,15 @@ public class HypeRateListener : IHrListener {
 
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        _client.Start().ContinueWith(t =>
+        try
         {
-            if (t.IsFaulted) _logger.LogError(t.Exception, "Failed to start HypeRate WebSocket");
-            else SendSubscription(id);
-        });
+            await _client.Start();
+            SendSubscription(id);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to start HypeRate WebSocket");
+        }
 
         _logger.LogInformation("Initialized HypeRate WebSocket!");
     }
@@ -68,7 +73,7 @@ public class HypeRateListener : IHrListener {
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         _client?.Dispose();
@@ -76,6 +81,7 @@ public class HypeRateListener : IHrListener {
         _heartRate.OnNext(0);
         _isConnected.OnNext(false);
         _logger.LogInformation("Stopped HypeRate WebSocket");
+        return Task.CompletedTask;
     }
 
     private void HandleMessage(string message) {

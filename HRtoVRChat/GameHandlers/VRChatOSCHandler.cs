@@ -58,12 +58,12 @@ public class VrChatOscHandler : StartStopServiceBase, IGameHandler {
         }
     }
 
-    public override void Stop() {
+    public override Task Stop() {
         if (IsConnected) {
             // Reset parameters to default values on stop
             Update(0, 0f, false);
         }
-        
+
         // Reset last sent values tracking
         _lastSentValues.Clear();
 
@@ -76,6 +76,7 @@ public class VrChatOscHandler : StartStopServiceBase, IGameHandler {
         }
 
         IsConnected = false;
+        return Task.CompletedTask;
     }
 
     private Process? GetVrchatProcess() {

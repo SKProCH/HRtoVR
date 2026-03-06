@@ -1,6 +1,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -26,12 +27,12 @@ public class HrProxyListener : IHrListener {
     public IObservable<int> HeartRate => _heartRate;
     public IObservable<bool> IsConnected => _isConnected;
 
-    public void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("HRProxy configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         var id = _options.CurrentValue.Id;
         var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
@@ -50,18 +51,20 @@ public class HrProxyListener : IHrListener {
         });
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        _client.Start().ContinueWith(t =>
+        try
         {
-            if (t.IsFaulted)
-                _logger.LogError(t.Exception, "Failed to connect to HRProxy server!");
-            else
-                _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
-        });
+            await _client.Start();
+            _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to connect to HRProxy server!");
+        }
 
         _logger.LogInformation("Initialized HRProxy WebSocket!");
     }
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         _client?.Dispose();
@@ -69,6 +72,7 @@ public class HrProxyListener : IHrListener {
         _isConnected.OnNext(false);
         _heartRate.OnNext(0);
         _logger.LogInformation("Stopped HRProxy WebSocket");
+        return Task.CompletedTask;
     }
 
     private void HandleMessage(string message) {

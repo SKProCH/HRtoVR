@@ -38,16 +38,17 @@ public class HRService : IHRService {
         _gameHandlerStarted = new bool[_gameHandlers.Length];
     }
 
-    public void Start() {
-        var optionsChangeDisposable = _appOptions.OnChange(options => ChangeListenerIfNeeded(options.ActiveListener));
+    public async Task Start() {
+        var optionsChangeDisposable =
+            _appOptions.OnChange(options => _ = ChangeListenerIfNeeded(options.ActiveListener));
         _globalDisposable!.Add(optionsChangeDisposable ?? Disposable.Empty);
 
-        ChangeListenerIfNeeded(_appOptions.CurrentValue.ActiveListener);
+        await ChangeListenerIfNeeded(_appOptions.CurrentValue.ActiveListener);
 
         for (var i = 0; i < _gameHandlers.Length; i++) {
             var gameHandler = _gameHandlers[i];
             if (!_appOptions.CurrentValue.GameHandlers.TryGetValue(gameHandler.Name, out var enabled) || enabled) {
-                gameHandler.Start();
+                await gameHandler.Start();
                 _gameHandlerStarted[i] = true;
             }
         }
@@ -55,7 +56,7 @@ public class HRService : IHRService {
         _ = Task.Run(PollGameHandlers);
     }
 
-    private void ChangeListenerIfNeeded(string? newListenerName) {
+    private async Task ChangeListenerIfNeeded(string? newListenerName) {
         if (_activeListener.Value?.Name == newListenerName) {
             return;
         }
@@ -63,7 +64,9 @@ public class HRService : IHRService {
         _listenerDisposable?.Dispose();
         _listenerDisposable = null;
 
-        _activeListener.Value?.Stop();
+        if (_activeListener.Value != null)
+            await _activeListener.Value.Stop();
+
         var newListener = _hrListeners.FirstOrDefault(x =>
             x.Name.Equals(newListenerName, StringComparison.OrdinalIgnoreCase));
         _activeListener.OnNext(newListener);
@@ -74,11 +77,11 @@ public class HRService : IHRService {
             .Subscribe(tuple => Broadcast(tuple.First, tuple.Second, tuple.Third)));
         _listenerDisposable.Add(newListener.HeartRate.Subscribe(_heartRate));
         _listenerDisposable.Add(newListener.IsConnected.Subscribe(_isConnected));
-        newListener.Start();
+        await newListener.Start();
     }
 
     private void Broadcast(int heartRate, bool isConnected, IReadOnlyList<IGameHandler> gameHandlers) {
-        var heartBeatPercentage = (heartRate - (float)_appOptions.CurrentValue.MinHR) 
+        var heartBeatPercentage = (heartRate - (float)_appOptions.CurrentValue.MinHR)
                                   / ((float)_appOptions.CurrentValue.MaxHR - (float)_appOptions.CurrentValue.MinHR);
         heartBeatPercentage = Math.Clamp(heartBeatPercentage, 0f, 1f);
         foreach (var gameHandler in gameHandlers) {
@@ -113,18 +116,21 @@ public class HRService : IHRService {
         }
     }
 
-    public void Dispose() {
+    public async ValueTask DisposeAsync() {
         _listenerDisposable?.Dispose();
         _listenerDisposable = null;
         for (var i = 0; i < _gameHandlers.Length; i++) {
             if (_gameHandlerStarted[i]) {
-                _gameHandlers[i].Stop();
+                await _gameHandlers[i].Stop();
                 _gameHandlerStarted[i] = false;
             }
         }
 
-        _activeListener.Value?.Stop();
-        _globalDisposable!.Dispose();
+        if (_activeListener.Value is not null)
+            await _activeListener.Value.Stop();
+        _activeListener.OnNext(null);
+
+        _globalDisposable?.Dispose();
         _globalDisposable = null;
     }
 

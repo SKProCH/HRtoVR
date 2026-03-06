@@ -11,7 +11,7 @@ public class StartStopServiceBase : ReactiveObject, IStartStopService {
     private CompositeDisposable? _compositeDisposable;
     protected virtual Task Run(CompositeDisposable disposables, CancellationToken token) { return Task.CompletedTask; }
 
-    public virtual void Start() {
+    public virtual Task Start() {
         _cts = new CancellationTokenSource();
         _ = Task.Run(async () => {
             _compositeDisposable = new CompositeDisposable();
@@ -22,13 +22,15 @@ public class StartStopServiceBase : ReactiveObject, IStartStopService {
                 // ignored
             }
         });
+        return Task.CompletedTask;
     }
 
-    public virtual void Stop() {
+    public virtual Task Stop() {
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;
         _compositeDisposable?.Dispose();
         _compositeDisposable = null;
+        return Task.CompletedTask;
     }
 }

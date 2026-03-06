@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -22,12 +23,12 @@ internal class PulsoidSocketListener : IHrListener {
         _options = options;
     }
 
-    public void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("PulsoidSocket configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         var pubUrl = "wss://dev.pulsoid.net/api/v1/data/real_time?access_token=" + _options.CurrentValue.Key;
 
@@ -60,11 +61,11 @@ internal class PulsoidSocketListener : IHrListener {
         _client.ReconnectionHappened.Subscribe(_ => _isConnected.OnNext(true));
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        _client.Start();
+        await _client.Start();
         _logger.LogInformation("PulsoidSocketListener started");
     }
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         _client?.Dispose();
@@ -72,6 +73,7 @@ internal class PulsoidSocketListener : IHrListener {
         _heartRate.OnNext(0);
         _isConnected.OnNext(false);
         _logger.LogInformation("PulsoidSocketListener stopped");
+        return Task.CompletedTask;
     }
 
     public string Name => "PulsoidSocket";

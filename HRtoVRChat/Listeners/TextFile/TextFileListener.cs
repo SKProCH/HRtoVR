@@ -21,12 +21,12 @@ internal class TextFileListener : IHrListener {
         _options = options;
     }
 
-    public void Start() {
-        _optionsSubscription = _options.OnChange(opt =>
+    public async Task Start() {
+        _optionsSubscription = _options.OnChange(async opt =>
         {
             _logger.LogInformation("TextFile configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         if (string.IsNullOrEmpty(_options.CurrentValue.Location))
         {
@@ -70,7 +70,7 @@ internal class TextFileListener : IHrListener {
     }
     private void OnFileRenamed(object sender, RenamedEventArgs e) => _ = UpdateHeartRateAsync();
 
-    public void Stop() {
+    public Task Stop() {
         _optionsSubscription?.Dispose();
         _optionsSubscription = null;
         if (_watcher != null)
@@ -85,6 +85,7 @@ internal class TextFileListener : IHrListener {
         }
         _isConnected.OnNext(false);
         _heartRate.OnNext(0);
+        return Task.CompletedTask;
     }
 
     public string Name => "TextFile";

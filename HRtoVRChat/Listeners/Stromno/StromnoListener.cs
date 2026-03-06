@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using HRtoVRChat.Listeners.Pulsoid;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,15 +16,15 @@ public class StromnoListener : PulsoidListener
 
     public override string Name => "Stromno";
 
-    public override void Start()
+    public override async Task Start()
     {
-        _optionsSubscription = _stromnoOptions.OnChange(opt =>
+        _optionsSubscription = _stromnoOptions.OnChange(async opt =>
         {
             _logger.LogInformation("Stromno configuration changed, restarting...");
-            Stop();
-            Start();
+            await Stop();
+            await Start();
         });
         // Stromno uses the same protocol as Pulsoid, just with a different widget ID source
-        StartConnection(_stromnoOptions.CurrentValue.Widget);
+        await StartConnection(_stromnoOptions.CurrentValue.Widget);
     }
 }

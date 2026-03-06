@@ -18,9 +18,9 @@ public class ListenerViewModel : ViewModelBase {
 
     public ListenerViewModel(IHrListener listener) {
         Name = listener.Name;
-        RestartCommand = ReactiveCommand.Create(() => {
-            listener.Stop();
-            listener.Start();
+        RestartCommand = ReactiveCommand.CreateFromTask(async () => {
+            await listener.Stop();
+            await listener.Start();
         });
         this.WhenAnyValue(model => model.IsConnected, model => model.HeartRate)
             .Select(tuple => ConnectionState.FromListenerState(tuple.Item1, tuple.Item2))
