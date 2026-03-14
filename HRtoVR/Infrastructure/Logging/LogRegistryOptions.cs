@@ -31,7 +31,7 @@ public class LogRegistryOptions : TextMateSharp.Registry.IRegistryOptions {
     public IRawTheme GetDefaultTheme() => _defaultOptions.GetDefaultTheme();
 
     private IRawGrammar LoadLogGrammar() {
-        using var stream = AssetLoader.Open(new Uri("avares://HRtoVRChat/Assets/log.tmLanguage.json"));
+        using var stream = AssetLoader.Open(new Uri("avares://HRtoVR/Assets/log.tmLanguage.json"));
         using var reader = new StreamReader(stream);
         return TextMateSharp.Internal.Grammars.Reader.GrammarReader.ReadGrammarSync(reader);
     }

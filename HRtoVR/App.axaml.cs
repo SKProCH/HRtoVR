@@ -36,7 +36,7 @@ public class App : Application {
         get {
             if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform
                     .OSX))
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "HRtoVRChat");
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "HRtoVR");
             return string.Empty;
         }
     }
@@ -44,8 +44,8 @@ public class App : Application {
     public static string OutputPath {
         get {
             if (LocalDirectory != string.Empty)
-                return Path.Combine(LocalDirectory, "HRtoVRChat");
-            return "HRtoVRChat";
+                return Path.Combine(LocalDirectory, "HRtoVR");
+            return "HRtoVR";
         }
     }
 

@@ -57,7 +57,7 @@ public class TrayIconService : ITrayIconService {
 
         var trayIcon = new TrayIcon {
             Icon = new WindowIcon(AssetTools.Icon),
-            ToolTipText = "HRtoVRChat",
+            ToolTipText = "HRtoVR",
             Menu = nm
         };
 

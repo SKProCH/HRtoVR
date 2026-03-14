@@ -14,7 +14,7 @@
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
         x:Class="HRtoVR.MainWindow"
         Icon="/Assets/hrtovrchat_logo.ico"
-        Title="HRtoVRChat">
+        Title="HRtoVR">
 
   <Design.DataContext>
     <viewModels:MainWindowViewModel />
