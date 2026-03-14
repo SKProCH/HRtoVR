@@ -1,0 +1,14 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:HRtoVRChat.Converters"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             x:Class="HRtoVRChat.App">
+  <Application.Resources>
+    <converters:BoolToRunningBackgroundConverter x:Key="BoolToRunningBackgroundConverter" />
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <materialIcons:MaterialIconStyles />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+  </Application.Styles>
+</Application>

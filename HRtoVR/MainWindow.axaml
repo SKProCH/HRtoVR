@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:HRtoVRChat.ViewModels"
+        xmlns:views="using:HRtoVRChat.Views"
+        xmlns:gh="using:HRtoVRChat.ViewModels.GameHandlers"
+        xmlns:ghv="using:HRtoVRChat.Views.GameHandlers"
+        xmlns:models="using:HRtoVRChat.Models"
+        xmlns:controls="using:HRtoVRChat.Controls"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+        Width="600" Height="500" WindowStartupLocation="CenterOwner"
+        MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
+        x:Class="HRtoVRChat.MainWindow"
+        Icon="/Assets/hrtovrchat_logo.ico"
+        Title="HRtoVRChat">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:ListenersViewModel}">
+      <views:ListenersView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type gh:GameHandlersViewModel}">
+      <ghv:GameHandlersView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
+      <views:ProgramView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:ConfigViewModel}">
+      <views:ConfigView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:LogsViewModel}">
+      <views:LogsView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+  </Window.Styles>
+
+  <Grid ColumnDefinitions="150, *">
+    <!--LeftBar-->
+    <Grid Grid.Column="0" Background="#0c0c0c" RowDefinitions="*,Auto">
+      <StackPanel Grid.Row="0" Spacing="0">
+        <ItemsControl ItemsSource="{Binding Pages}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:IPageViewModel">
+              <Button Width="150" Background="Transparent"
+                      Command="{Binding $parent[ItemsControl].DataContext.SwitchPanelCommand}"
+                      CommandParameter="{Binding}">
+                <Grid ColumnDefinitions="Auto 5 * Auto">
+                  <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" />
+                  <TextBlock Grid.Column="2" Text="{Binding Title}" />
+                  <controls:ConnectionIndicator Grid.Column="3" State="{Binding State, FallbackValue={x:Static models:ConnectionState.Disconnected}, Mode=OneWay}"
+                                               IsVisible="{Binding State, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Spacing="0">
+        <Button Width="150" Background="#212121" Command="{Binding HideAppCommand}">
+          <StackPanel Orientation="Horizontal">
+            <materialIcons:MaterialIcon Kind="EyeOff" HorizontalAlignment="Left" />
+            <TextBlock Margin="5,1,0,0">Hide Application</TextBlock>
+          </StackPanel>
+        </Button>
+        <Button Width="150" Background="Red" Command="{Binding ExitAppCommand}">
+          <StackPanel Orientation="Horizontal">
+            <materialIcons:MaterialIcon Kind="Power" HorizontalAlignment="Left" />
+            <TextBlock Margin="5,1,0,0">Exit</TextBlock>
+          </StackPanel>
+        </Button>
+        <Button Width="150" Background="transparent" Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/200Tigersbloxed/HRtoVRChat_OSC">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="Assets/github.png" Width="35" />
+            <TextBlock Margin="10,9,0,0">GitHub</TextBlock>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Content Area -->
+    <TransitioningContentControl Grid.Column="1" Content="{Binding CurrentPage}" />
+  </Grid>
+</Window>
