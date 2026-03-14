@@ -2,13 +2,13 @@ using System;
 using System.Net.WebSockets;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using HRtoVRChat.Infrastructure.Options;
+using HRtoVR.Infrastructure.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Websocket.Client;
 
-namespace HRtoVRChat.Listeners.HypeRate;
+namespace HRtoVR.Listeners.HypeRate;
 
 public class HypeRateListener : IHrListener {
     private WebsocketClient? _client;
@@ -18,22 +18,19 @@ public class HypeRateListener : IHrListener {
     private readonly IOptionsMonitor<HypeRateOptions> _options;
     private IDisposable? _optionsSubscription;
 
-    public HypeRateListener(ILogger<HypeRateListener> logger, IOptionsManager<HypeRateOptions> options)
-    {
+    public HypeRateListener(ILogger<HypeRateListener> logger, IOptionsManager<HypeRateOptions> options) {
         _logger = logger;
         _options = options;
     }
 
     public async Task Start() {
-        _optionsSubscription = _options.OnChange(async opt =>
-        {
+        _optionsSubscription = _options.OnChange(async opt => {
             _logger.LogInformation("HypeRate configuration changed, restarting...");
             await Stop();
             await Start();
         });
         var id = _options.CurrentValue.SessionId;
-        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
-        {
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
         });
 
@@ -42,8 +39,7 @@ public class HypeRateListener : IHrListener {
 
         _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
 
-        _client.ReconnectionHappened.Subscribe(info =>
-        {
+        _client.ReconnectionHappened.Subscribe(info => {
             _logger.LogInformation("Reconnection happened, type: {ReconnectionType}", info.Type);
             SendSubscription(id);
             _isConnected.OnNext(true);
@@ -51,21 +47,18 @@ public class HypeRateListener : IHrListener {
 
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        try
-        {
+        try {
             await _client.Start();
             SendSubscription(id);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             _logger.LogError(e, "Failed to start HypeRate WebSocket");
         }
 
         _logger.LogInformation("Initialized HypeRate WebSocket!");
     }
 
-    private void SendSubscription(string id)
-    {
+    private void SendSubscription(string id) {
         _client?.Send($$"""{"reader": "hyperate", "identifier": "{{id}}", "service": "vrchat"}""");
     }
 

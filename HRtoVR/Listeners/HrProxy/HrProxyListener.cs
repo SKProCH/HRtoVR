@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Websocket.Client;
 
-namespace HRtoVRChat.Listeners.HrProxy;
+namespace HRtoVR.Listeners.HrProxy;
 
 public class HrProxyListener : IHrListener {
     private WebsocketClient? _client;
@@ -17,8 +17,7 @@ public class HrProxyListener : IHrListener {
     private readonly IOptionsMonitor<HRProxyOptions> _options;
     private IDisposable? _optionsSubscription;
 
-    public HrProxyListener(ILogger<HrProxyListener> logger, IOptionsMonitor<HRProxyOptions> options)
-    {
+    public HrProxyListener(ILogger<HrProxyListener> logger, IOptionsMonitor<HRProxyOptions> options) {
         _logger = logger;
         _options = options;
     }
@@ -28,36 +27,31 @@ public class HrProxyListener : IHrListener {
     public IObservable<bool> IsConnected => _isConnected;
 
     public async Task Start() {
-        _optionsSubscription = _options.OnChange(async opt =>
-        {
+        _optionsSubscription = _options.OnChange(async opt => {
             _logger.LogInformation("HRProxy configuration changed, restarting...");
             await Stop();
             await Start();
         });
         var id = _options.CurrentValue.Id;
-        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
-        {
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
         });
 
         _client = new WebsocketClient(new Uri("wss://hrproxy.fortnite.lol:2096/hrproxy"), factory);
         _client.ReconnectTimeout = TimeSpan.FromSeconds(30);
         _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
-        _client.ReconnectionHappened.Subscribe(info =>
-        {
+        _client.ReconnectionHappened.Subscribe(info => {
             _logger.LogInformation("Reconnection happened, type: {ReconnectionType}", info.Type);
             _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
             _isConnected.OnNext(true);
         });
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        try
-        {
+        try {
             await _client.Start();
             _client.Send("{\"reader\": \"HRProxy\", \"identifier\": \"" + id + "\"}");
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             _logger.LogError(e, "Failed to connect to HRProxy server!");
         }
 

@@ -2,7 +2,7 @@ using System;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 
-namespace HRtoVRChat;
+namespace HRtoVR;
 
 public static class AssetTools {
     public static Bitmap Icon { get; private set; } = null!;

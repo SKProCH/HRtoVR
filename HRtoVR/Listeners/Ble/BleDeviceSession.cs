@@ -7,7 +7,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using HRtoVRChat.Models;
+using HRtoVR.Models;
 using Microsoft.Extensions.Logging;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions.Contracts;
@@ -15,7 +15,7 @@ using Plugin.BLE.Abstractions.EventArgs;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.Listeners.Ble;
+namespace HRtoVR.Listeners.Ble;
 
 public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
     private readonly IDevice _device;

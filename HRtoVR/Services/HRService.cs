@@ -5,12 +5,12 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using HRtoVRChat.Configs;
-using HRtoVRChat.GameHandlers;
+using HRtoVR.Configs;
+using HRtoVR.GameHandlers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace HRtoVRChat.Services;
+namespace HRtoVR.Services;
 
 public class HRService : IHRService {
     private readonly ILogger<HRService> _logger;

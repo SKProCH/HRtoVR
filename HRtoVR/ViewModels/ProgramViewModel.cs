@@ -1,15 +1,14 @@
 using System;
-using HRtoVRChat.Services;
+using System.Reactive.Linq;
+using HRtoVR.Models;
+using HRtoVR.Services;
+using Material.Icons;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using System.Reactive.Linq;
-using HRtoVRChat.Models;
-using Material.Icons;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
-public class ProgramViewModel : ViewModelBase, IPageViewModel
-{
+public class ProgramViewModel : ViewModelBase, IPageViewModel {
     public string Title => "Program";
     public MaterialIconKind Icon => MaterialIconKind.Application;
     public ConnectionState? State => null;
@@ -21,8 +20,7 @@ public class ProgramViewModel : ViewModelBase, IPageViewModel
     private readonly IHRService _hrService;
     private readonly ITrayIconService _trayIconService;
 
-    public ProgramViewModel(IHRService hrService, ITrayIconService trayIconService)
-    {
+    public ProgramViewModel(IHRService hrService, ITrayIconService trayIconService) {
         _hrService = hrService;
         _trayIconService = trayIconService;
 
@@ -39,7 +37,7 @@ public class ProgramViewModel : ViewModelBase, IPageViewModel
             .Subscribe(listener => ActiveListenerName = listener?.Name ?? "None");
 
         _hrService.IsConnected.CombineLatest(_hrService.ActiveListener, (connected, listener) =>
-            $"STATUS: {(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
+                $"STATUS: {(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(status => StatusText = status);
     }

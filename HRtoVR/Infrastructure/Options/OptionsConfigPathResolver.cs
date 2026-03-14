@@ -1,10 +1,10 @@
-namespace HRtoVRChat.Infrastructure.Options;
+namespace HRtoVR.Infrastructure.Options;
 
 internal record OptionsConfigPathResolver<T> {
     public OptionsConfigPathResolver() {
         Path = typeof(T).Name;
     }
-    
+
     public OptionsConfigPathResolver(string Path) {
         this.Path = Path;
     }

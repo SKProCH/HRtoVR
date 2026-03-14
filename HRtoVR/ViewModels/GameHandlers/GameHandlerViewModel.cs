@@ -1,14 +1,13 @@
 using System;
-using System.Reactive.Disposables;
-using HRtoVRChat.Configs;
-using HRtoVRChat.GameHandlers;
-using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.Models;
-using HRtoVRChat.ViewModels.Listeners;
+using HRtoVR.Configs;
+using HRtoVR.GameHandlers;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Models;
+using HRtoVR.ViewModels.Listeners;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels.GameHandlers;
+namespace HRtoVR.ViewModels.GameHandlers;
 
 public class GameHandlerViewModel : ViewModelBase {
     public string Name { get; }

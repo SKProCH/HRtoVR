@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace HRtoVRChat.Listeners.Ble;
+namespace HRtoVR.Listeners.Ble;
 
 public static class BleExtensions {
     public static async Task<T> RetryWithDelayAsync<T>(

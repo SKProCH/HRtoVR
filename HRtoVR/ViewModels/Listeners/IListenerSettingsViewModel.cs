@@ -1,3 +1,3 @@
-namespace HRtoVRChat.ViewModels.Listeners;
+namespace HRtoVR.ViewModels.Listeners;
 
 public interface IListenerSettingsViewModel;

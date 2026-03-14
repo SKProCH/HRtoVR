@@ -1,11 +1,11 @@
 using System.Reactive.Linq;
 using System.Windows.Input;
-using HRtoVRChat.Models;
-using HRtoVRChat.ViewModels.Listeners;
+using HRtoVR.Models;
+using HRtoVR.ViewModels.Listeners;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
 public class ListenerViewModel : ViewModelBase {
     [Reactive] public bool IsExpanded { get; set; }

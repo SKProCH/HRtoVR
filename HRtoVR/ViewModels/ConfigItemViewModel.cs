@@ -8,10 +8,9 @@ using Microsoft.Extensions.Configuration;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
-public class ConfigItemViewModel : ViewModelBase
-{
+public class ConfigItemViewModel : ViewModelBase {
     [Reactive] public string Name { get; set; } = "";
     [Reactive] public string Description { get; set; } = "";
     [Reactive] public string TypeName { get; set; } = "";
@@ -25,8 +24,8 @@ public class ConfigItemViewModel : ViewModelBase
 
     private readonly IConfiguration _configuration;
 
-    public ConfigItemViewModel(object targetObject, PropertyInfo propertyInfo, string configPath, IConfiguration configuration)
-    {
+    public ConfigItemViewModel(object targetObject, PropertyInfo propertyInfo, string configPath,
+        IConfiguration configuration) {
         TargetObject = targetObject;
         PropertyInfo = propertyInfo;
         ConfigPath = configPath;
@@ -48,17 +47,14 @@ public class ConfigItemViewModel : ViewModelBase
             .Subscribe(Save);
     }
 
-    public void Save(string newValue)
-    {
-        try
-        {
+    public void Save(string newValue) {
+        try {
             var typedValue = Convert.ChangeType(newValue, PropertyInfo.PropertyType);
             PropertyInfo.SetValue(TargetObject, typedValue);
 
             _configuration?[ConfigPath] = newValue;
         }
-        catch (Exception)
-        {
+        catch (Exception) {
             // Ignore conversion errors
         }
     }

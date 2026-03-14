@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ReactiveUI;
 
-namespace HRtoVRChat.Infrastructure;
+namespace HRtoVR.Infrastructure;
 
 public class StartStopServiceBase : ReactiveObject, IStartStopService {
     private CancellationTokenSource? _cts;

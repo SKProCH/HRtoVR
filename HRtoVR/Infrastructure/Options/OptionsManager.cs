@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using HRtoVR.Infrastructure.WritableJsonConfiguration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using INotifyPropertyChanged = System.ComponentModel.INotifyPropertyChanged;
 
-namespace HRtoVRChat.Infrastructure.Options;
+namespace HRtoVR.Infrastructure.Options;
 
 internal class OptionsManager<T> : OptionsMonitor<T>, IOptionsManager<T>, IDisposable where T : class {
     private readonly IConfiguration _configuration;
@@ -38,7 +39,7 @@ internal class OptionsManager<T> : OptionsMonitor<T>, IOptionsManager<T>, IDispo
     public void Save(object? sender) {
         _configuration.Set(_configPathResolver.Path, sender ?? CurrentValue);
     }
-    
+
     public void Save() {
         Save(CurrentValue);
     }

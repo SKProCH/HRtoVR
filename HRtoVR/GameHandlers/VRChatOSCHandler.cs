@@ -5,15 +5,14 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
-using HRtoVRChat.Configs;
-using HRtoVRChat.Infrastructure;
+using HRtoVR.Configs;
+using HRtoVR.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Vizcon.OSC;
 
-namespace HRtoVRChat.GameHandlers;
+namespace HRtoVR.GameHandlers;
 
 public class VrChatOscHandler : StartStopServiceBase, IGameHandler {
     private readonly IOptionsMonitor<AppOptions> _appOptions;

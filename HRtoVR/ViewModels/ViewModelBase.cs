@@ -1,21 +1,22 @@
 using ReactiveUI;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
-public class ViewModelBase : ReactiveObject
-{
-    public static void OpenUrl(string url)
-    {
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) {
+public class ViewModelBase : ReactiveObject {
+    public static void OpenUrl(string url) {
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform
+                .Windows)) {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd", $"/c start {url}") {
                 CreateNoWindow = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             });
         }
-        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)) {
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices
+                     .OSPlatform.Linux)) {
             System.Diagnostics.Process.Start("xdg-open", url);
         }
-        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)) {
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices
+                     .OSPlatform.OSX)) {
             System.Diagnostics.Process.Start("open", url);
         }
         else {

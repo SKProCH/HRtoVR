@@ -1,13 +1,10 @@
 using Avalonia.ReactiveUI;
-using HRtoVRChat.ViewModels.Listeners;
-using ReactiveUI;
+using HRtoVR.ViewModels.Listeners;
 
-namespace HRtoVRChat.Views.Listeners;
+namespace HRtoVR.Views.Listeners;
 
-public partial class BleSettingsView : ReactiveUserControl<BleSettingsViewModel>
-{
-    public BleSettingsView()
-    {
+public partial class BleSettingsView : ReactiveUserControl<BleSettingsViewModel> {
+    public BleSettingsView() {
         InitializeComponent();
     }
 }

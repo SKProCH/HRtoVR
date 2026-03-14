@@ -1,9 +1,8 @@
 using System.ComponentModel;
 
-namespace HRtoVRChat.GameHandlers;
+namespace HRtoVR.GameHandlers;
 
-public class VrChatOscOptions
-{
+public class VrChatOscOptions {
     [Description("The IP to send messages to")]
     public string Ip { get; set; } = "127.0.0.1";
 

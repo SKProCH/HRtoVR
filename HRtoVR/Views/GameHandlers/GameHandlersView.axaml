@@ -2,11 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:HRtoVRChat.ViewModels.GameHandlers"
-             xmlns:controls="using:HRtoVRChat.Controls"
-             xmlns:listeners="using:HRtoVRChat.Views.Listeners"
+             xmlns:vm="clr-namespace:HRtoVR.ViewModels.GameHandlers"
+             xmlns:controls1="clr-namespace:HRtoVR.Controls"
+             xmlns:listeners1="clr-namespace:HRtoVR.Views.Listeners"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="HRtoVRChat.Views.GameHandlers.GameHandlersView"
+             x:Class="HRtoVR.Views.GameHandlers.GameHandlersView"
              x:DataType="vm:GameHandlersViewModel">
   <ScrollViewer>
     <ItemsControl ItemsSource="{Binding Handlers}" Padding="10">
@@ -29,13 +29,13 @@
                               Margin="0,0,10,0"
                               FontWeight="Bold" />
 
-                <controls:ConnectionIndicator
+                <controls1:ConnectionIndicator
                   Grid.Column="1"
                   IsVisible="{Binding IsEnabled}"
                   State="{Binding State}" />
               </Grid>
             </Expander.Header>
-            <listeners:ListenerSettingsView DataContext="{Binding}" Margin="5" />
+            <listeners1:ListenerSettingsView DataContext="{Binding}" Margin="5" />
           </Expander>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

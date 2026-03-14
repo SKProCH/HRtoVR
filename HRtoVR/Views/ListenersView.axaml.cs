@@ -1,11 +1,9 @@
 using Avalonia.Controls;
 
-namespace HRtoVRChat.Views;
+namespace HRtoVR.Views;
 
-public partial class ListenersView : UserControl
-{
-    public ListenersView()
-    {
+public partial class ListenersView : UserControl {
+    public ListenersView() {
         InitializeComponent();
     }
 }

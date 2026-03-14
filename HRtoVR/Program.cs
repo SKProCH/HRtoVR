@@ -2,7 +2,7 @@
 using Avalonia;
 using Avalonia.ReactiveUI;
 
-namespace HRtoVRChat;
+namespace HRtoVR;
 
 internal class Program {
     // Initialization code. Don't use any Avalonia, third-party APIs or any

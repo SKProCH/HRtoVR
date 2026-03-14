@@ -1,11 +1,9 @@
 using Avalonia.Controls;
 
-namespace HRtoVRChat.Views;
+namespace HRtoVR.Views;
 
-public partial class ConfigView : UserControl
-{
-    public ConfigView()
-    {
+public partial class ConfigView : UserControl {
+    public ConfigView() {
         InitializeComponent();
     }
 }

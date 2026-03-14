@@ -1,11 +1,9 @@
+using HRtoVR.Models;
 using Material.Icons;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
-using HRtoVRChat.Models;
-
-public interface IPageViewModel
-{
+public interface IPageViewModel {
     string Title { get; }
     MaterialIconKind Icon { get; }
     ConnectionState? State { get; }

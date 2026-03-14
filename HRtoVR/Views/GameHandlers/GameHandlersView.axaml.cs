@@ -1,12 +1,9 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
-namespace HRtoVRChat.Views.GameHandlers;
+namespace HRtoVR.Views.GameHandlers;
 
-public partial class GameHandlersView : UserControl
-{
-    public GameHandlersView()
-    {
+public partial class GameHandlersView : UserControl {
+    public GameHandlersView() {
         InitializeComponent();
     }
 }

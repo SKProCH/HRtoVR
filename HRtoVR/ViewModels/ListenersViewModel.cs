@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using HRtoVRChat.Configs;
-using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.Listeners.Ble;
-using HRtoVRChat.ViewModels.Listeners;
+using System.Reactive.Linq;
+using HRtoVR.Configs;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Models;
+using HRtoVR.ViewModels.Listeners;
 using Material.Icons;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,11 +14,7 @@ using Microsoft.Extensions.Options;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels;
-
-using HRtoVRChat.Models;
-
-using System.Reactive.Linq;
+namespace HRtoVR.ViewModels;
 
 public class ListenersViewModel : ViewModelBase, IPageViewModel {
     public string Title => "Listeners";
@@ -33,7 +30,8 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
     private readonly IEnumerable<IHrListener> _hrListeners;
     private readonly IServiceProvider _serviceProvider;
 
-    public ListenersViewModel(IOptionsManager<AppOptions> appOptions, IConfiguration configuration, IEnumerable<IHrListener> hrListeners, IServiceProvider serviceProvider) {
+    public ListenersViewModel(IOptionsManager<AppOptions> appOptions, IConfiguration configuration,
+        IEnumerable<IHrListener> hrListeners, IServiceProvider serviceProvider) {
         _appOptions = appOptions;
         _configuration = configuration;
         _hrListeners = hrListeners;
@@ -96,10 +94,8 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
         }
     }
 
-    private IListenerSettingsViewModel? CreateSettingsViewModel(IHrListener listener)
-    {
-        if (listener.SettingsViewModelType != null)
-        {
+    private IListenerSettingsViewModel? CreateSettingsViewModel(IHrListener listener) {
+        if (listener.SettingsViewModelType != null) {
             return _serviceProvider.GetRequiredService(listener.SettingsViewModelType) as IListenerSettingsViewModel;
         }
 

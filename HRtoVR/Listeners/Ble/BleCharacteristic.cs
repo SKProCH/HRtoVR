@@ -1,5 +1,5 @@
 using System;
 
-namespace HRtoVRChat.Listeners.Ble;
+namespace HRtoVR.Listeners.Ble;
 
 public record BleCharacteristic(Guid Id, string Name, bool CanUpdate) : BleDescriptor(Id, Name);

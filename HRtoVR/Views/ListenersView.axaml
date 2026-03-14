@@ -2,13 +2,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:HRtoVRChat.ViewModels"
-             xmlns:dvm="using:HRtoVRChat.ViewModels.Design"
-             xmlns:controls="using:HRtoVRChat.Controls"
-             xmlns:listeners="using:HRtoVRChat.Views.Listeners"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="clr-namespace:HRtoVR.ViewModels"
+             xmlns:dvm="clr-namespace:HRtoVR.ViewModels.Design"
+             xmlns:controls1="clr-namespace:HRtoVR.Controls"
+             xmlns:listeners1="clr-namespace:HRtoVR.Views.Listeners"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="HRtoVRChat.Views.ListenersView"
+             x:Class="HRtoVR.Views.ListenersView"
              x:DataType="vm:ListenersViewModel"
              d:DataContext="{x:Static dvm:DesignListenersViewModel.Instance}">
   <Grid>
@@ -50,22 +50,22 @@
                 </Style>
               </Expander.Styles>
               <Expander.Header>
-                <Grid ColumnDefinitions="*, Auto" >
+                <Grid ColumnDefinitions="*, Auto">
                   <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" />
-                  <controls:ConnectionIndicator Grid.Column="1"
-                                                State="{Binding State}"
-                                                IsVisible="{Binding IsExpanded}"
-                                                Margin="0,0,0,0" VerticalAlignment="Center" />
+                  <controls1:ConnectionIndicator Grid.Column="1"
+                                                 State="{Binding State}"
+                                                 IsVisible="{Binding IsExpanded}"
+                                                 Margin="0,0,0,0" VerticalAlignment="Center" />
                 </Grid>
               </Expander.Header>
-              <listeners:ListenerSettingsView DataContext="{Binding}" Margin="5" />
+              <listeners1:ListenerSettingsView DataContext="{Binding}" Margin="5" />
             </Expander>
             <Button
               Background="Transparent"
               Content="{avalonia:MaterialIconExt Kind=Restart}"
               Command="{Binding RestartCommand}"
               IsVisible="{Binding IsExpanded}"
-              VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0  10 8 0"/>
+              VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0  10 8 0" />
           </Panel>
         </DataTemplate>
       </ListBox.ItemTemplate>

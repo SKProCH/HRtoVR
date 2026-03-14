@@ -1,10 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 
-namespace HRtoVRChat;
+namespace HRtoVR;
 
 public partial class MainWindow : Window {
-
     public MainWindow() {
         InitializeComponent();
 #if DEBUG

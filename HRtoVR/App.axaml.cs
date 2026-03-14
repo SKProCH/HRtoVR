@@ -1,42 +1,41 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using HRtoVRChat.Configs;
-using HRtoVRChat.GameHandlers;
-using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.Listeners.Fitbit;
-using HRtoVRChat.Listeners.HrProxy;
-using HRtoVRChat.Listeners.HypeRate;
-using HRtoVRChat.Listeners.Pulsoid;
-using HRtoVRChat.Listeners.PulsoidSocket;
-using HRtoVRChat.Listeners.Stromno;
-using HRtoVRChat.Listeners.TextFile;
-using HRtoVRChat.Listeners.Ble;
-using HRtoVRChat.ViewModels.Listeners;
-using HRtoVRChat.Services;
-using HRtoVRChat.ViewModels;
-using HRtoVRChat.ViewModels.GameHandlers;
+using HRtoVR.Configs;
+using HRtoVR.GameHandlers;
+using HRtoVR.Infrastructure.Logging;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Infrastructure.WritableJsonConfiguration;
+using HRtoVR.Listeners.Ble;
+using HRtoVR.Listeners.Fitbit;
+using HRtoVR.Listeners.HrProxy;
+using HRtoVR.Listeners.HypeRate;
+using HRtoVR.Listeners.Pulsoid;
+using HRtoVR.Listeners.PulsoidSocket;
+using HRtoVR.Listeners.Stromno;
+using HRtoVR.Listeners.TextFile;
+using HRtoVR.Services;
+using HRtoVR.ViewModels;
+using HRtoVR.ViewModels.GameHandlers;
+using HRtoVR.ViewModels.Listeners;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
-using WritableJsonConfiguration;
-using HRtoVRChat.Infrastructure.Logging;
 
-namespace HRtoVRChat;
+namespace HRtoVR;
 
 public class App : Application {
     public static IServiceProvider? Services { get; private set; }
 
     public static string LocalDirectory {
         get {
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform
+                    .OSX))
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "HRtoVRChat");
             return string.Empty;
         }
@@ -95,8 +94,7 @@ public class App : Application {
         collection.AddSingleton(logSink);
 
         // Register Logging
-        collection.AddLogging(loggingBuilder =>
-        {
+        collection.AddLogging(loggingBuilder => {
             loggingBuilder.ClearProviders();
             loggingBuilder.AddSerilog(dispose: true);
         });
@@ -125,8 +123,7 @@ public class App : Application {
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-    {
+    private void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
         // Services
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<HRService>();
@@ -182,7 +179,7 @@ public class App : Application {
         if (Services is IAsyncDisposable disposable) {
             await disposable.DisposeAsync();
         }
-        
+
         Environment.Exit(0);
     }
 }

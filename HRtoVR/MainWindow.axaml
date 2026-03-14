@@ -2,39 +2,39 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="using:HRtoVRChat.ViewModels"
-        xmlns:views="using:HRtoVRChat.Views"
-        xmlns:gh="using:HRtoVRChat.ViewModels.GameHandlers"
-        xmlns:ghv="using:HRtoVRChat.Views.GameHandlers"
-        xmlns:models="using:HRtoVRChat.Models"
-        xmlns:controls="using:HRtoVRChat.Controls"
         xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        xmlns:viewModels="clr-namespace:HRtoVR.ViewModels"
+        xmlns:views1="clr-namespace:HRtoVR.Views"
+        xmlns:gh="clr-namespace:HRtoVR.ViewModels.GameHandlers"
+        xmlns:gameHandlers="clr-namespace:HRtoVR.Views.GameHandlers"
+        xmlns:controls1="clr-namespace:HRtoVR.Controls"
+        xmlns:models="clr-namespace:HRtoVR.Models"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
         Width="600" Height="500" WindowStartupLocation="CenterOwner"
         MaxWidth="600" MaxHeight="500" MinWidth="600" MinHeight="500" CanResize="False"
-        x:Class="HRtoVRChat.MainWindow"
+        x:Class="HRtoVR.MainWindow"
         Icon="/Assets/hrtovrchat_logo.ico"
         Title="HRtoVRChat">
 
   <Design.DataContext>
-    <vm:MainWindowViewModel />
+    <viewModels:MainWindowViewModel />
   </Design.DataContext>
 
   <Window.DataTemplates>
-    <DataTemplate DataType="{x:Type vm:ListenersViewModel}">
-      <views:ListenersView />
+    <DataTemplate DataType="{x:Type viewModels:ListenersViewModel}">
+      <views1:ListenersView />
     </DataTemplate>
     <DataTemplate DataType="{x:Type gh:GameHandlersViewModel}">
-      <ghv:GameHandlersView />
+      <gameHandlers:GameHandlersView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:ProgramViewModel}">
-      <views:ProgramView />
+    <DataTemplate DataType="{x:Type viewModels:ProgramViewModel}">
+      <views1:ProgramView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:ConfigViewModel}">
-      <views:ConfigView />
+    <DataTemplate DataType="{x:Type viewModels:ConfigViewModel}">
+      <views1:ConfigView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:LogsViewModel}">
-      <views:LogsView />
+    <DataTemplate DataType="{x:Type viewModels:LogsViewModel}">
+      <views1:LogsView />
     </DataTemplate>
   </Window.DataTemplates>
 
@@ -51,15 +51,15 @@
       <StackPanel Grid.Row="0" Spacing="0">
         <ItemsControl ItemsSource="{Binding Pages}">
           <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:IPageViewModel">
+            <DataTemplate x:DataType="viewModels:IPageViewModel">
               <Button Width="150" Background="Transparent"
                       Command="{Binding $parent[ItemsControl].DataContext.SwitchPanelCommand}"
                       CommandParameter="{Binding}">
                 <Grid ColumnDefinitions="Auto 5 * Auto">
                   <materialIcons:MaterialIcon Grid.Column="0" Kind="{Binding Icon}" />
                   <TextBlock Grid.Column="2" Text="{Binding Title}" />
-                  <controls:ConnectionIndicator Grid.Column="3" State="{Binding State, FallbackValue={x:Static models:ConnectionState.Disconnected}, Mode=OneWay}"
-                                               IsVisible="{Binding State, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  <controls1:ConnectionIndicator Grid.Column="3" State="{Binding State, FallbackValue={x:Static models:ConnectionState.Disconnected}, Mode=OneWay}"
+                                                 IsVisible="{Binding State, Converter={x:Static ObjectConverters.IsNotNull}}" />
                 </Grid>
               </Button>
             </DataTemplate>

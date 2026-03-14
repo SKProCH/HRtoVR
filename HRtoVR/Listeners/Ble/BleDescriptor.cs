@@ -1,6 +1,6 @@
 using System;
 
-namespace HRtoVRChat.Listeners.Ble;
+namespace HRtoVR.Listeners.Ble;
 
 /// <summary>
 /// Represents a Bluetooth Low Energy (BLE) device, service or characteristic.

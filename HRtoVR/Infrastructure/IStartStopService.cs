@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
-namespace HRtoVRChat.Infrastructure;
+
+namespace HRtoVR.Infrastructure;
 
 public interface IStartStopService {
     Task Start();

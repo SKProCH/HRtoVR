@@ -1,7 +1,7 @@
 using System;
-using HRtoVRChat.Infrastructure;
+using HRtoVR.Infrastructure;
 
-namespace HRtoVRChat;
+namespace HRtoVR;
 
 public interface IHrListener : IStartStopService {
     string Name { get; }

@@ -1,14 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace HRtoVRChat.Infrastructure.Options;
+namespace HRtoVR.Infrastructure.Options;
 
 public class AutoConfigureFromConfigurationOptions<TOptions> : ConfigureFromConfigurationOptions<TOptions>
-    where TOptions : class
-{
+    where TOptions : class {
     public AutoConfigureFromConfigurationOptions(IConfiguration configuration)
         // Передаем секцию, имя которой совпадает с именем класса TOptions
-        : base(configuration.GetSection(typeof(TOptions).Name))
-    {
+        : base(configuration.GetSection(typeof(TOptions).Name)) {
     }
 }

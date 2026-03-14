@@ -6,7 +6,7 @@ using TextMateSharp.Grammars;
 using TextMateSharp.Internal.Types;
 using TextMateSharp.Themes;
 
-namespace HRtoVRChat.Infrastructure.Logging;
+namespace HRtoVR.Infrastructure.Logging;
 
 public class LogRegistryOptions : TextMateSharp.Registry.IRegistryOptions {
     private readonly TextMateSharp.Registry.IRegistryOptions _defaultOptions;

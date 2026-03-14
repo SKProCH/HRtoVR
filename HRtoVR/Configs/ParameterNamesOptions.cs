@@ -1,10 +1,9 @@
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.Configs;
+namespace HRtoVR.Configs;
 
-public class ParameterNamesOptions : ReactiveObject
-{
+public class ParameterNamesOptions : ReactiveObject {
     [Reactive] public string OnesHR { get; set; } = "onesHR";
     [Reactive] public string TensHR { get; set; } = "tensHR";
     [Reactive] public string HundredsHR { get; set; } = "hundredsHR";

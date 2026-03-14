@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace HRtoVRChat.Infrastructure.Options;
+namespace HRtoVR.Infrastructure.Options;
 
 public static class OptionsExtensions {
     public static IObservable<TOptions> Observe<TOptions>(this IOptionsMonitor<TOptions> monitor)

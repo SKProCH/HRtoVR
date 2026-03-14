@@ -1,11 +1,9 @@
-namespace HRtoVRChat.ViewModels.Listeners;
+namespace HRtoVR.ViewModels.Listeners;
 
-public class ConfigSettingsViewModel : ViewModelBase, IListenerSettingsViewModel
-{
+public class ConfigSettingsViewModel : ViewModelBase, IListenerSettingsViewModel {
     public object Settings { get; }
 
-    public ConfigSettingsViewModel(object settings)
-    {
+    public ConfigSettingsViewModel(object settings) {
         Settings = settings;
     }
 }

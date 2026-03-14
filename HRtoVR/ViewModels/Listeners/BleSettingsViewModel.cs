@@ -7,17 +7,17 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
-using HRtoVRChat.Infrastructure;
-using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.Listeners.Ble;
-using HRtoVRChat.Models;
+using HRtoVR.Infrastructure;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Listeners.Ble;
+using HRtoVR.Models;
 using Microsoft.Extensions.Logging;
 using Plugin.BLE;
 using Plugin.BLE.Abstractions.Contracts;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels.Listeners;
+namespace HRtoVR.ViewModels.Listeners;
 
 public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, IActivatableViewModel {
     private readonly ILogger<BleSettingsViewModel> _logger;
@@ -103,13 +103,16 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
         // Bind services and characteristics from the listener's session
         bleListener.WhenAnyValue(x => x.Session)
-            .Select(s => s?.WhenAnyValue(x => x.DiscoveredServices) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
+            .Select(s =>
+                s?.WhenAnyValue(x => x.DiscoveredServices) ?? Observable.Return<IReadOnlyList<BleDescriptor>>([]))
             .Switch()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnServicesDiscovered);
 
         bleListener.WhenAnyValue(x => x.Session)
-            .Select(s => s?.WhenAnyValue(x => x.DiscoveredCharacteristics) ?? Observable.Return<IReadOnlyList<BleCharacteristic>>([]))
+            .Select(s =>
+                s?.WhenAnyValue(x => x.DiscoveredCharacteristics) ??
+                Observable.Return<IReadOnlyList<BleCharacteristic>>([]))
             .Switch()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(OnCharacteristicsDiscovered);
@@ -158,11 +161,12 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         ActiveService = obj.FirstOrDefault(x => x.Id == ActiveService?.Id);
         if (ActiveService == null || obj.All(x => x.Id != ActiveService.Id)) {
             ActiveService = obj.FirstOrDefault(x => x.Id == HeartRateServiceUuid)
-                          ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
+                            ?? obj.FirstOrDefault(x => x.Name.Contains("Heart", StringComparison.OrdinalIgnoreCase));
         }
     }
 
-    private static readonly Guid HeartRateMeasurementCharacteristicUuid = Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid HeartRateMeasurementCharacteristicUuid =
+        Guid.Parse("00002a37-0000-1000-8000-00805f9b34fb");
 
     private void OnCharacteristicsDiscovered(IReadOnlyList<BleCharacteristic> obj) {
         Characteristics = new ObservableCollection<BleDescriptor>(obj);
@@ -171,7 +175,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == ActiveCharacteristic?.Id);
         if (ActiveCharacteristic == null || obj.All(x => x.Id != ActiveCharacteristic.Id)) {
             ActiveCharacteristic = obj.FirstOrDefault(x => x.Id == HeartRateMeasurementCharacteristicUuid)
-                                 ?? obj.FirstOrDefault(x => x.CanUpdate);
+                                   ?? obj.FirstOrDefault(x => x.CanUpdate);
         }
     }
 }

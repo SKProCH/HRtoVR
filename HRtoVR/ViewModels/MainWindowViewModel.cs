@@ -1,20 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using Avalonia;
-using HRtoVRChat.Services;
-using HRtoVRChat.ViewModels.GameHandlers;
+using HRtoVR.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.ViewModels;
+namespace HRtoVR.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase
-{
+public class MainWindowViewModel : ViewModelBase {
     [Reactive] public IPageViewModel CurrentPage { get; set; }
 
     public ObservableCollection<IPageViewModel> Pages { get; }
@@ -32,8 +28,7 @@ public class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel(
         IEnumerable<IPageViewModel> pages,
-        ITrayIconService trayIconService)
-    {
+        ITrayIconService trayIconService) {
         Pages = new ObservableCollection<IPageViewModel>(pages);
         _trayIconService = trayIconService;
 
@@ -47,17 +42,15 @@ public class MainWindowViewModel : ViewModelBase
         CurrentPage = Pages.FirstOrDefault() ?? throw new InvalidOperationException("No pages registered");
 
         // Commands
-        SwitchPanelCommand = ReactiveCommand.Create<IPageViewModel>(vm =>
-        {
+        SwitchPanelCommand = ReactiveCommand.Create<IPageViewModel>(vm => {
             CurrentPage = vm;
         });
 
         OpenUrlCommand = ReactiveCommand.Create<string>(OpenUrl);
 
-        HideAppCommand = ReactiveCommand.Create(() =>
-        {
-             _trayIconService.Update(new TrayIconInfo { HideApplication = true });
-             RequestHide?.Invoke();
+        HideAppCommand = ReactiveCommand.Create(() => {
+            _trayIconService.Update(new TrayIconInfo { HideApplication = true });
+            RequestHide?.Invoke();
         });
 
         ExitAppCommand = ReactiveCommand.CreateFromTask(async () => {

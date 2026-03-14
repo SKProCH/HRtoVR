@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:HRtoVRChat.ViewModels"
+             xmlns:vm="clr-namespace:HRtoVR.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="HRtoVRChat.Views.ProgramView"
+             x:Class="HRtoVR.Views.ProgramView"
              x:DataType="vm:ProgramViewModel">
   <Grid RowDefinitions="Auto,Auto" Margin="10">
     <StackPanel Grid.Row="0" Margin="0,5,0,0">

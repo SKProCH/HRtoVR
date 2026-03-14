@@ -1,19 +1,17 @@
 using System;
 using System.Collections.Specialized;
 using System.Text;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.TextMate;
-using HRtoVRChat.Infrastructure.Logging;
-using HRtoVRChat.ViewModels;
-using Serilog.Events;
+using HRtoVR.Infrastructure.Logging;
+using HRtoVR.ViewModels;
 using TextMateSharp.Grammars;
 
-namespace HRtoVRChat.Views;
+namespace HRtoVR.Views;
 
 public partial class LogsView : UserControl {
     private TextEditor _logEditor;

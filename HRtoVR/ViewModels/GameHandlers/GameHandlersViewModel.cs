@@ -1,22 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive.Linq;
 using DynamicData;
 using DynamicData.Aggregation;
-using DynamicData.Alias;
-using HRtoVRChat.Configs;
-using HRtoVRChat.GameHandlers;
-using HRtoVRChat.Infrastructure.Options;
-using HRtoVRChat.ViewModels.Listeners;
+using HRtoVR.Configs;
+using HRtoVR.GameHandlers;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Models;
+using HRtoVR.ViewModels.Listeners;
 using Material.Icons;
 using Microsoft.Extensions.Options;
-
-namespace HRtoVRChat.ViewModels.GameHandlers;
-
-using System.Reactive.Linq;
-using HRtoVRChat.Models;
 using ReactiveUI;
+
+namespace HRtoVR.ViewModels.GameHandlers;
 
 public class GameHandlersViewModel : ViewModelBase, IPageViewModel {
     public string Title => "Games";

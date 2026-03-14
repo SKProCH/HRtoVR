@@ -2,13 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:HRtoVRChat.ViewModels.Listeners"
-             xmlns:ble="clr-namespace:HRtoVRChat.Listeners.Ble"
-             xmlns:pble="clr-namespace:Plugin.BLE.Abstractions.Contracts;assembly=Plugin.BLE"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:controls="using:HRtoVRChat.Controls"
+             xmlns:vm="clr-namespace:HRtoVR.ViewModels.Listeners"
+             xmlns:controls1="clr-namespace:HRtoVR.Controls"
+             xmlns:ble="clr-namespace:HRtoVR.Listeners.Ble"
              mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="550"
-             x:Class="HRtoVRChat.Views.Listeners.BleSettingsView"
+             x:Class="HRtoVR.Views.Listeners.BleSettingsView"
              x:DataType="vm:BleSettingsViewModel">
   <Grid RowDefinitions="Auto,*">
     <StackPanel Grid.Row="0" Spacing="20">
@@ -20,9 +19,9 @@
           <Grid ColumnDefinitions="Auto,*,Auto">
             <Panel VerticalAlignment="Center" Margin="0,0,16,0">
               <materialIcons:MaterialIcon Kind="BluetoothConnected" Width="32" Height="32" Foreground="{DynamicResource SystemAccentColor}" />
-              <controls:ConnectionIndicator State="{Binding State}"
-                                            Width="10" Height="10"
-                                            VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+              <controls1:ConnectionIndicator State="{Binding State}"
+                                             Width="10" Height="10"
+                                             VerticalAlignment="Bottom" HorizontalAlignment="Right" />
             </Panel>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

@@ -1,4 +1,4 @@
-namespace HRtoVRChat.Models;
+namespace HRtoVR.Models;
 
 public enum ConnectionState {
     Disconnected,

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Websocket.Client;
 
-namespace HRtoVRChat.Listeners.Pulsoid;
+namespace HRtoVR.Listeners.Pulsoid;
 
 public class PulsoidListener : IHrListener {
     private WebsocketClient? _client;
@@ -17,15 +17,13 @@ public class PulsoidListener : IHrListener {
     protected readonly IOptionsMonitor<PulsoidOptions> _options;
     protected IDisposable? _optionsSubscription;
 
-    public PulsoidListener(ILogger<PulsoidListener> logger, IOptionsMonitor<PulsoidOptions> options)
-    {
+    public PulsoidListener(ILogger<PulsoidListener> logger, IOptionsMonitor<PulsoidOptions> options) {
         _logger = logger;
         _options = options;
     }
 
     // Protected constructor for Stromno
-    protected PulsoidListener(ILogger logger, IOptionsMonitor<PulsoidOptions> options)
-    {
+    protected PulsoidListener(ILogger logger, IOptionsMonitor<PulsoidOptions> options) {
         _logger = logger;
         _options = options;
     }
@@ -35,8 +33,7 @@ public class PulsoidListener : IHrListener {
     public string Timestamp { get; private set; } = string.Empty;
 
     public virtual async Task Start() {
-        _optionsSubscription = _options.OnChange(async opt =>
-        {
+        _optionsSubscription = _options.OnChange(async opt => {
             _logger.LogInformation("Pulsoid configuration changed, restarting...");
             await Stop();
             await Start();
@@ -46,8 +43,7 @@ public class PulsoidListener : IHrListener {
     }
 
     protected async Task StartConnection(string id) {
-        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket
-        {
+        var factory = new Func<ClientWebSocket>(() => new ClientWebSocket {
             Options = { KeepAliveInterval = TimeSpan.FromSeconds(5) }
         });
 
@@ -56,8 +52,7 @@ public class PulsoidListener : IHrListener {
 
         _client.MessageReceived.Subscribe(msg => HandleMessage(msg.Text));
 
-        _client.ReconnectionHappened.Subscribe(info =>
-        {
+        _client.ReconnectionHappened.Subscribe(info => {
             _logger.LogInformation("Reconnection happened, type: {ReconnectionType}", info.Type);
             SendSubscription(id);
             _isConnected.OnNext(true);
@@ -65,19 +60,16 @@ public class PulsoidListener : IHrListener {
 
         _client.DisconnectionHappened.Subscribe(_ => _isConnected.OnNext(false));
 
-        try
-        {
+        try {
             await _client.Start();
             SendSubscription(id);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             _logger.LogError(e, "Failed to start Pulsoid/Stromno WebSocket");
         }
     }
 
-    private void SendSubscription(string id)
-    {
+    private void SendSubscription(string id) {
         _client?.Send("{\"reader\": \"pulsoid\", \"identifier\": \"" + id + "\", \"service\": \"vrchat\"}");
     }
 

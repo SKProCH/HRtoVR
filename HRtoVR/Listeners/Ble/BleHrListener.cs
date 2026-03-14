@@ -1,21 +1,21 @@
 using System;
 using System.Reactive;
-using System.Reactive.Linq;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using HRtoVRChat.Infrastructure;
-using HRtoVRChat.Models;
-using Plugin.BLE;
+using HRtoVR.Infrastructure;
+using HRtoVR.Infrastructure.Options;
+using HRtoVR.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Plugin.BLE;
+using Plugin.BLE.Abstractions.Exceptions;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using HRtoVRChat.Infrastructure.Options;
-using Plugin.BLE.Abstractions.Exceptions;
 
-namespace HRtoVRChat.Listeners.Ble;
+namespace HRtoVR.Listeners.Ble;
 
 public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOptions> options)
     : StartStopServiceBase, IHrListener {

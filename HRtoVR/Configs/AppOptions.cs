@@ -3,17 +3,14 @@ using System.ComponentModel;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
-namespace HRtoVRChat.Configs;
+namespace HRtoVR.Configs;
 
 public class AppOptions : EditableAppOptions {
-    [Reactive]
-    public string? ActiveListener { get; set; }
+    [Reactive] public string? ActiveListener { get; set; }
 
-    [Reactive]
-    public Dictionary<string, bool> GameHandlers { get; set; } = [];
-    
-    [Reactive]
-    public ParameterNamesOptions ParameterNames { get; set; } = new();
+    [Reactive] public Dictionary<string, bool> GameHandlers { get; set; } = [];
+
+    [Reactive] public ParameterNamesOptions ParameterNames { get; set; } = new();
 }
 
 public class EditableAppOptions : ReactiveObject {

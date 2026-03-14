@@ -3,7 +3,7 @@ using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace HRtoVRChat.Infrastructure;
+namespace HRtoVR.Infrastructure;
 
 public static class ExtensionMethods {
     public static CancellationToken RegisterToken(this CompositeDisposable disposable) {
@@ -37,7 +37,7 @@ public static class ExtensionMethods {
             return await task;
         throw new TimeoutException();
     }
-    
+
     public static CancellationToken WithTimeout(this CancellationToken token, TimeSpan timeout) {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
         cts.CancelAfter(timeout);

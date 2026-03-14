@@ -1,7 +1,7 @@
 using System.ComponentModel;
-using HRtoVRChat.Infrastructure;
+using HRtoVR.Infrastructure;
 
-namespace HRtoVRChat.GameHandlers;
+namespace HRtoVR.GameHandlers;
 
 public interface IGameHandler : IStartStopService, INotifyPropertyChanged {
     string Name { get; }
