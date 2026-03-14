@@ -49,13 +49,6 @@ public class App : Application {
         }
     }
 
-    public override void Initialize() {
-        // Cache any assets
-        AssetTools.Init();
-        // Continue
-        AvaloniaXamlLoader.Load(this);
-    }
-
     public override void OnFrameworkInitializationCompleted() {
         // Setup Configuration
         var configPath = Path.Combine(OutputPath, "config.json");

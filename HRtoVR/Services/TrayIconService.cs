@@ -5,6 +5,8 @@ using System.Reactive.Linq;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using HRtoVR.ViewModels;
 using ReactiveUI;
 
@@ -54,9 +56,10 @@ public class TrayIconService : ITrayIconService {
         var nm = new NativeMenu();
         foreach (var (key, value) in _nativeMenuItems)
             nm.Add(value);
-
+        
+        using var stream = AssetLoader.Open(new Uri("avares://HRtoVR/Assets/hrtovrchat_logo.ico"));
         var trayIcon = new TrayIcon {
-            Icon = new WindowIcon(AssetTools.Icon),
+            Icon = new WindowIcon(new Bitmap(stream)),
             ToolTipText = "HRtoVR",
             Menu = nm
         };

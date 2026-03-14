@@ -49,7 +49,4 @@
     <PackageReference Include="Websocket.Client" Version="4.6.1" />
     <PackageReference Include="WatsonWebsocket" Version="4.1.8" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Converters\" />
-  </ItemGroup>
 </Project>
