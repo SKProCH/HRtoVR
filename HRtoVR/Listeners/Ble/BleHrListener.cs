@@ -28,6 +28,7 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
     public IObservable<bool> IsConnected => _isConnected;
     public IObservable<ConnectionState> State => _state;
     public Type SettingsViewModelType => typeof(ViewModels.Listeners.BleSettingsViewModel);
+    public bool IsAvailable => CrossBluetoothLE.Current.IsAvailable && CrossBluetoothLE.Current.IsOn;
 
     [Reactive] public BleDeviceSession? Session { get; private set; }
 

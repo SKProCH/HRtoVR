@@ -8,4 +8,5 @@ public interface IHrListener : IStartStopService {
     IObservable<int> HeartRate { get; }
     IObservable<bool> IsConnected { get; }
     Type? SettingsViewModelType => null;
+    bool IsAvailable => true;
 }

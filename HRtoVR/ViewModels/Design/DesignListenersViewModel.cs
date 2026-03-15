@@ -12,7 +12,7 @@ namespace HRtoVR.ViewModels.Design;
 public class DesignListenersViewModel : ListenersViewModel {
     public static DesignListenersViewModel Instance { get; } = new();
 
-    public DesignListenersViewModel() : base(new FakeAppOptionsManager(), new FakeConfiguration(),
+    public DesignListenersViewModel() : base(new FakeAppOptionsManager(),
         CreateFakeListeners(), new FakeServiceProvider()) {
     }
 

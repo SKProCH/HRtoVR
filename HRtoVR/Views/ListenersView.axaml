@@ -34,7 +34,8 @@
       </ListBox.Styles>
       <ListBox.ItemTemplate>
         <DataTemplate>
-          <Panel>
+          <Panel IsEnabled="{Binding Listener.IsAvailable}" 
+                 IsHitTestVisible="{Binding Listener.IsAvailable}">
             <Expander HorizontalAlignment="Stretch" IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
               <Expander.Styles>
                 <Style Selector="Expander[IsExpanded=True] /template/ ToggleButton#ExpanderHeader">
