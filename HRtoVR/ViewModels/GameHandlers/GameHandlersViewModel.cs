@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
 using DynamicData;
@@ -20,7 +21,7 @@ public class GameHandlersViewModel : ViewModelBase, IPageViewModel {
     public MaterialIconKind Icon => MaterialIconKind.Gamepad;
     public ConnectionState? State { get; private set; }
 
-    public SourceList<GameHandlerViewModel> Handlers { get; } = new();
+    public ReadOnlyObservableCollection<GameHandlerViewModel> Handlers { get; }
 
     private readonly IServiceProvider _serviceProvider;
 
@@ -29,14 +30,21 @@ public class GameHandlersViewModel : ViewModelBase, IPageViewModel {
         IServiceProvider serviceProvider,
         IOptionsManager<AppOptions> appOptionsManager) {
         _serviceProvider = serviceProvider;
+        
+        var handlersSource = new SourceList<GameHandlerViewModel>();
         foreach (var handler in gameHandlers) {
             var handlerVm = new GameHandlerViewModel(handler, appOptionsManager);
             handlerVm.Settings = CreateSettingsViewModel(handler);
 
-            Handlers.Add(handlerVm);
+            handlersSource.Add(handlerVm);
         }
 
-        Handlers.Connect()
+        handlersSource.Connect()
+            .Bind(out var handlers)
+            .Subscribe();
+        Handlers = handlers;
+        
+        handlersSource.Connect()
             .Filter(model => model.IsEnabled)
             .Maximum(x => (int)x.State)
             .Select(i => (ConnectionState)i)
