@@ -21,17 +21,17 @@ HRtoVR is now a unified cross-platform application.
 
 Configure your preferred service in the **Listeners** tab within the UI.
 
-| Device        | Info                                                                           |
-|---------------|--------------------------------------------------------------------------------|
-| Bluetooth LE  | Native bluetooth support from your PC                                          |
-| FitbitHRtoWS  | https://github.com/SKProCH/FitbitHRtoWS                                        |
-| HRProxy       | HRProxy Custom Reader                                                          |
-| HypeRate      | https://www.hyperate.io/                                                       |
-| Pulsoid       | https://pulsoid.net/ https://www.stromno.com/                                  |
-| PulsoidSocket | https://github.com/SKProCH/HRtoVR/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket |
-| Stromno       | https://www.stromno.com/                                                       |
-| TextFile      | A .txt file containing only a number                                           |
-| Omnicept      | https://www.hp.com/us-en/vr/reverb-g2-vr-headset-omnicept-edition.html         |
+| Device        | Info                                                                                           |
+|---------------|------------------------------------------------------------------------------------------------|
+| Bluetooth LE  | Native bluetooth support from your PC                                                          |
+| FitbitHRtoWS  | https://github.com/200Tigersbloxed/FitbitHRtoWS                                                |
+| HRProxy       | HRProxy Custom Reader                                                                          |
+| HypeRate      | https://www.hyperate.io/                                                                       |
+| Pulsoid       | https://pulsoid.net/ https://www.stromno.com/                                                  |
+| PulsoidSocket | https://github.com/200Tigersbloxed/HRtoVRChat_OSC/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket |
+| Stromno       | https://www.stromno.com/                                                                       |
+| TextFile      | A .txt file containing only a number                                                           |
+| Omnicept      | https://www.hp.com/us-en/vr/reverb-g2-vr-headset-omnicept-edition.html                         |
 
 ## Configuration
 
@@ -54,4 +54,4 @@ use [original avatar setup guide](https://github.com/200Tigersbloxed/HRtoVRChat_
 want.
 
 I've had success with the [ImLunaUwU prefab](https://github.com/ImLunaUwU/LunaHR), but make sure that you adjust your
-parameter names in app.
+parameter names in the app.
