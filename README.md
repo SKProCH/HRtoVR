@@ -31,7 +31,6 @@ Configure your preferred service in the **Listeners** tab within the UI.
 | PulsoidSocket | https://github.com/200Tigersbloxed/HRtoVRChat_OSC/wiki/Upgrading-from-Pulsoid-to-PulsoidSocket |
 | Stromno       | https://www.stromno.com/                                                                       |
 | TextFile      | A .txt file containing only a number                                                           |
-| Omnicept      | https://www.hp.com/us-en/vr/reverb-g2-vr-headset-omnicept-edition.html                         |
 
 ## Configuration
 
