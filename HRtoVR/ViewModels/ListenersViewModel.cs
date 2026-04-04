@@ -23,7 +23,7 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
     public ConnectionState? State => _connectionState.Value;
 
     public ObservableCollection<ListenerViewModel> Listeners { get; } = [];
-    [Reactive] public ListenerViewModel? SelectedListener { get; set; }
+    [Reactive] public ListenerViewModel? ActiveListener { get; private set; }
 
     private readonly IOptionsManager<AppOptions> _appOptions;
     private readonly IEnumerable<IHrListener> _hrListeners;
@@ -37,21 +37,7 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
 
         LoadListeners();
 
-        // Handle selection changes
-        this.WhenAnyValue(x => x.SelectedListener)
-            .Subscribe(listener => {
-                if (listener != null) {
-                    // Expand the selected listener and collapse others
-                    foreach (var l in Listeners) {
-                        l.IsExpanded = l == listener;
-                    }
-
-                    _appOptions.CurrentValue.ActiveListener = listener.Name;
-                    _appOptions.Save();
-                }
-            });
-
-        _connectionState = this.WhenAnyValue(x => x.SelectedListener)
+        _connectionState = this.WhenAnyValue(x => x.ActiveListener)
             .Select(listener => listener != null
                 ? listener.WhenAnyValue(x => (ConnectionState?)x.State)
                 : Observable.Return((ConnectionState?)null))
@@ -64,18 +50,28 @@ public class ListenersViewModel : ViewModelBase, IPageViewModel {
         var config = _appOptions.CurrentValue;
         Listeners.AddRange(_hrListeners.Select(l => new ListenerViewModel(l, _serviceProvider)));
 
-        // Select the active listener
-        SelectedListener = Listeners.FirstOrDefault(m => 
+        // Expand the active listener
+        ActiveListener = Listeners.FirstOrDefault(m =>
             m.Listener.IsAvailable &&
             m.Name.Equals(config.ActiveListener, StringComparison.OrdinalIgnoreCase));
 
-        // Sync manual expansion with selection
+        if (ActiveListener != null) {
+            ActiveListener.IsExpanded = true;
+        }
+
+        // Accordion behavior
         foreach (var listener in Listeners) {
             listener.WhenAnyValue(x => x.IsExpanded)
-                .Subscribe(isExpanded => {
-                    if (isExpanded) {
-                        SelectedListener = listener;
+                .Where(isExpanded => isExpanded)
+                .Subscribe(_ => {
+                    foreach (var other in Listeners) {
+                        if (other != listener) {
+                            other.IsExpanded = false;
+                        }
                     }
+                    ActiveListener = listener;
+                    _appOptions.CurrentValue.ActiveListener = listener.Name;
+                    _appOptions.Save();
                 });
         }
     }

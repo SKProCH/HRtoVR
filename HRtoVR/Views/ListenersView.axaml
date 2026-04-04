@@ -12,64 +12,48 @@
              x:DataType="vm:ListenersViewModel"
              d:DataContext="{x:Static dvm:DesignListenersViewModel.Instance}">
   <Grid>
-    <ListBox ItemsSource="{Binding Listeners}"
-             SelectedItem="{Binding SelectedListener}"
-             Padding="10"
-             Classes="ListenersListBox">
-      <ListBox.Styles>
-        <Style Selector="ListBox.ListenersListBox>ListBoxItem">
-          <Setter Property="Padding" Value="0,0,0,10" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="ListBox.ListenersListBox>ListBoxItem:last-child">
-          <Setter Property="Padding" Value="0" />
-        </Style>
-        <Style Selector="ListBox.ListenersListBox>ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-          <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="ListBox.ListenersListBox>ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-          <Setter Property="Background" Value="Transparent" />
-        </Style>
-      </ListBox.Styles>
-      <ListBox.ItemTemplate>
-        <DataTemplate>
-          <Panel IsEnabled="{Binding Listener.IsAvailable}" 
-                 IsHitTestVisible="{Binding Listener.IsAvailable}">
-            <Expander HorizontalAlignment="Stretch" IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
-              <Expander.Styles>
-                <Style Selector="Expander[IsExpanded=True] /template/ ToggleButton#ExpanderHeader">
-                  <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
-                  <!-- Disable clicking when already expanded to prevent collapsing -->
-                  <Setter Property="IsHitTestVisible" Value="False" />
-                  <Style Selector="^ Border#ExpandCollapseChevronBorder">
-                    <Setter Property="Opacity" Value="0" />
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding Listeners}"
+                    Padding="10">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Panel IsEnabled="{Binding Listener.IsAvailable}"
+                   IsHitTestVisible="{Binding Listener.IsAvailable}"
+                   Margin="0,0,0,10">
+              <Expander HorizontalAlignment="Stretch" IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                <Expander.Styles>
+                  <Style Selector="Expander[IsExpanded=True] /template/ ToggleButton#ExpanderHeader">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+                    <Setter Property="IsHitTestVisible" Value="False" />
+                    <Style Selector="^ Border#ExpandCollapseChevronBorder">
+                      <Setter Property="Opacity" Value="0" />
+                    </Style>
                   </Style>
-                </Style>
-                <Style Selector="Expander[IsExpanded=True] TextBlock">
-                  <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
-                </Style>
-              </Expander.Styles>
-              <Expander.Header>
-                <Grid ColumnDefinitions="*, Auto">
-                  <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" />
-                  <controls1:ConnectionIndicator Grid.Column="1"
-                                                 State="{Binding State}"
-                                                 IsVisible="{Binding IsExpanded}"
-                                                 Margin="0,0,0,0" VerticalAlignment="Center" />
-                </Grid>
-              </Expander.Header>
-              <listeners1:ListenerSettingsView DataContext="{Binding}" Margin="5" />
-            </Expander>
-            <Button
-              Background="Transparent"
-              Content="{avalonia:MaterialIconExt Kind=Restart}"
-              Command="{Binding RestartCommand}"
-              IsVisible="{Binding IsExpanded}"
-              VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0  10 8 0" />
-          </Panel>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
+                  <Style Selector="Expander[IsExpanded=True] TextBlock">
+                    <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+                  </Style>
+                </Expander.Styles>
+                <Expander.Header>
+                  <Grid ColumnDefinitions="*, Auto">
+                    <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" />
+                    <controls1:ConnectionIndicator Grid.Column="1"
+                                                   State="{Binding State}"
+                                                   IsVisible="{Binding IsExpanded}"
+                                                   Margin="0,0,0,0" VerticalAlignment="Center" />
+                  </Grid>
+                </Expander.Header>
+                <listeners1:ListenerSettingsView DataContext="{Binding}" Margin="5" />
+              </Expander>
+              <Button
+                Background="Transparent"
+                Content="{avalonia:MaterialIconExt Kind=Restart}"
+                Command="{Binding RestartCommand}"
+                IsVisible="{Binding IsExpanded}"
+                VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,10,8,0" />
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
   </Grid>
 </UserControl>
