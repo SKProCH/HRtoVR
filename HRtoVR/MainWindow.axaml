@@ -80,7 +80,7 @@
             <TextBlock Margin="5,1,0,0">Exit</TextBlock>
           </StackPanel>
         </Button>
-        <Button Width="150" Background="transparent" Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/200Tigersbloxed/HRtoVRChat_OSC">
+        <Button Width="150" Background="transparent" Command="{Binding OpenUrlCommand}" CommandParameter="https://github.com/SKProCH/HRtoVR">
           <StackPanel Orientation="Horizontal">
             <Image Source="Assets/github.png" Width="35" />
             <TextBlock Margin="10,9,0,0">GitHub</TextBlock>

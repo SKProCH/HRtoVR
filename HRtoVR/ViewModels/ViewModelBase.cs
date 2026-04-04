@@ -23,7 +23,7 @@ public class ViewModelBase : ReactiveObject {
             try {
                 // Fallback
                 if (url.Contains("github"))
-                    System.Diagnostics.Process.Start("https://github.com/200Tigersbloxed/HRtoVRChat_OSC");
+                    System.Diagnostics.Process.Start("https://github.com/SKProCH/HRtoVR");
             }
             catch (System.Exception) { }
         }
