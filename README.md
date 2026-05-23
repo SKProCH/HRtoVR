@@ -32,6 +32,16 @@ Configure your preferred service in the **Listeners** tab within the UI.
 | Stromno       | https://www.stromno.com/                                                                       |
 | TextFile      | A .txt file containing only a number                                                           |
 
+## Launch Modes
+
+The application supports additional launch modes via command-line arguments:
+
+| Argument     | Description                                                                                                                                                                |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| *(none)*     | Normal mode - opens the main window and system tray icon                                                                                                                   |
+| `--tray`     | Starts minimized to system tray. The UI is fully available via the tray icon                                                                                               |
+| `--headless` | Daemon mode - runs without any UI. Only core services (listeners, OSC) are active. Logs are written to file (and to console if launched from a terminal). Stop with Ctrl+C |
+
 ## Configuration
 
 All the configuration is done within the UI, you don't need the edit config anymore.  
