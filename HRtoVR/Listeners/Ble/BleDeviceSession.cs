@@ -115,12 +115,20 @@ public sealed class BleDeviceSession : ReactiveObject, IAsyncDisposable {
                             }
                         });
                     }
+                    catch (ObjectDisposedException ex) {
+                        _logger.LogWarning(ex,
+                            "Service/characteristic disposed for {ServiceId}/{CharacteristicId}, retrying...",
+                            x.ServiceId, x.CharacteristicId);
+                        await Task.Delay(1000, ct);
+                        observer.OnError(ex);
+                        return Disposable.Empty;
+                    }
                     catch (Exception ex) when (ex is not OperationCanceledException) {
                         _logger.LogError(ex, "Error in heart rate subscription for {ServiceId}/{CharacteristicId}",
                             x.ServiceId, x.CharacteristicId);
                         return Disposable.Empty;
                     }
-                });
+                }).Retry(3);
             })
             .Switch()
             .Subscribe(hr => _heartRate.OnNext(hr))
