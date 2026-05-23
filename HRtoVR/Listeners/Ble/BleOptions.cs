@@ -7,4 +7,5 @@ public class BleOptions : ReactiveObject {
     [Reactive] public BleDescriptor? Device { get; set; }
     [Reactive] public BleDescriptor? Service { get; set; }
     [Reactive] public BleDescriptor? Characteristic { get; set; }
+    [Reactive] public bool AutoDiscover { get; set; } = true;
 }

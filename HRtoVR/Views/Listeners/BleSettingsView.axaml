@@ -11,6 +11,18 @@
              x:DataType="vm:BleSettingsViewModel">
   <Grid RowDefinitions="Auto,*">
     <StackPanel Grid.Row="0" Spacing="20">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <ToggleSwitch IsChecked="{Binding AutoDiscover}"
+                      OnContent="Auto-discovery fallback"
+                      OffContent="Auto-discovery fallback"
+                      FontSize="11">
+          <ToolTip.Tip>
+            Automatically scan for and reconnect to the device if the saved connection fails.
+            Can help if app not connecting to the device automatically (probably OS failt).
+          </ToolTip.Tip>
+        </ToggleSwitch>
+      </StackPanel>
+
       <!-- Connected Device Card -->
       <StackPanel IsVisible="{Binding ActiveDevice, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="SELECTED DEVICE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />

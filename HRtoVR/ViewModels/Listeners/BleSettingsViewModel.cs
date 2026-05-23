@@ -39,6 +39,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
     [Reactive] public ObservableCollection<BleDescriptor> Characteristics { get; set; } = [];
     [Reactive] public BleDescriptor? ActiveCharacteristic { get; set; }
+    [Reactive] public bool AutoDiscover { get; set; }
 
     public BleSettingsViewModel(BleHrListener bleListener, IOptionsManager<BleOptions> optionsManager,
         ILogger<BleSettingsViewModel> logger) {
@@ -48,6 +49,7 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
         ActiveDevice = optionsManager.CurrentValue.Device;
         ActiveService = optionsManager.CurrentValue.Service;
         ActiveCharacteristic = optionsManager.CurrentValue.Characteristic;
+        AutoDiscover = optionsManager.CurrentValue.AutoDiscover;
 
         bleListener.State
             .ObserveOn(RxApp.MainThreadScheduler)
@@ -78,6 +80,9 @@ public class BleSettingsViewModel : ViewModelBase, IListenerSettingsViewModel, I
 
         this.WhenAnyValue(x => x.ActiveCharacteristic)
             .Subscribe(descriptor => optionsManager.CurrentValue.Characteristic = descriptor);
+
+        this.WhenAnyValue(x => x.AutoDiscover)
+            .Subscribe(val => optionsManager.CurrentValue.AutoDiscover = val);
 
         Observable.CombineLatest(
                 this.WhenAnyValue(x => x.ActiveDevice),

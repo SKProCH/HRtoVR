@@ -141,17 +141,49 @@ public class BleHrListener(ILogger<BleHrListener> logger, IOptionsMonitor<BleOpt
             catch (TimeoutException) {
                 attempt++;
                 logger.LogWarning("Timeout connecting to BLE device {DeviceId}, retrying", deviceId);
+                await TryAutoDiscover(deviceId, token);
             }
             catch (Exception ex) {
                 var delay = Math.Min(2000 * attempt++, 15000);
                 logger.LogError(ex is DeviceConnectionException ? null : ex,
                     "Error in BLE connection loop for device {DeviceId}, retrying in {DelayMs}ms", deviceId, delay);
                 await Task.Delay(delay, token);
+                await TryAutoDiscover(deviceId, token);
             }
             finally {
                 if (Session == session)
                     Session = null;
             }
+        }
+    }
+
+    private async Task TryAutoDiscover(Guid deviceId, CancellationToken token) {
+        if (!options.CurrentValue.AutoDiscover) return;
+
+        logger.LogInformation("Connection failed, scanning to make device {DeviceId} visible to the BLE stack", deviceId);
+        await ScanUntilDeviceFoundAsync(deviceId, token);
+    }
+
+    private async Task ScanUntilDeviceFoundAsync(Guid deviceId, CancellationToken token) {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var registration = token.Register(() => tcs.TrySetResult());
+
+        void OnDeviceDiscovered(object? sender, Plugin.BLE.Abstractions.EventArgs.DeviceEventArgs e) {
+            if (e.Device.Id == deviceId) {
+                logger.LogInformation("Device {DeviceId} found via scan, reconnecting", deviceId);
+                tcs.TrySetResult();
+            }
+        }
+
+        try {
+            CrossBluetoothLE.Current.Adapter.ScanTimeout = int.MaxValue;
+            CrossBluetoothLE.Current.Adapter.DeviceDiscovered += OnDeviceDiscovered;
+            await CrossBluetoothLE.Current.Adapter.StartScanningForDevicesAsync(cancellationToken: token);
+            await tcs.Task;
+        }
+        finally {
+            CrossBluetoothLE.Current.Adapter.DeviceDiscovered -= OnDeviceDiscovered;
+            await CrossBluetoothLE.Current.Adapter.StopScanningForDevicesAsync();
         }
     }
 }
