@@ -17,27 +17,21 @@ public class ProgramViewModel : ViewModelBase, IPageViewModel {
     [Reactive] public bool IsConnected { get; set; }
     [Reactive] public string ActiveListenerName { get; set; } = "None";
 
-    private readonly IHRService _hrService;
-    private readonly ITrayIconService _trayIconService;
-
-    public ProgramViewModel(IHRService hrService, ITrayIconService trayIconService) {
-        _hrService = hrService;
-        _trayIconService = trayIconService;
-
-        _hrService.HeartRate
+    public ProgramViewModel(IHRService hrService) {
+        hrService.HeartRate
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(hr => HeartRate = hr);
 
-        _hrService.IsConnected
+        hrService.IsConnected
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(connected => IsConnected = connected);
 
-        _hrService.ActiveListener
+        hrService.ActiveListener
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(listener => ActiveListenerName = listener?.Name ?? "None");
 
-        _hrService.IsConnected.CombineLatest(_hrService.ActiveListener, (connected, listener) =>
-                $"STATUS: {(listener != null ? (connected ? "CONNECTED" : "DISCONNECTED") : "STOPPED")}")
+        hrService.IsConnected.CombineLatest(hrService.ActiveListener, (connected, listener) =>
+                $"STATUS: {(listener != null ? connected ? "CONNECTED" : "DISCONNECTED" : "STOPPED")}")
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(status => StatusText = status);
     }

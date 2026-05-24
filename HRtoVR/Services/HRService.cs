@@ -109,8 +109,10 @@ public class HRService : IHRService {
                 state[i] = isRunning;
             }
 
-            if (changed)
+            if (changed) {
                 _activeGameHandlers.OnNext(active);
+                _hasActiveGameHandle.OnNext(active.Count > 0);
+            }
 
             await Task.Delay(2000);
         }

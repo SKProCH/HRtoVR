@@ -52,7 +52,6 @@ public class App : Application {
         _ = hrService.Start();
 
         var trayIconService = Services.GetRequiredService<ITrayIconService>();
-        trayIconService.Init(this);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
             var mainWindow = new MainWindow();
@@ -61,11 +60,11 @@ public class App : Application {
             mainVm.RequestHide += mainWindow.Hide;
 
             mainWindow.DataContext = mainVm;
-            trayIconService.MainWindow = mainWindow;
+            trayIconService.Init(this, mainWindow);
 
             if (Program.StartMinimized) {
                 desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnExplicitShutdown;
-                trayIconService.Update(new TrayIconInfo { HideApplication = true });
+                mainWindow.Hide();
             } else {
                 desktop.MainWindow = mainWindow;
             }

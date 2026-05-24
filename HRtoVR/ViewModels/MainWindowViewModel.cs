@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using HRtoVR.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -21,27 +20,16 @@ public class MainWindowViewModel : ViewModelBase {
     public ReactiveCommand<Unit, Unit> ExitAppCommand { get; }
     public ReactiveCommand<string, Unit> OpenUrlCommand { get; }
 
-    // Events
     public event Action? RequestHide;
 
-    private readonly ITrayIconService _trayIconService;
-
-    public MainWindowViewModel(
-        IEnumerable<IPageViewModel> pages,
-        ITrayIconService trayIconService) {
+    public MainWindowViewModel(IEnumerable<IPageViewModel> pages) {
         Pages = new ObservableCollection<IPageViewModel>(pages);
-        _trayIconService = trayIconService;
 
-        // Global Initialization
         if (!string.IsNullOrEmpty(App.LocalDirectory) && !Directory.Exists(App.LocalDirectory))
             Directory.CreateDirectory(App.LocalDirectory);
 
-        // _configService.CreateConfig(); // Config is loaded via DI
-
-        // Default Page
         CurrentPage = Pages.FirstOrDefault() ?? throw new InvalidOperationException("No pages registered");
 
-        // Commands
         SwitchPanelCommand = ReactiveCommand.Create<IPageViewModel>(vm => {
             CurrentPage = vm;
         });
@@ -49,7 +37,6 @@ public class MainWindowViewModel : ViewModelBase {
         OpenUrlCommand = ReactiveCommand.Create<string>(OpenUrl);
 
         HideAppCommand = ReactiveCommand.Create(() => {
-            _trayIconService.Update(new TrayIconInfo { HideApplication = true });
             RequestHide?.Invoke();
         });
 

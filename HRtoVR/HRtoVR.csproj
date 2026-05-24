@@ -45,6 +45,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.3" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
     <PackageReference Include="Vizcon.OSC" Version="1.0.3" />
     <PackageReference Include="Websocket.Client" Version="4.6.1" />
     <PackageReference Include="WatsonWebsocket" Version="4.1.8" />
